@@ -8,6 +8,7 @@ public class StreamManager: NSObject {
     
     public var rtmpConnection = RTMPConnection()
     public var rtmpStream: RTMPStream!
+    private var streamKeyToPublish: String = ""
     
     private override init() {
         super.init()
@@ -38,13 +39,20 @@ public class StreamManager: NSObject {
         }
     }
     
-    public func startStreaming(url: String, streamKey: String) {
-        rtmpConnection.addEventListener(.rtmpStatus, selector: #selector(statusHandler), observer: self)
-        rtmpConnection.connect(url)
-        self.streamKeyToPublish = streamKey
+    // Metodo per collegare l'anteprima video (lfView / MTHKView)
+    public func attachCamera(to view: MTHKView) {
+        view.attachStream(rtmpStream)
     }
     
-    private var streamKeyToPublish: String = ""
+    public func attachCamera(to view: HKView) {
+        view.attachStream(rtmpStream)
+    }
+    
+    public func startStreaming(url: String, streamKey: String) {
+        self.streamKeyToPublish = streamKey
+        rtmpConnection.addEventListener(.rtmpStatus, selector: #selector(statusHandler), observer: self)
+        rtmpConnection.connect(url)
+    }
     
     @objc private func statusHandler(_ notification: Notification) {
         let e = Event.from(notification)
