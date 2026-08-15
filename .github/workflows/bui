@@ -1,0 +1,39 @@
+name: Compila IPA
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Scarica codice
+        uses: actions/checkout@v4
+
+      - name: Installa XcodeGen
+        run: brew install xcodegen
+
+      - name: Genera progetto Xcode
+        run: xcodegen generate
+
+      - name: Compila Progetto
+        run: |
+          xcodebuild build \
+            -project MiaApp.xcodeproj \
+            -scheme MiaApp \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CONFIGURATION_BUILD_DIR=build
+
+      - name: Crea pacchetto IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/*.app Payload/
+          zip -r AppPerIphone.ipa Payload
+
+      - name: Salva il file
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacchetto-ipa
+          path: AppPerIphone.ipa
