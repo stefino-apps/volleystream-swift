@@ -21,15 +21,16 @@ jobs:
             -scheme MiaApp \
             -sdk iphoneos \
             -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=build
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Crea pacchetto IPA
         run: |
           mkdir -p Payload
-          cp -r build/*.app Payload/
+          cp -r DerivedData/Build/Products/Release-iphoneos/MiaApp.app Payload/
           zip -r AppPerIphone.ipa Payload
 
       - name: Salva il file
