@@ -1,6 +1,10 @@
 name: MiaApp
 options:
   bundleIdPrefix: com.sviluppo
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    majorVersion: 11.0.0
 targets:
   MiaApp:
     type: application
@@ -12,5 +16,12 @@ targets:
           - ".github"
           - ".git"
           - "project.yml"
+    dependencies:
+      - package: Firebase
+        product: FirebaseCore
+      - package: Firebase
+        product: FirebaseDatabase
+      - package: Firebase
+        product: FirebaseAuth
     info:
       path: Info.plist
