@@ -39,12 +39,8 @@ public class StreamManager: NSObject {
         }
     }
     
-    // Metodo per collegare l'anteprima video (lfView / MTHKView)
+    // Metodo per collegare la preview video Metal
     public func attachCamera(to view: MTHKView) {
-        view.attachStream(rtmpStream)
-    }
-    
-    public func attachCamera(to view: HKView) {
         view.attachStream(rtmpStream)
     }
     
