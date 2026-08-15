@@ -8,6 +8,9 @@ packages:
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
     majorVersion: 8.0.0
+  HaishinKit:
+    url: https://github.com/shogo4405/HaishinKit.swift
+    from: 1.8.0
 targets:
   MiaApp:
     type: application
@@ -30,5 +33,7 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
+      - package: HaishinKit
+        product: HaishinKit
     info:
       path: Info.plist
