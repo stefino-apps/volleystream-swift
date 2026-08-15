@@ -1,87 +1,65 @@
+import Foundation
 import AVFoundation
+import VideoToolbox
 import HaishinKit
-import UIKit
 
-class StreamManager {
-    static let shared = StreamManager()
+public class StreamManager: NSObject {
+    public static let shared = StreamManager()
     
-    private var rtmpConnection = RTMPConnection()
-    private var rtmpStream: RTMPStream!
+    public var rtmpConnection = RTMPConnection()
+    public var rtmpStream: RTMPStream!
     
-    // View dove la fotocamera viene mostrata
-    var previewView: MTHKView?
+    private override init() {
+        super.init()
+        setupStream()
+    }
     
-    private init() {
+    public func setupStream() {
         rtmpStream = RTMPStream(connection: rtmpConnection)
         
-        // Configurazioni Audio/Video a 60 FPS
-        rtmpStream.videoSettings = [
-            .width: 1920,
-            .height: 1080,
-            .profileLevel: kVTProfileLevel_H264_High_AutoLevel,
-            .maxKeyFrameIntervalDuration: 2,
-            .bitrate: 4000 * 1000 // 4 Mbps
-        ]
+        // Video Settings
+        rtmpStream.videoSettings.videoSize = .init(width: 1920, height: 1080)
+        rtmpStream.videoSettings.bitRate = 4000 * 1000 // 4 Mbps
+        rtmpStream.videoSettings.profileLevel = kVTProfileLevel_H264_High_AutoLevel as String
+        rtmpStream.videoSettings.maxKeyFrameIntervalDuration = 2.0
         
-        rtmpStream.audioSettings = [
-            .bitrate: 128 * 1000
-        ]
+        // Audio Settings
+        rtmpStream.audioSettings.bitRate = 128 * 1000
         
-        rtmpStream.captureSettings = [
-            .fps: 60.0,
-            .sessionPreset: AVCaptureSession.Preset.hd1920x1080,
-            .continuousAutofocus: true,
-            .continuousExposure: true
-        ]
+        // Capture & Camera Settings
+        rtmpStream.frameRate = 60.0
+        rtmpStream.sessionPreset = .hd1920x1080
         
-        // Listener per connessione
-        rtmpConnection.addEventListener(.rtmpStatus, selector: #selector(rtmpStatusHandler), observer: self)
-    }
-    
-    func attachCamera(to view: MTHKView) {
-        self.previewView = view
-        view.attachStream(rtmpStream)
-        
-        rtmpStream.attachAudio(AVCaptureDevice.default(for: .audio)) { error in
-            print("Audio Attach Error: \(error)")
-        }
+        // Attach Audio & Video
+        rtmpStream.attachAudio(AVCaptureDevice.default(for: .audio)) { _, _ in }
         
         if let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
-            rtmpStream.attachCamera(camera) { error in
-                print("Camera Attach Error: \(error)")
-            }
+            rtmpStream.attachCamera(camera) { _, _ in }
         }
     }
     
-    func startStreaming(url: String, streamKey: String) {
+    public func startStreaming(url: String, streamKey: String) {
+        rtmpConnection.addEventListener(.rtmpStatus, selector: #selector(statusHandler), observer: self)
         rtmpConnection.connect(url)
-        // Non appena si connette (rtmpStatusHandler = NetConnection.Connect.Success), chiameremo publish
-        // In un'app completa, si gestisce l'evento in modo asincrono.
-        
-        // Qui lo simuliamo con un delay o lo mettiamo nell'handler.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.rtmpStream.publish(streamKey)
-        }
+        self.streamKeyToPublish = streamKey
     }
     
-    func stopStreaming() {
-        rtmpStream.close()
-        rtmpConnection.close()
-    }
+    private var streamKeyToPublish: String = ""
     
-    @objc private func rtmpStatusHandler(_ notification: Notification) {
+    @objc private func statusHandler(_ notification: Notification) {
         let e = Event.from(notification)
-        guard let data: ASObject = e.data as? ASObject, let code: String = data["code"] as? String else {
+        guard let data: NSDictionary = e.data as? NSDictionary,
+              let code: String = data["code"] as? String else {
             return
         }
-        print("RTMP Status: \(code)")
+        
+        if code == RTMPConnection.Code.connectSuccess.rawValue {
+            rtmpStream.publish(streamKeyToPublish)
+        }
     }
     
-    // Funzione fondamentale: sovrapporre grafica
-    // HaishinKit permette di registrare un view o CALayer da renderizzare sopra il video
-    func registerOverlay(view: UIView) {
-        // La registrazione dell'overlay avviene disegnando l'HUD.
-        rtmpStream.registerEffect(videoEffect: VideoEffect()) // Placeholder per overlay personalizzato
-        // Per inserire UIKit, si può usare il drawable custom di HaishinKit
+    public func stopStreaming() {
+        rtmpStream.close()
+        rtmpConnection.close()
     }
 }
