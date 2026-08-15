@@ -22,7 +22,7 @@ public class StreamManager: NSObject {
         rtmpStream.videoSettings.videoSize = .init(width: 1920, height: 1080)
         rtmpStream.videoSettings.bitRate = 4000 * 1000 // 4 Mbps
         rtmpStream.videoSettings.profileLevel = kVTProfileLevel_H264_High_AutoLevel as String
-        rtmpStream.videoSettings.maxKeyFrameIntervalDuration = 2.0
+        rtmpStream.videoSettings.maxKeyFrameIntervalDuration = 2
         
         // Audio Settings
         rtmpStream.audioSettings.bitRate = 128 * 1000
