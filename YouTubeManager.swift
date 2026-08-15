@@ -1,56 +1,44 @@
 import Foundation
+import UIKit
 import GoogleSignIn
-import AppAuth
 
-class YouTubeManager {
-    static let shared = YouTubeManager()
+public class YouTubeManager: NSObject {
+    public static let shared = YouTubeManager()
     
-    // Configura il client OAuth
-    private var authState: OIDAuthState?
+    public var userEmail: String?
+    public var accessToken: String?
     
-    func signIn(presentingViewController: UIViewController, completion: @escaping (Bool) -> Void) {
-        // La configurazione OAuth per Google
-        let configuration = GIDConfiguration(clientID: "INSERIRE_CLIENT_ID_IOS")
+    private override init() {
+        super.init()
+    }
+    
+    public func signIn(presentingViewController: UIViewController, completion: @escaping (Bool, Error?) -> Void) {
+        let scopes = [
+            "https://www.googleapis.com/auth/youtube",
+            "https://www.googleapis.com/auth/youtube.force-ssl",
+            "https://www.googleapis.com/auth/youtube.readonly"
+        ]
         
-        GIDSignIn.sharedInstance.signIn(with: configuration, presenting: presentingViewController) { user, error in
+        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes) { result, error in
             if let error = error {
-                print("Errore Google Sign In: \(error.localizedDescription)")
-                completion(false)
+                completion(false, error)
                 return
             }
             
-            // L'utente è loggato. Richiediamo gli scope YouTube
-            let additionalScopes = ["https://www.googleapis.com/auth/youtube", 
-                                    "https://www.googleapis.com/auth/youtube.readonly"]
-            
-            GIDSignIn.sharedInstance.addScopes(additionalScopes, presenting: presentingViewController) { user, error in
-                if let error = error {
-                    print("Errore richiesta scopes: \(error.localizedDescription)")
-                    completion(false)
-                    return
-                }
-                
-                print("Login YouTube effettuato con successo!")
-                completion(true)
+            guard let result = result else {
+                completion(false, nil)
+                return
             }
+            
+            self.userEmail = result.user.profile?.email
+            self.accessToken = result.user.accessToken.tokenString
+            completion(true, nil)
         }
     }
     
-    func createLiveBroadcast(title: String, description: String, completion: @escaping (String?, String?) -> Void) {
-        // Qui andrà l'implementazione delle chiamate REST a YouTube Data API v3
-        // per creare il LiveBroadcast e il LiveStream e legarli.
-        // Simulazione per la struttura:
-        print("Creazione Broadcast: \(title)")
-        
-        let streamName = "simulated_stream_key_12345"
-        let broadcastId = "simulated_broadcast_id"
-        
-        completion(broadcastId, streamName)
-    }
-    
-    func transitionBroadcast(broadcastId: String, status: String, completion: @escaping (Bool) -> Void) {
-        // Chiama l'API transition (testing, live, complete)
-        print("Transizione broadcast \(broadcastId) a stato \(status)")
-        completion(true)
+    public func signOut() {
+        GIDSignIn.sharedInstance.signOut()
+        self.userEmail = nil
+        self.accessToken = nil
     }
 }
