@@ -98,7 +98,8 @@ class MainViewController: UIViewController {
     
     private func setupControls() {
         let safeY = view.bounds.height - 80
-        startStreamButton = UIButton(frame: CGRect(x: view.bounds.width - 200, y: safeY, width: 180, height: 50))
+        let centerX = view.bounds.width / 2
+        startStreamButton = UIButton(frame: CGRect(x: centerX - 90, y: safeY, width: 180, height: 50))
         startStreamButton.setTitle("start_live".localized, for: .normal)
         startStreamButton.backgroundColor = .red
         startStreamButton.layer.cornerRadius = 25
@@ -112,14 +113,14 @@ class MainViewController: UIViewController {
         modeButton.addTarget(self, action: #selector(toggleMode), for: .touchUpInside)
         view.addSubview(modeButton)
         
-        shareLiveButton = UIButton(frame: CGRect(x: 160, y: safeY, width: 150, height: 50))
+        shareLiveButton = UIButton(frame: CGRect(x: centerX + 110, y: safeY, width: 150, height: 50))
         shareLiveButton.setTitle("Share Live", for: .normal)
         shareLiveButton.backgroundColor = .systemBlue
         shareLiveButton.layer.cornerRadius = 10
         shareLiveButton.addTarget(self, action: #selector(shareLive), for: .touchUpInside)
         view.addSubview(shareLiveButton)
         
-        shareRemoteButton = UIButton(frame: CGRect(x: 330, y: safeY, width: 150, height: 50))
+        shareRemoteButton = UIButton(frame: CGRect(x: centerX + 280, y: safeY, width: 150, height: 50))
         shareRemoteButton.setTitle("Share Remote", for: .normal)
         shareRemoteButton.backgroundColor = .systemGreen
         shareRemoteButton.layer.cornerRadius = 10
