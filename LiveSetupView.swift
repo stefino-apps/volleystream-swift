@@ -4,8 +4,29 @@ struct LiveSetupView: View {
     @State private var streamTitle = ""
     @State private var fps60Enabled = false
     
+    // Nuove impostazioni per sport e tema
+    @State private var selectedSport = "volley"
+    @State private var selectedTheme = "neon"
+    
+    let sports = ["volley", "basket", "soccer", "tennis", "darts", "cricket"]
+    let themes = ["neon", "classic", "dark", "light"]
+    
     var body: some View {
         Form {
+            Section(header: Text("Impostazioni Partita")) {
+                Picker("Sport", selection: $selectedSport) {
+                    ForEach(sports, id: \.self) { sport in
+                        Text(sport.capitalized).tag(sport)
+                    }
+                }
+                
+                Picker("Tema Grafico", selection: $selectedTheme) {
+                    ForEach(themes, id: \.self) { theme in
+                        Text(theme.capitalized).tag(theme)
+                    }
+                }
+            }
+            
             Section(header: Text("youtube_config".localized)) {
                 Button("login_youtube".localized) {
                     // Chiamata a YouTubeManager.shared.signIn
@@ -21,7 +42,7 @@ struct LiveSetupView: View {
             }
             
             Section {
-                NavigationLink(destination: DirectorView()) {
+                NavigationLink(destination: DirectorView(sport: selectedSport, theme: selectedTheme)) {
                     Text("start_live".localized)
                         .foregroundColor(.vspRed)
                         .bold()
@@ -39,3 +60,4 @@ struct LiveSetupView: View {
         }
     }
 }
+

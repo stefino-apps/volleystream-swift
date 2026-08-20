@@ -3,6 +3,9 @@ import HaishinKit
 
 class MainViewController: UIViewController {
 
+    var initialSport: String = "volley"
+    var initialTheme: String = "neon"
+
     var lfView: MTHKView!
     var scoreboardView: ScoreboardOverlayView!
     

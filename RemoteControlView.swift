@@ -3,123 +3,69 @@ import SwiftUI
 struct RemoteControlView: View {
     @State private var sessionCode: String = ""
     @State private var isConnected = false
-    
     @State private var matchState = RemoteMatchState()
     
     var body: some View {
         VStack {
             if !isConnected {
-                // Schermata Inserimento Codice
-                VStack(spacing: 20) {
-                    Text("Inserisci Codice Regia")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    
-                    TextField("Codice...", text: $sessionCode)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .font(.title2)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                        .textInputAutocapitalization(.characters)
-                    
-                    Button("CONNETTI") {
-                        connectToSession()
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
-                }
-                .padding()
+                setupView
             } else {
-                // Schermata Telecomando Attivo
-                VStack {
-                    HStack {
-                        Text("Connesso a: \(sessionCode)")
-                            .foregroundColor(.green)
-                            .bold()
-                        Spacer()
-                        Button("DISCONNETTI") {
-                            FirebaseManager.shared.stopListening()
-                            isConnected = false
-                        }
-                        .foregroundColor(.red)
-                    }
-                    .padding()
-                    
+                activeRemoteView
+            }
+        }
+    }
+    
+    var setupView: some View {
+        VStack(spacing: 20) {
+            Text("Inserisci Codice Regia").font(.title).bold()
+            TextField("Codice...", text: $sessionCode)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .font(.title2).multilineTextAlignment(.center).padding()
+            Button("CONNETTI") { connectToSession() }
+                .font(.headline).foregroundColor(.white).padding()
+                .frame(maxWidth: .infinity).background(Color.blue).cornerRadius(10)
+        }.padding()
+    }
+    
+    var activeRemoteView: some View {
+        ScrollView {
+            VStack {
+                HStack {
+                    Text("Connesso a: \(sessionCode) [\(matchState.sportType)]")
+                        .foregroundColor(.green).bold()
                     Spacer()
-                    
-                    HStack {
-                        RemoteScorePanel(
-                            team: matchState.teamA,
-                            score: matchState.scoreA,
-                            sets: matchState.setsA,
-                            timeouts: matchState.timeoutA,
-                            onScoreChanged: { newScore in
-                                matchState.scoreA = newScore
-                                updateState()
-                            },
-                            onSet: {
-                                matchState.setsA += 1
-                                updateState()
-                            },
-                            onTimeout: {
-                                matchState.timeoutA += 1
-                                updateState()
-                            }
-                        )
-                        
-                        Spacer()
-                        
-                        RemoteScorePanel(
-                            team: matchState.teamB,
-                            score: matchState.scoreB,
-                            sets: matchState.setsB,
-                            timeouts: matchState.timeoutB,
-                            onScoreChanged: { newScore in
-                                matchState.scoreB = newScore
-                                updateState()
-                            },
-                            onSet: {
-                                matchState.setsB += 1
-                                updateState()
-                            },
-                            onTimeout: {
-                                matchState.timeoutB += 1
-                                updateState()
-                            }
-                        )
-                    }
-                    .padding()
-                    
-                    Spacer()
-                    
-                    // Extra Controls
-                    HStack {
-                        Toggle("Mostra Sponsor", isOn: $matchState.showSponsor)
-                            .onChange(of: matchState.showSponsor) { _ in updateState() }
-                            .padding()
-                        
-                        Button("REPLAY") {
-                            FirebaseManager.shared.sendCommand("TRIGGER_REPLAY")
-                        }
-                        .padding()
-                        .background(Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                        
-                        Button("HIGHLIGHT") {
-                            FirebaseManager.shared.sendCommand("TRIGGER_HIGHLIGHT")
-                        }
-                        .padding()
-                        .background(Color.purple)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                    }
+                    Button("DISCONNETTI") {
+                        FirebaseManager.shared.stopListening()
+                        isConnected = false
+                    }.foregroundColor(.red)
+                }.padding()
+                
+                // Controlli specifici per sport
+                if matchState.sportType == "volley" {
+                    VolleyRemote(state: $matchState, update: updateState)
+                } else if matchState.sportType == "basket" {
+                    BasketRemote(state: $matchState, update: updateState)
+                } else if matchState.sportType == "soccer" {
+                    SoccerRemote(state: $matchState, update: updateState)
+                } else if matchState.sportType == "tennis" {
+                    TennisRemote(state: $matchState, update: updateState)
+                } else {
+                    Text("Controlli per \(matchState.sportType) in arrivo...")
                 }
+                
+                Divider().padding()
+                
+                // Controlli globali (Regia)
+                HStack {
+                    Toggle("Sponsor", isOn: $matchState.showSponsor)
+                        .onChange(of: matchState.showSponsor) { _ in updateState() }
+                    
+                    Button("REPLAY") { FirebaseManager.shared.sendCommand("TRIGGER_REPLAY") }
+                        .padding().background(Color.orange).foregroundColor(.white).cornerRadius(8)
+                    
+                    Button("HIGHLIGHT") { FirebaseManager.shared.sendCommand("TRIGGER_HIGHLIGHT") }
+                        .padding().background(Color.purple).foregroundColor(.white).cornerRadius(8)
+                }.padding()
             }
         }
     }
@@ -128,57 +74,100 @@ struct RemoteControlView: View {
         guard !sessionCode.isEmpty else { return }
         FirebaseManager.shared.joinSession(id: sessionCode) { success in
             if success {
-                FirebaseManager.shared.onStateUpdated = { state in
-                    self.matchState = state
-                }
-                DispatchQueue.main.async {
-                    self.isConnected = true
-                }
+                FirebaseManager.shared.onStateUpdated = { state in self.matchState = state }
+                DispatchQueue.main.async { self.isConnected = true }
             }
         }
     }
     
     private func updateState() {
-        // Usa il server timestamp e aggiorna
         matchState.lastUpdate = Int64(Date().timeIntervalSince1970 * 1000)
-        // Ma poichè il remote control non è l'host, in un'app reale dovrebbe mandare 
-        // i comandi o avere i permessi. Per semplicità usiamo un comando per lo stato o forziamo.
-        // Simulazione (In Android c'è updateMatchState se si è HOST)
-        // FirebaseManager.shared.updateMatchState(matchState)
+        // Simulazione
     }
 }
 
-struct RemoteScorePanel: View {
+// MARK: - Volley Remote
+struct VolleyRemote: View {
+    @Binding var state: RemoteMatchState
+    var update: () -> Void
+    var body: some View {
+        HStack {
+            TeamPanel(team: state.teamA, score: $state.scoreA, subValue: $state.setsA, subLabel: "Set", update: update)
+            TeamPanel(team: state.teamB, score: $state.scoreB, subValue: $state.setsB, subLabel: "Set", update: update)
+        }
+    }
+}
+
+// MARK: - Basket Remote
+struct BasketRemote: View {
+    @Binding var state: RemoteMatchState
+    var update: () -> Void
+    var body: some View {
+        VStack {
+            HStack {
+                TeamPanel(team: state.teamA, score: $state.scoreA, subValue: $state.foulsA, subLabel: "Falli", update: update)
+                TeamPanel(team: state.teamB, score: $state.scoreB, subValue: $state.foulsB, subLabel: "Falli", update: update)
+            }
+            Stepper("Quarto: \(state.currentSet)", value: $state.currentSet, in: 1...4)
+                .padding().onChange(of: state.currentSet) { _ in update() }
+        }
+    }
+}
+
+// MARK: - Soccer Remote
+struct SoccerRemote: View {
+    @Binding var state: RemoteMatchState
+    var update: () -> Void
+    var body: some View {
+        VStack {
+            HStack {
+                TeamPanel(team: state.teamA, score: $state.scoreA, subValue: $state.redCardsA, subLabel: "Rossi", update: update)
+                TeamPanel(team: state.teamB, score: $state.scoreB, subValue: $state.redCardsB, subLabel: "Rossi", update: update)
+            }
+            HStack {
+                Button(state.timerRunning ? "Ferma Tempo" : "Avvia Tempo") {
+                    state.timerRunning.toggle()
+                    update()
+                }.padding().background(state.timerRunning ? Color.red : Color.green).foregroundColor(.white).cornerRadius(10)
+            }
+        }
+    }
+}
+
+// MARK: - Tennis Remote
+struct TennisRemote: View {
+    @Binding var state: RemoteMatchState
+    var update: () -> Void
+    var body: some View {
+        HStack {
+            TeamPanel(team: state.teamA, score: $state.tennisPointsA, subValue: $state.tennisGamesA, subLabel: "Games", update: update)
+            TeamPanel(team: state.teamB, score: $state.tennisPointsB, subValue: $state.tennisGamesB, subLabel: "Games", update: update)
+        }
+    }
+}
+
+// MARK: - Componente Base
+struct TeamPanel: View {
     var team: String
-    var score: Int
-    var sets: Int
-    var timeouts: Int
-    
-    var onScoreChanged: (Int) -> Void
-    var onSet: () -> Void
-    var onTimeout: () -> Void
+    @Binding var score: Int
+    @Binding var subValue: Int
+    var subLabel: String
+    var update: () -> Void
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text(team).font(.title2).bold()
-            
-            Text("\(score)")
-                .font(.system(size: 80, weight: .bold))
-                .foregroundColor(.red)
-            
+        VStack {
+            Text(team).font(.title3).bold()
+            Text("\(score)").font(.system(size: 60, weight: .bold)).foregroundColor(.red)
             HStack {
-                Button("-") { if score > 0 { onScoreChanged(score - 1) } }
-                    .font(.largeTitle).padding().background(Color.gray.opacity(0.3)).cornerRadius(10)
-                Button("+") { onScoreChanged(score + 1) }
-                    .font(.largeTitle).padding().background(Color.green.opacity(0.3)).cornerRadius(10)
+                Button("-") { if score > 0 { score -= 1; update() } }.font(.title).padding().background(Color.gray.opacity(0.3)).cornerRadius(10)
+                Button("+") { score += 1; update() }.font(.title).padding().background(Color.green.opacity(0.3)).cornerRadius(10)
             }
-            
-            Text("Set: \(sets)")
-            Button("Vinci Set") { onSet() }.padding().background(Color.blue).foregroundColor(.white).cornerRadius(10)
-            
-            Text("Timeout: \(timeouts)")
-            Button("Chiama Timeout") { onTimeout() }.padding().background(Color.orange).foregroundColor(.white).cornerRadius(10)
-        }
+            Text("\(subLabel): \(subValue)").padding(.top)
+            HStack {
+                Button("-") { if subValue > 0 { subValue -= 1; update() } }.padding().background(Color.gray.opacity(0.3)).cornerRadius(8)
+                Button("+") { subValue += 1; update() }.padding().background(Color.blue.opacity(0.3)).cornerRadius(8)
+            }
+        }.padding()
     }
 }
 
