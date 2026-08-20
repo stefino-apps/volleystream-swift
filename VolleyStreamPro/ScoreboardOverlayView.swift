@@ -8,13 +8,6 @@ class ScoreboardOverlayView: UIView {
     private let scoreLabel = UILabel()
     private let setsLabel = UILabel()
     
-    // Timeout indicators
-    private var homeTimeoutDots: [UIView] = []
-    private var awayTimeoutDots: [UIView] = []
-    
-    // Sponsor image
-    private let sponsorImageView = UIImageView()
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -25,12 +18,14 @@ class ScoreboardOverlayView: UIView {
     }
     
     private func setupUI() {
+        // Sfondo semi-trasparente scuro
         backgroundView.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         backgroundView.layer.cornerRadius = 10
         backgroundView.frame = bounds
         backgroundView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(backgroundView)
         
+        // Font in stile sportivo
         let boldFont = UIFont.boldSystemFont(ofSize: 24)
         
         homeNameLabel.frame = CGRect(x: 10, y: 10, width: 120, height: 30)
@@ -60,51 +55,18 @@ class ScoreboardOverlayView: UIView {
         setsLabel.numberOfLines = 2
         setsLabel.text = "Set: 0\nSet: 0"
         addSubview(setsLabel)
-        
-        // Timeouts
-        for i in 0..<2 {
-            let homeDot = UIView(frame: CGRect(x: 130 + (i*15), y: 25, width: 8, height: 8))
-            homeDot.backgroundColor = .darkGray
-            homeDot.layer.cornerRadius = 4
-            addSubview(homeDot)
-            homeTimeoutDots.append(homeDot)
-            
-            let awayDot = UIView(frame: CGRect(x: 130 + (i*15), y: 55, width: 8, height: 8))
-            awayDot.backgroundColor = .darkGray
-            awayDot.layer.cornerRadius = 4
-            addSubview(awayDot)
-            awayTimeoutDots.append(awayDot)
-        }
-        
-        // Sponsor
-        sponsorImageView.frame = CGRect(x: 320, y: 10, width: 70, height: 60)
-        sponsorImageView.contentMode = .scaleAspectFit
-        sponsorImageView.isHidden = true
-        addSubview(sponsorImageView)
     }
     
-    func updateFromState(_ state: RemoteMatchState) {
-        homeNameLabel.text = state.teamA
-        awayNameLabel.text = state.teamB
-        scoreLabel.text = "\(state.scoreA)\n\(state.scoreB)"
-        setsLabel.text = "Set: \(state.setsA)\nSet: \(state.setsB)"
-        
-        // Timeout A
-        for i in 0..<2 {
-            homeTimeoutDots[i].backgroundColor = (i < state.timeoutA) ? .red : .darkGray
-        }
-        // Timeout B
-        for i in 0..<2 {
-            awayTimeoutDots[i].backgroundColor = (i < state.timeoutB) ? .red : .darkGray
-        }
-        
-        // Sponsor
-        if state.showSponsor {
-            sponsorImageView.isHidden = false
-            sponsorImageView.image = UIImage(named: "sponsor_placeholder") // Or load from network/local
-        } else {
-            sponsorImageView.isHidden = true
-        }
+    func updateScore(home: Int, away: Int) {
+        scoreLabel.text = "\(home)\n\(away)"
+    }
+    
+    func updateSets(home: Int, away: Int) {
+        setsLabel.text = "Set: \(home)\nSet: \(away)"
+    }
+    
+    func updateTeams(home: String, away: String) {
+        homeNameLabel.text = home
+        awayNameLabel.text = away
     }
 }
-

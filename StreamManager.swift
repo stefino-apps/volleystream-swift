@@ -10,6 +10,9 @@ public class StreamManager: NSObject {
     public var rtmpStream: RTMPStream!
     private var streamKeyToPublish: String = ""
     
+    // Effetto Video per Replay e Grafica
+    let videoEffect = StreamVideoEffect()
+    
     private override init() {
         super.init()
         setupStream()
@@ -37,6 +40,9 @@ public class StreamManager: NSObject {
         if let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
             rtmpStream.attachCamera(camera) { _, _ in }
         }
+        
+        // Registra il Video Effect per sovrimpressione
+        _ = rtmpStream.registerVideoEffect(videoEffect)
     }
     
     // Metodo per collegare la preview video Metal
@@ -67,3 +73,4 @@ public class StreamManager: NSObject {
         rtmpConnection.close()
     }
 }
+

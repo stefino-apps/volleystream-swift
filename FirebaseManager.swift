@@ -6,66 +6,130 @@ class FirebaseManager {
     static let shared = FirebaseManager()
     
     private var ref: DatabaseReference!
+    var sessionId: String?
+    var isHost: Bool = true
     
-    // Callbacks per aggiornare la UI
-    var onScoreUpdate: ((Int, Int) -> Void)?
-    var onSetsUpdate: ((Int, Int) -> Void)?
-    var onTeamNamesUpdate: ((String, String) -> Void)?
-    var onShowReplay: (() -> Void)?
+    // Callbacks
+    var onStateUpdated: ((RemoteMatchState) -> Void)?
+    var onCommandReceived: ((String) -> Void)?
+    var onError: ((String) -> Void)?
     
     private init() {
         ref = Database.database().reference()
     }
     
-    func authenticateAnonymously(completion: @escaping (Bool) -> Void) {
-        Auth.auth().signInAnonymously { authResult, error in
-            if let error = error {
-                print("Firebase Auth Error: \(error.localizedDescription)")
+    func ensureAuth(completion: @escaping (String?) -> Void) {
+        if let user = Auth.auth().currentUser {
+            completion(user.uid)
+        } else {
+            Auth.auth().signInAnonymously { authResult, error in
+                if let error = error {
+                    print("Firebase Auth Error: \(error.localizedDescription)")
+                    self.onError?(error.localizedDescription)
+                    completion(nil)
+                    return
+                }
+                completion(authResult?.user.uid)
+            }
+        }
+    }
+    
+    // (HOST) Crea o si collega come Director
+    func createSession(id: String, completion: @escaping (Bool) -> Void) {
+        ensureAuth { uid in
+            guard let uid = uid else {
                 completion(false)
                 return
             }
-            completion(true)
-        }
-    }
-    
-    func startListeningToMatch(matchId: String) {
-        let matchRef = ref.child("matches").child(matchId)
-        
-        // Ascolta Punti
-        matchRef.child("score").observe(.value) { snapshot in
-            if let value = snapshot.value as? [String: Int],
-               let home = value["home"], let away = value["away"] {
-                self.onScoreUpdate?(home, away)
-            }
-        }
-        
-        // Ascolta Set
-        matchRef.child("sets").observe(.value) { snapshot in
-            if let value = snapshot.value as? [String: Int],
-               let home = value["home"], let away = value["away"] {
-                self.onSetsUpdate?(home, away)
-            }
-        }
-        
-        // Ascolta Nomi Squadre
-        matchRef.child("teams").observe(.value) { snapshot in
-            if let value = snapshot.value as? [String: String],
-               let home = value["home"], let away = value["away"] {
-                self.onTeamNamesUpdate?(home, away)
-            }
-        }
-        
-        // Ascolta trigger Replay
-        matchRef.child("actions").child("triggerReplay").observe(.value) { snapshot in
-            if let trigger = snapshot.value as? Bool, trigger == true {
-                self.onShowReplay?()
-                // Resetta il trigger
-                matchRef.child("actions").child("triggerReplay").setValue(false)
+            self.isHost = true
+            self.sessionId = id
+            
+            self.ref.child("sessions/\(id)/owner").setValue(uid) { error, _ in
+                if error == nil {
+                    let initialState = RemoteMatchState()
+                    self.ref.child("sessions/\(id)/state").setValue(initialState.dictionary)
+                    self.listenForCommands()
+                    completion(true)
+                } else {
+                    completion(false)
+                }
             }
         }
     }
     
-    func stopListening(matchId: String) {
-        ref.child("matches").child(matchId).removeAllObservers()
+    // (CLIENT) Si unisce come Telecomando
+    func joinSession(id: String, completion: @escaping (Bool) -> Void) {
+        ensureAuth { uid in
+            guard let uid = uid else {
+                completion(false)
+                return
+            }
+            self.isHost = false
+            self.sessionId = id
+            
+            self.ref.child("sessions/\(id)/controllers/\(uid)").setValue(true) { error, _ in
+                if error == nil {
+                    self.startListeningToState()
+                    completion(true)
+                } else {
+                    completion(false)
+                }
+            }
+        }
+    }
+    
+    private func startListeningToState() {
+        guard let id = sessionId else { return }
+        ref.child("sessions/\(id)/state").observe(.value) { snapshot in
+            if let dict = snapshot.value as? [String: Any] {
+                do {
+                    let data = try JSONSerialization.data(withJSONObject: dict)
+                    let state = try JSONDecoder().decode(RemoteMatchState.self, from: data)
+                    self.onStateUpdated?(state)
+                } catch {
+                    print("Error decoding state: \(error)")
+                }
+            }
+        }
+    }
+    
+    // (HOST) Aggiorna lo stato sul server
+    func updateMatchState(_ state: RemoteMatchState) {
+        guard isHost, let id = sessionId else { return }
+        self.ref.child("sessions/\(id)/state").setValue(state.dictionary)
+    }
+    
+    // (CLIENT) Invia un comando all Host
+    func sendCommand(_ command: String) {
+        guard !isHost, let id = sessionId else { return }
+        let cmdId = UUID().uuidString
+        self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(command)
+    }
+    
+    private func listenForCommands() {
+        guard let id = sessionId else { return }
+        ref.child("sessions/\(id)/commands").observe(.childAdded) { snapshot in
+            if let command = snapshot.value as? String {
+                self.onCommandReceived?(command)
+                snapshot.ref.removeValue()
+            }
+        }
+    }
+    
+    func stopListening() {
+        if let id = sessionId {
+            ref.child("sessions/\(id)").removeAllObservers()
+            ref.child("sessions/\(id)/state").removeAllObservers()
+            ref.child("sessions/\(id)/commands").removeAllObservers()
+        }
     }
 }
+
+// Extension per convertire struct in dictionary per Firebase
+extension Encodable {
+    var dictionary: [String: Any]? {
+        guard let data = try? JSONEncoder().encode(self) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: data, options: .allowFragments)).flatMap { $0 as? [String: Any] }
+    }
+}
+

@@ -8,49 +8,33 @@ class MainViewController: UIViewController {
     
     // UI Controls
     var startStreamButton: UIButton!
-    var sessionId: String?
+    var connectFirebaseButton: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         setupCameraView()
-        setupScoreboardOverlay(); StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
+        setupScoreboardOverlay()
         setupControls()
         
-        // Collega Firebase per la regia
-        FirebaseManager.shared.onStateUpdated = { [weak self] state in
+        // Collega Firebase per il controllo remoto
+        FirebaseManager.shared.onScoreUpdate = { [weak self] home, away in
             DispatchQueue.main.async {
-                self?.scoreboardView.updateFromState(state); StreamManager.shared.videoEffect.currentState = state
-                
-                if state.isReplaying {
-                    ReplayManager.shared.startPlayback()
-                }
+                self?.scoreboardView.updateScore(home: home, away: away)
             }
         }
         
-        FirebaseManager.shared.onCommandReceived = { [weak self] command in
+        FirebaseManager.shared.onSetsUpdate = { [weak self] home, away in
             DispatchQueue.main.async {
-                self?.handleRemoteCommand(command)
+                self?.scoreboardView.updateSets(home: home, away: away)
             }
         }
-    }
-    
-    private func handleRemoteCommand(_ command: String) {
-        if command == "TRIGGER_REPLAY" {
-            ReplayManager.shared.startPlayback()
-            // Se siamo l host, aggiorniamo lo stato
-            if var state = getLocalState() {
-                state.isReplaying = true
-                FirebaseManager.shared.updateMatchState(state)
+        
+        FirebaseManager.shared.onTeamNamesUpdate = { [weak self] home, away in
+            DispatchQueue.main.async {
+                self?.scoreboardView.updateTeams(home: home, away: away)
             }
-        } else if command == "TRIGGER_HIGHLIGHT" {
-            // Save highlight locally
         }
-    }
-    
-    private func getLocalState() -> RemoteMatchState? {
-        // In una vera app, mantenere il riferimento allo stato corrente
-        return RemoteMatchState()
     }
     
     private func setupCameraView() {
@@ -58,10 +42,12 @@ class MainViewController: UIViewController {
         lfView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(lfView)
         
+        // Inizializza fotocamera
         StreamManager.shared.attachCamera(to: lfView)
     }
     
-    private func setupScoreboardOverlay(); StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView {
+    private func setupScoreboardOverlay() {
+        // Grafica in stile TV
         scoreboardView = ScoreboardOverlayView(frame: CGRect(x: 50, y: 50, width: 400, height: 80))
         view.addSubview(scoreboardView)
     }
@@ -77,6 +63,7 @@ class MainViewController: UIViewController {
     
     @objc func startLive() {
         if startStreamButton.titleLabel?.text == "START LIVE" {
+            // Usa il simulato (o fai login con YouTubeManager)
             StreamManager.shared.startStreaming(url: "rtmp://src1.volleyscout.it/live", streamKey: "test")
             startStreamButton.setTitle("STOP", for: .normal)
             startStreamButton.backgroundColor = .gray
@@ -91,4 +78,3 @@ class MainViewController: UIViewController {
         return .landscape
     }
 }
-
