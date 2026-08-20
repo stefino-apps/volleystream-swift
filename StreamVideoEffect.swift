@@ -9,37 +9,30 @@ class StreamVideoEffect: VideoEffect {
     private var overlayImage: CIImage?
     private var lastStateUpdate: Int64 = 0
     
-    // Riferimento per disegnare l HUD. Assicurarsi di impostare questo dall esterno.
     var scoreboardView: ScoreboardOverlayView?
+    var marqueeView: MarqueeOverlayView? = MarqueeOverlayView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
     var currentState: RemoteMatchState?
     
     override func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
-        // 1. Registra o Riproduci Replay
         var outputImage = image
         
         if ReplayManager.shared.isReplaying {
             if let replayFrame = ReplayManager.shared.getPlaybackFrame() {
                 outputImage = replayFrame
             } else {
-                // Finito, riprende a registrare dalla cam
                 ReplayManager.shared.recordFrame(image)
             }
         } else {
             ReplayManager.shared.recordFrame(image)
         }
         
-        // 2. Aggiorna l'immagine dell'overlay se lo stato è cambiato
         if let state = currentState {
-            if state.lastUpdate != lastStateUpdate {
-                lastStateUpdate = state.lastUpdate
-                updateOverlayImage()
-            }
+            // Aggiorna sempre il marquee per l'animazione
+            updateOverlayImage(state: state)
         } else if overlayImage == nil {
-            // Primo render
-            updateOverlayImage()
+            updateOverlayImage(state: RemoteMatchState())
         }
         
-        // 3. Applica l'overlay al frame video
         guard let overlay = overlayImage, let filter = filter else {
             return outputImage
         }
@@ -50,28 +43,37 @@ class StreamVideoEffect: VideoEffect {
         return filter.outputImage ?? outputImage
     }
     
-    private func updateOverlayImage() {
-        guard let view = scoreboardView else { return }
-        
+    private func updateOverlayImage(state: RemoteMatchState) {
         DispatchQueue.main.sync {
-            if let state = self.currentState {
-                view.updateFromState(state)
-            }
+            // 1. Aggiorna lo stato delle view
+            self.scoreboardView?.updateFromState(state)
+            self.marqueeView?.updateMessage(state.scrollMessage, show: state.showScrollText)
             
-            // Renderizza la view UIKit in una UIImage
+            // 2. Crea un canvas vuoto 1920x1080
             let format = UIGraphicsImageRendererFormat()
             format.scale = 1.0
             format.opaque = false
+            let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: 1080), format: format)
             
-            let renderer = UIGraphicsImageRenderer(bounds: view.bounds, format: format)
             let uiImage = renderer.image { context in
-                view.layer.render(in: context.cgContext)
+                // Disegna il tabellone
+                if let sv = self.scoreboardView {
+                    context.cgContext.saveGState()
+                    context.cgContext.translateBy(x: 50, y: 50)
+                    sv.layer.render(in: context.cgContext)
+                    context.cgContext.restoreGState()
+                }
+                
+                // Disegna il marquee
+                if let mv = self.marqueeView {
+                    mv.layer.render(in: context.cgContext)
+                }
             }
             
             if let cgImage = uiImage.cgImage {
-                // Sposta l'overlay nella posizione corretta. (CIImage ha l'origine in basso a sinistra)
+                // Invertiamo l'asse Y per CIImage
                 let ciImage = CIImage(cgImage: cgImage)
-                let transform = CGAffineTransform(translationX: 50, y: 1080 - 50 - view.bounds.height) // Assumendo 1080p
+                let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: -1080)
                 self.overlayImage = ciImage.transformed(by: transform)
             }
         }
