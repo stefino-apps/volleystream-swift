@@ -14,6 +14,8 @@ class ScoreboardOverlayView: UIView {
     
     // Soccer specific
     private let timerLabel = UILabel()
+    private let homeServeIcon = UIImageView()
+    private let awayServeIcon = UIImageView()
     private let redCardsLabel = UILabel()
     
     // Darts specific
@@ -80,6 +82,16 @@ class ScoreboardOverlayView: UIView {
         timerLabel.textAlignment = .center
         addSubview(timerLabel)
         
+        homeServeIcon.frame = CGRect(x: 105, y: 15, width: 20, height: 20)
+        homeServeIcon.image = UIImage(systemName: "volleyball.fill")
+        homeServeIcon.tintColor = .white
+        addSubview(homeServeIcon)
+        
+        awayServeIcon.frame = CGRect(x: 105, y: 45, width: 20, height: 20)
+        awayServeIcon.image = UIImage(systemName: "volleyball.fill")
+        awayServeIcon.tintColor = .white
+        addSubview(awayServeIcon)
+        
         for i in 0..<3 { // Fino a 3 timeout per basket
             let homeDot = UIView(frame: CGRect(x: 130 + (i*12), y: 25, width: 8, height: 8))
             homeDot.backgroundColor = .darkGray
@@ -141,6 +153,8 @@ class ScoreboardOverlayView: UIView {
         }
         
         timerLabel.isHidden = true
+        homeServeIcon.isHidden = true
+        awayServeIcon.isHidden = true
         
         switch state.sportType {
         case "volley":

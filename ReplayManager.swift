@@ -6,7 +6,9 @@ class ReplayManager {
     static let shared = ReplayManager()
     
     private var frameBuffer: [CIImage] = []
-    private let maxFrames = 300 // 5 seconds at 60fps or 10 seconds at 30fps
+    var replayDuration: Int = 5
+    var replaySpeed: Double = 0.5
+    private var maxFrames: Int { return replayDuration * 60 }
     private var isRecording = true
     private var isPlaying = false
     private var playbackIndex = 0

@@ -12,11 +12,21 @@ class StreamVideoEffect: VideoEffect {
     var scoreboardView: ScoreboardOverlayView?
     var marqueeView: MarqueeOverlayView? = MarqueeOverlayView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
     var currentState: RemoteMatchState?
+    var stingerFrameCount = 0
+    var isTransitioningToReplay = false
+    var lastReplayState = false
     
     override func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
         var outputImage = image
         
-        if ReplayManager.shared.isReplaying {
+        let currentlyReplaying = ReplayManager.shared.isReplaying
+        if currentlyReplaying != lastReplayState {
+            isTransitioningToReplay = true
+            stingerFrameCount = 15 // 0.25 sec @ 60fps
+            lastReplayState = currentlyReplaying
+        }
+        
+        if currentlyReplaying {
             if let replayFrame = ReplayManager.shared.getPlaybackFrame() {
                 outputImage = replayFrame
             } else {
@@ -40,7 +50,19 @@ class StreamVideoEffect: VideoEffect {
         filter.setValue(overlay, forKey: kCIInputImageKey)
         filter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
         
-        return filter.outputImage ?? outputImage
+        let finalImage = filter.outputImage ?? outputImage
+        
+        if isTransitioningToReplay {
+            stingerFrameCount -= 1
+            if stingerFrameCount <= 0 { isTransitioningToReplay = false }
+            // Disegna il flash bianco
+            let flash = CIImage(color: CIColor.white).cropped(to: finalImage.extent)
+            let mixFilter = CIFilter(name: "CISourceOverCompositing")!
+            mixFilter.setValue(flash, forKey: kCIInputImageKey)
+            mixFilter.setValue(finalImage, forKey: kCIInputBackgroundImageKey)
+            return mixFilter.outputImage ?? finalImage
+        }
+        return finalImage
     }
     
     private func updateOverlayImage(state: RemoteMatchState) {

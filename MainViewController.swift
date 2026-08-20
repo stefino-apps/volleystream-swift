@@ -11,6 +11,9 @@ class MainViewController: UIViewController {
     var modeButton: UIButton!
     var shareLiveButton: UIButton!
     var shareRemoteButton: UIButton!
+    var muteButton: UIButton!
+    var replayButton: UIButton!
+    var highlightButton: UIButton!
     
     // Grid Overlay
     var gridLayer: CAShapeLayer?
@@ -124,6 +127,20 @@ class MainViewController: UIViewController {
         view.addSubview(shareRemoteButton)
     }
     
+    @objc func toggleMute() {
+        let isMuted = StreamManager.shared.rtmpStream.audioSettings.muted
+        StreamManager.shared.rtmpStream.audioSettings.muted = !isMuted
+        muteButton.backgroundColor = !isMuted ? .red : .orange
+    }
+    
+    @objc func triggerReplay() {
+        ReplayManager.shared.startPlayback()
+    }
+    
+    @objc func triggerHighlight() {
+        // Salva clip highlight
+    }
+    
     @objc func toggleMode() {
         currentMode = (currentMode + 1) % 3
         
@@ -131,6 +148,9 @@ class MainViewController: UIViewController {
         startStreamButton.isHidden = hideControls
         shareLiveButton.isHidden = hideControls
         shareRemoteButton.isHidden = hideControls
+        muteButton.isHidden = hideControls
+        replayButton.isHidden = hideControls
+        highlightButton.isHidden = hideControls
         // modeButton is always visible to switch back
         
         gridLayer?.isHidden = (currentMode != 1)
