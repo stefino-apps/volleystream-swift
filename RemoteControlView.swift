@@ -57,7 +57,13 @@ struct RemoteControlView: View {
                 
                 // Controlli globali (Regia)
                 HStack {
-                    Toggle("Sponsor", isOn: $matchState.showSponsor)
+                    Toggle("Sponsor Rotanti", isOn: $matchState.showSponsor)
+                    .onChange(of: matchState.showSponsor) { _ in updateState() }
+
+                Toggle("Sponsor FullScreen", isOn: $matchState.fullScreenSponsor)
+                    .onChange(of: matchState.fullScreenSponsor) { _ in updateState() }
+
+                Toggle("Testo Scorrevole", isOn: $matchState.showScrollText)
                         .onChange(of: matchState.showSponsor) { _ in updateState() }
                     
                     Button("REPLAY") { FirebaseManager.shared.sendCommand("TRIGGER_REPLAY") }

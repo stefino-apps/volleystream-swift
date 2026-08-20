@@ -34,6 +34,8 @@ struct RemoteMatchState: Codable {
     var showSponsor: Bool = false
     var currentSponsorIdx: Int = -1
     var showScrollText: Bool = false
+    var scrollMessage: String = "NOTIZIE: La partita proceda con regolarita' e le squadre sono in campo."
+    var fullScreenSponsor: Bool = false
     var dataUsageGB: Double = 0.0
     var batteryLevel: Int = 0
     var languageCode: String = "it"

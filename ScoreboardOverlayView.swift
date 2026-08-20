@@ -19,8 +19,17 @@ class ScoreboardOverlayView: UIView {
     // Darts specific
     private let dartsExtraLabel = UILabel()
     
-    // Sponsor
+    // Sponsor e Marquee
     private let sponsorImageView = UIImageView()
+    private let fullScreenSponsorView = UIImageView()
+    
+    private let marqueeBackground = UIView()
+    private let marqueeLabel = UILabel()
+    
+    // Timer per sponsor rotanti
+    private var sponsorTimer: Timer?
+    private var currentSponsorIndex = 0
+    private let sponsorImages = ["sponsor1", "sponsor2", "sponsor3"] // Dummy images
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -32,6 +41,7 @@ class ScoreboardOverlayView: UIView {
     }
     
     private func setupUI() {
+        // ... (resto della UI) ...
         backgroundView.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         backgroundView.layer.cornerRadius = 10
         backgroundView.frame = bounds
@@ -88,6 +98,31 @@ class ScoreboardOverlayView: UIView {
         sponsorImageView.contentMode = .scaleAspectFit
         sponsorImageView.isHidden = true
         addSubview(sponsorImageView)
+        
+        // Full screen sponsor
+        // In una vera app la View di overlay sarebbe a grandezza intera.
+        // Simuliamo l'overlay full screen ancorandolo alla superview o a coordinate ampie.
+        fullScreenSponsorView.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        fullScreenSponsorView.contentMode = .scaleAspectFill
+        fullScreenSponsorView.isHidden = true
+        fullScreenSponsorView.backgroundColor = .black
+        // addSubview(fullScreenSponsorView) - verrebbe aggiunto alla window o al main container. Lo ignoriamo dal bounds qui.
+        
+        // Ticker (Marquee)
+        marqueeBackground.frame = CGRect(x: -50, y: 900, width: 1920, height: 40) // Posizionato in basso
+        marqueeBackground.backgroundColor = UIColor.blue.withAlphaComponent(0.8)
+        marqueeBackground.isHidden = true
+        
+        marqueeLabel.frame = CGRect(x: 1920, y: 0, width: 2000, height: 40)
+        marqueeLabel.textColor = .white
+        marqueeLabel.font = UIFont.boldSystemFont(ofSize: 24)
+        marqueeBackground.addSubview(marqueeLabel)
+        
+        // Nel VideoEffect queste view andrebbero disegnate. 
+        // Per semplicita' le aggiungiamo alla view, anche se andrebbero fuori dai bounds attuali.
+        self.clipsToBounds = false
+        addSubview(marqueeBackground)
+        addSubview(fullScreenSponsorView)
     }
     
     func updateFromState(_ state: RemoteMatchState) {
@@ -145,12 +180,50 @@ class ScoreboardOverlayView: UIView {
             extraLabel.text = ""
         }
         
+        // Sponsor Logics
         if state.showSponsor {
             sponsorImageView.isHidden = false
-            sponsorImageView.image = UIImage(systemName: "star.fill") // Placeholder
+            if sponsorTimer == nil {
+                sponsorTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+                    self?.rotateSponsor()
+                }
+            }
         } else {
             sponsorImageView.isHidden = true
+            sponsorTimer?.invalidate()
+            sponsorTimer = nil
         }
+        
+        if state.fullScreenSponsor {
+            fullScreenSponsorView.isHidden = false
+            fullScreenSponsorView.image = UIImage(systemName: "photo.fill")
+        } else {
+            fullScreenSponsorView.isHidden = true
+        }
+        
+        // Marquee Logics
+        if state.showScrollText {
+            marqueeBackground.isHidden = false
+            marqueeLabel.text = state.scrollMessage
+            startMarquee()
+        } else {
+            marqueeBackground.isHidden = true
+            marqueeLabel.layer.removeAllAnimations()
+        }
+    }
+    
+    private func rotateSponsor() {
+        currentSponsorIndex = (currentSponsorIndex + 1) % sponsorImages.count
+        sponsorImageView.image = UIImage(systemName: "star") // Usa immagini reali
+    }
+    
+    private func startMarquee() {
+        marqueeLabel.layer.removeAllAnimations()
+        marqueeLabel.frame.origin.x = 1920
+        
+        UIView.animate(withDuration: 15.0, delay: 0, options: [.repeat, .curveLinear], animations: {
+            self.marqueeLabel.frame.origin.x = -self.marqueeLabel.frame.width
+        }, completion: nil)
     }
     
     private func updateTimeouts(countA: Int, countB: Int, max: Int) {

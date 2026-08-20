@@ -3,6 +3,8 @@ import SwiftUI
 struct LiveSetupView: View {
     @State private var streamTitle = ""
     @State private var fps60Enabled = false
+    @State private var isYouTubeLoggedIn = false
+    @State private var networkStatus = "Non testata"
     
     // Nuove impostazioni per sport e tema
     @State private var selectedSport = "volley"
@@ -28,6 +30,33 @@ struct LiveSetupView: View {
             }
             
             Section(header: Text("youtube_config".localized)) {
+                if isYouTubeLoggedIn {
+                    Text("? Collegato al tuo canale YouTube").foregroundColor(.green)
+                } else {
+                    Button("login_youtube".localized) {
+                        // Richiede il ViewController corrente per il login
+                        if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                            YouTubeManager.shared.signIn(presentingViewController: rootVC) { success in
+                                if success { isYouTubeLoggedIn = true }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Section(header: Text("Rete e Qualità")) {
+                HStack {
+                    Text("Stato Connessione:")
+                    Spacer()
+                    Text(networkStatus).foregroundColor(.gray)
+                }
+                Button("Esegui Speed Test") {
+                    networkStatus = "Testing..."
+                    NetworkTester.shared.runSpeedTest { result in
+                        networkStatus = result
+                    }
+                }
+
                 Button("login_youtube".localized) {
                     // Chiamata a YouTubeManager.shared.signIn
                 }
