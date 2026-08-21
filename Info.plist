@@ -58,11 +58,12 @@
 					<key>UISceneConfigurationName</key>
 					<string>Default Configuration</string>
 					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<string>MiaApp.SceneDelegate</string>
 				</dict>
 			</array>
 		</dict>
 	</dict>
 </dict>
 </plist>
+
 
