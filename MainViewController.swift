@@ -126,6 +126,27 @@ class MainViewController: UIViewController {
         shareRemoteButton.layer.cornerRadius = 10
         shareRemoteButton.addTarget(self, action: #selector(shareRemote), for: .touchUpInside)
         view.addSubview(shareRemoteButton)
+
+        muteButton = UIButton(frame: CGRect(x: centerX - 210, y: safeY, width: 100, height: 50))
+        muteButton.setTitle("MUTO", for: .normal)
+        muteButton.backgroundColor = .orange
+        muteButton.layer.cornerRadius = 10
+        muteButton.addTarget(self, action: #selector(toggleMute), for: .touchUpInside)
+        view.addSubview(muteButton)
+        
+        replayButton = UIButton(frame: CGRect(x: centerX - 330, y: safeY, width: 100, height: 50))
+        replayButton.setTitle("REPLAY", for: .normal)
+        replayButton.backgroundColor = .purple
+        replayButton.layer.cornerRadius = 10
+        replayButton.addTarget(self, action: #selector(triggerReplay), for: .touchUpInside)
+        view.addSubview(replayButton)
+        
+        highlightButton = UIButton(frame: CGRect(x: centerX - 470, y: safeY, width: 120, height: 50))
+        highlightButton.setTitle("HIGHLIGHT", for: .normal)
+        highlightButton.backgroundColor = .systemPink
+        highlightButton.layer.cornerRadius = 10
+        highlightButton.addTarget(self, action: #selector(triggerHighlight), for: .touchUpInside)
+        view.addSubview(highlightButton)
     }
     
     @objc func toggleMute() {
@@ -193,4 +214,5 @@ class MainViewController: UIViewController {
         return .landscape
     }
 }
+
 
