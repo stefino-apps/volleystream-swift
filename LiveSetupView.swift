@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 struct LiveSetupView: View {
     @State private var streamTitle = ""
@@ -59,7 +59,7 @@ struct LiveSetupView: View {
                 } else {
                     Button("login_youtube".localized) {
                         if let rootVC = UIApplication.shared.windows.first?.rootViewController {
-                            YouTubeManager.shared.signIn(presentingViewController: rootVC) { success in
+                            YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, _ in
                                 if success { isYouTubeLoggedIn = true }
                             }
                         }

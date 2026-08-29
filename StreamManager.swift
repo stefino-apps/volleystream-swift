@@ -35,10 +35,12 @@ public class StreamManager: NSObject {
         rtmpStream.sessionPreset = .hd1920x1080
         
         // Attach Audio & Video
-        rtmpStream.attachAudio(AVCaptureDevice.default(for: .audio)) { _, _ in }
+        if let audio = AVCaptureDevice.default(for: .audio) {
+            try? rtmpStream.attachAudio(audio)
+        }
         
         if let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
-            rtmpStream.attachCamera(camera) { _, _ in }
+            try? rtmpStream.attachCamera(camera)
         }
         
         // Registra il Video Effect per sovrimpressione
