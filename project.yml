@@ -38,5 +38,26 @@ targets:
         product: GoogleSignInSwift
       - package: HaishinKit
         product: HaishinKit
+    settings:
+      GENERATE_INFOPLIST_FILE: NO
+      PRODUCT_NAME: VolleyStream Pro
+      PRODUCT_BUNDLE_IDENTIFIER: com.sviluppo.MiaApp
     info:
       path: Info.plist
+      properties:
+        NSCameraUsageDescription: "VolleyStream Pro richiede l'accesso alla fotocamera per trasmettere le partite in diretta."
+        NSMicrophoneUsageDescription: "VolleyStream Pro richiede l'accesso al microfono per registrare l'audio durante la telecronaca."
+        NSPhotoLibraryUsageDescription: "Per caricare loghi."
+        NSPhotoLibraryAddUsageDescription: "Per salvare video."
+        UILaunchStoryboardName: "LaunchScreen"
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: "Default Configuration"
+                UISceneDelegateClassName: "$(PRODUCT_MODULE_NAME).SceneDelegate"
+        GIDClientID: "133245296621-4buscrif7ssggiqk4uj1qn9qegr13e15.apps.googleusercontent.com"
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLSchemes:
+              - "com.googleusercontent.apps.133245296621-4buscrif7ssggiqk4uj1qn9qegr13e15"
