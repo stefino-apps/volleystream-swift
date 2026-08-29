@@ -10,7 +10,7 @@ class YouTubeManager {
     
     func signIn(presentingViewController: UIViewController, completion: @escaping (Bool) -> Void) {
         // La configurazione OAuth per Google
-        let configuration = GIDConfiguration(clientID: "INSERIRE_CLIENT_ID_IOS")
+        let configuration = GIDConfiguration(clientID: "133245296621-4buscrif7ssggiqk4uj1qn9qegr13e15.apps.googleusercontent.com")
         
         GIDSignIn.sharedInstance.signIn(with: configuration, presenting: presentingViewController) { user, error in
             if let error = error {

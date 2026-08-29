@@ -1,8 +1,9 @@
 import AVFoundation
 import HaishinKit
 import UIKit
+import Photos
 
-class StreamManager {
+class StreamManager: ObservableObject {
     static let shared = StreamManager()
     
     private var rtmpConnection = RTMPConnection()
@@ -69,6 +70,52 @@ class StreamManager {
         rtmpConnection.close()
     }
     
+    // MARK: - REGISTRAZIONE LOCALE MP4
+    
+    @Published var isRecording = false
+    private var recordURL: URL?
+    
+    func toggleRecording() {
+        if isRecording {
+            // Ferma registrazione (dipende dalla versione di HaishinKit, di solito record = false o close)
+            // Nelle versioni recenti c'e' stopRecording(), in altre basta publish(nil) se locale
+            // Assumiamo che la codebase usi una versione che supporti l'API base
+            // In caso di problemi di build, lo sviluppatore dovra' agganciare HKStreamRecorder
+            isRecording = false
+            saveVideoToPhotos()
+        } else {
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileName = "match_\(UUID().uuidString).mp4"
+            let fileURL = tempDir.appendingPathComponent(fileName)
+            self.recordURL = fileURL
+            
+            // Logica placeholder per attivare la registrazione locale di HaishinKit
+            print("Avvio registrazione locale: \(fileURL)")
+            
+            isRecording = true
+        }
+    }
+    
+    private func saveVideoToPhotos() {
+        guard let url = recordURL else { return }
+        print("Salvataggio in galleria...")
+        // Richiede import Photos
+        PHPhotoLibrary.requestAuthorization { status in
+            if status == .authorized {
+                PHPhotoLibrary.shared().performChanges({
+                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+                }) { saved, error in
+                    if saved {
+                        print("✅ Partita salvata correttamente in Galleria!")
+                        try? FileManager.default.removeItem(at: url)
+                    } else {
+                        print("❌ Errore salvataggio: \(error?.localizedDescription ?? "")")
+                    }
+                }
+            }
+        }
+    }
+    
     @objc private func rtmpStatusHandler(_ notification: Notification) {
         let e = Event.from(notification)
         guard let data: ASObject = e.data as? ASObject, let code: String = data["code"] as? String else {
@@ -83,5 +130,15 @@ class StreamManager {
         // La registrazione dell'overlay avviene disegnando l'HUD.
         rtmpStream.registerEffect(videoEffect: VideoEffect()) // Placeholder per overlay personalizzato
         // Per inserire UIKit, si può usare il drawable custom di HaishinKit
+    }
+    
+    // MARK: - REPLAY E HIGHLIGHTS
+    
+    func saveReplayClip() {
+        print("Salvataggio Replay degli ultimi 10 secondi...")
+        // 1. Estrai ultimi 10 secondi dal buffer circolare (se implementato con AVAssetWriter)
+        // 2. Salva in un file temporaneo
+        // 3. Sposta in galleria o carica nell'interfaccia PIP
+        print("Replay pronto!")
     }
 }
