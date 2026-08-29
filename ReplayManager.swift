@@ -1,4 +1,4 @@
-import Foundation
+ï»¿import Foundation
 import CoreImage
 import CoreMedia
 
@@ -23,7 +23,7 @@ class ReplayManager {
             
             // Per evitare che i buffer vengano sovrascritti dalla telecamera
             // forziamo un render contestuale se necessario, o ci fidiamo del CVPixelBuffer se gestito da AVFoundation.
-            // Spesso è necessario clonare il CVPixelBuffer o applicare un filtro. 
+            // Spesso e' necessario clonare il CVPixelBuffer o applicare un filtro. 
             // In questa demo salviamo il CIImage.
             self.frameBuffer.append(image)
             

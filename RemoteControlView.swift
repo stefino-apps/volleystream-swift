@@ -93,9 +93,18 @@ struct RemoteControlView: View {
 }
 
 // MARK: - Volley Remote
-.padding().background(state.servingTeam == "A" ? Color.green : Color.gray).foregroundColor(.white).cornerRadius(10)
+struct VolleyRemote: View {
+    @Binding var state: RemoteMatchState
+    var update: () -> Void
+    var body: some View {
+        VStack {
+            HStack {
+                Button(state.servingTeam == "A" ? "BATTUTA A" : "Cambio Palla A") {
+                    state.servingTeam = "A"
+                    update()
+                }.padding().background(state.servingTeam == "A" ? Color.green : Color.gray).foregroundColor(.white).cornerRadius(10)
                 Spacer()
-                Button(state.servingTeam == "B" ? "?? BATTUTA B" : "Cambio Palla B") {
+                Button(state.servingTeam == "B" ? "BATTUTA B" : "Cambio Palla B") {
                     state.servingTeam = "B"
                     update()
                 }.padding().background(state.servingTeam == "B" ? Color.green : Color.gray).foregroundColor(.white).cornerRadius(10)
@@ -104,15 +113,6 @@ struct RemoteControlView: View {
                 TeamPanel(team: state.teamA, score: $state.scoreA, subValue: $state.setsA, subLabel: "Set", update: update)
                 TeamPanel(team: state.teamB, score: $state.scoreB, subValue: $state.setsB, subLabel: "Set", update: update)
             }
-        }
-    }
-}
-    @Binding var state: RemoteMatchState
-    var update: () -> Void
-    var body: some View {
-        HStack {
-            TeamPanel(team: state.teamA, score: $state.scoreA, subValue: $state.setsA, subLabel: "Set", update: update)
-            TeamPanel(team: state.teamB, score: $state.scoreB, subValue: $state.setsB, subLabel: "Set", update: update)
         }
     }
 }

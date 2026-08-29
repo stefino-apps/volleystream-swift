@@ -150,9 +150,9 @@ class MainViewController: UIViewController {
     }
     
     @objc func toggleMute() {
-        let isMuted = StreamManager.shared.rtmpStream.audioSettings.muted
-        StreamManager.shared.rtmpStream.audioSettings.muted = !isMuted
-        muteButton.backgroundColor = !isMuted ? .red : .orange
+        let hasAudio = StreamManager.shared.rtmpStream.hasAudio
+        StreamManager.shared.rtmpStream.hasAudio = !hasAudio
+        muteButton.backgroundColor = hasAudio ? .red : .orange
     }
     
     @objc func triggerReplay() {

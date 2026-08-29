@@ -1,4 +1,4 @@
-import SwiftUI
+ï»¿import SwiftUI
 
 struct LiveSetupView: View {
     @State private var streamTitle = ""
@@ -45,7 +45,7 @@ struct LiveSetupView: View {
                         Text("10 Secondi").tag(10)
                     }.pickerStyle(SegmentedPickerStyle())
                     
-                    Picker("Velocità Replay", selection: $replaySpeed) {
+                    Picker("Velocita' Replay", selection: $replaySpeed) {
                         Text("Normale (1x)").tag(1.0)
                         Text("Rallenty (0.75x)").tag(0.75)
                         Text("Slow Mo (0.5x)").tag(0.5)
@@ -67,7 +67,7 @@ struct LiveSetupView: View {
                 }
             }
             
-            Section(header: Text("Rete e Qualità")) {
+            Section(header: Text("Rete e Qualita'")) {
                 HStack {
                     Text("Stato Connessione:")
                     Spacer()

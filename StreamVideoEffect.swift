@@ -1,5 +1,6 @@
 import Foundation
 import CoreImage
+import CoreMedia
 import HaishinKit
 import UIKit
 
