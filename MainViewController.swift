@@ -149,10 +149,22 @@ class MainViewController: UIViewController {
         view.addSubview(highlightButton)
     }
     
+    var isAudioMuted = false
+    
     @objc func toggleMute() {
-        let hasAudio = StreamManager.shared.rtmpStream.hasAudio
-        StreamManager.shared.rtmpStream.hasAudio = !hasAudio
-        muteButton.backgroundColor = hasAudio ? .red : .orange
+        isAudioMuted.toggle()
+        
+        do {
+            if isAudioMuted {
+                try? StreamManager.shared.rtmpStream.attachAudio(nil)
+            } else {
+                if let audio = AVCaptureDevice.default(for: .audio) {
+                    try? StreamManager.shared.rtmpStream.attachAudio(audio)
+                }
+            }
+        }
+        
+        muteButton.backgroundColor = isAudioMuted ? .red : .orange
     }
     
     @objc func triggerReplay() {
