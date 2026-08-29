@@ -1,7 +1,7 @@
 import Foundation
 import StoreKit
 
-class StoreKitManager: ObservableObject {
+class StoreKitManager: ObservableObject, @unchecked Sendable {
     static let shared = StoreKitManager()
     
     @Published var isPremium: Bool = false
