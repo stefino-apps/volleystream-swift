@@ -30,7 +30,7 @@ jobs:
       - name: Crea pacchetto IPA
         run: |
           mkdir -p Payload
-          cp -r DerivedData/Build/Products/Release-iphoneos/MiaApp.app Payload/
+          cp -r DerivedData/Build/Products/Release-iphoneos/*.app Payload/
           zip -r AppPerIphone.ipa Payload
 
       - name: Salva il file
