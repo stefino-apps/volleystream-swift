@@ -58,7 +58,8 @@ struct LiveSetupView: View {
                     Text("? Collegato al tuo canale YouTube").foregroundColor(.green)
                 } else {
                     Button("login_youtube".localized) {
-                        if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let rootVC = windowScene.windows.first?.rootViewController {
                             YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, _ in
                                 if success { isYouTubeLoggedIn = true }
                             }

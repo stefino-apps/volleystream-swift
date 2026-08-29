@@ -1,5 +1,6 @@
 import UIKit
 import HaishinKit
+import AVFoundation
 
 class MainViewController: UIViewController {
 
@@ -156,10 +157,10 @@ class MainViewController: UIViewController {
         
         do {
             if isAudioMuted {
-                try? StreamManager.shared.rtmpStream.attachAudio(nil)
+                StreamManager.shared.rtmpStream.attachAudio(nil)
             } else {
                 if let audio = AVCaptureDevice.default(for: .audio) {
-                    try? StreamManager.shared.rtmpStream.attachAudio(audio)
+                    StreamManager.shared.rtmpStream.attachAudio(audio)
                 }
             }
         }

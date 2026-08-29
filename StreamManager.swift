@@ -36,11 +36,11 @@ public class StreamManager: NSObject {
         
         // Attach Audio & Video
         if let audio = AVCaptureDevice.default(for: .audio) {
-            try? rtmpStream.attachAudio(audio)
+            rtmpStream.attachAudio(audio)
         }
         
         if let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
-            try? rtmpStream.attachCamera(camera)
+            rtmpStream.attachCamera(camera)
         }
         
         // Registra il Video Effect per sovrimpressione
