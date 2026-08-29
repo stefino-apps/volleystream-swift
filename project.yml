@@ -22,6 +22,7 @@ targets:
           - ".github"
           - ".git"
           - "project.yml"
+          - "Info.plist"
     dependencies:
       - package: Firebase
         product: FirebaseCore
