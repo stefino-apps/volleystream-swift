@@ -23,6 +23,8 @@ targets:
           - ".git"
           - "project.yml"
           - "Info.plist"
+    resources:
+      - path: GoogleService-Info.plist
     dependencies:
       - package: Firebase
         product: FirebaseCore
