@@ -20,10 +20,10 @@ jobs:
     - name: Install XcodeGen 2.39.0
       run: |
         curl -LO https://github.com/yonaskolb/XcodeGen/releases/download/2.39.0/xcodegen.zip
-        unzip xcodegen.zip -d xcodegen_bin
+        unzip xcodegen.zip
       
     - name: Generate Xcode Project
-      run: ./xcodegen_bin/bin/xcodegen generate
+      run: ./xcodegen/bin/xcodegen generate
       
     - name: Build Unsigned App
       run: |
