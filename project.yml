@@ -1,7 +1,6 @@
 name: MiaApp
 options:
   bundleIdPrefix: com.sviluppo
-  xcodeVersion: "15.0"
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
@@ -11,7 +10,7 @@ packages:
     majorVersion: 8.0.0
   HaishinKit:
     url: https://github.com/shogo4405/HaishinKit.swift
-    upToNextMajor: 1.8.0
+    majorVersion: 1.8.0
 targets:
   MiaApp:
     type: application
