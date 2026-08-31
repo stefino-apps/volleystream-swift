@@ -52,12 +52,13 @@ struct RemoteMatchState: Codable {
     var goalAlertTeam: String = ""
     var goalAlertStartTime: Int64 = 0
     
-    // Tennis specific
+    // Tennis/Padel specific
     var tennisPointsA: Int = 0
     var tennisPointsB: Int = 0
     var tennisGamesA: Int = 0
     var tennisGamesB: Int = 0
     var isTiebreak: Bool = false
+    var isPuntoDeOro: Bool = false
 
     // Darts specific
     var dartsMode: String = "501"

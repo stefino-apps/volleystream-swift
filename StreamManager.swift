@@ -34,17 +34,26 @@ public class StreamManager: NSObject {
         rtmpStream.frameRate = 60.0
         rtmpStream.sessionPreset = .hd1920x1080
         
-        // Attach Audio & Video
+        // Registra il Video Effect per sovrimpressione
+        _ = rtmpStream.registerVideoEffect(videoEffect)
+    }
+    
+    public func attachDevices() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playAndRecord, mode: .videoChat, options: [.defaultToSpeaker, .allowBluetooth])
+            try session.setActive(true)
+        } catch {
+            print("Audio session error: \(error)")
+        }
+        
         if let audio = AVCaptureDevice.default(for: .audio) {
-            rtmpStream.attachAudio(audio)
+            rtmpStream.attachAudio(audio) { error in print("Audio error: \(error)") }
         }
         
         if let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
-            rtmpStream.attachCamera(camera)
+            rtmpStream.attachCamera(camera) { error in print("Camera error: \(error)") }
         }
-        
-        // Registra il Video Effect per sovrimpressione
-        _ = rtmpStream.registerVideoEffect(videoEffect)
     }
     
     // Metodo per collegare la preview video Metal

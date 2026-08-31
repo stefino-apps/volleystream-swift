@@ -1,111 +1,151 @@
 import SwiftUI
 
 struct LiveSetupView: View {
-    @State private var streamTitle = ""
-    @State private var fps60Enabled = false
+    @State private var streamPlatform = "YouTube"
+    @State private var streamVisibility = "Pubblico"
+    @State private var streamResolution = "1080p"
+    @State private var streamFPS = 60
+    
+    @State private var streamTitle = "\(AppPreferences.shared.teamHome) vs \(AppPreferences.shared.teamAway)"
+    @State private var streamDescription = ""
+    
     @State private var isYouTubeLoggedIn = false
     @State private var networkStatus = "Non testata"
+    
     @State private var recordLocally = false
     @State private var replayDuration = 5
     @State private var replaySpeed = 0.5
     
-    // Nuove impostazioni per sport e tema
-    @State private var selectedSport = "volley"
-    @State private var selectedTheme = "neon"
-    
-    let sports = ["volley", "basket", "soccer", "tennis", "darts", "cricket"]
-    let themes = ["neon", "classic", "dark", "light"]
+    @State private var rtmpUrl = ""
+    @State private var streamKey = ""
+    @State private var isCreatingEvent = false
+    @State private var navigateToDirector = false
     
     var body: some View {
         Form {
-            Section(header: Text("Impostazioni Partita")) {
-                Picker("Sport", selection: $selectedSport) {
-                    ForEach(sports, id: \.self) { sport in
-                        Text(sport.capitalized).tag(sport)
-                    }
-                }
+            Section(header: Text("Piattaforma di Streaming")) {
+                Picker("Piattaforma", selection: $streamPlatform) {
+                    Text("YouTube").tag("YouTube")
+                    Text("RTMP Personalizzato").tag("RTMP")
+                }.pickerStyle(SegmentedPickerStyle())
                 
-                Picker("Tema Grafico", selection: $selectedTheme) {
-                    ForEach(themes, id: \.self) { theme in
-                        Text(theme.capitalized).tag(theme)
-                    }
-                }
-            }
-            
-            Section(header: Text("Opzioni Replay e Registrazione")) {
-                Toggle("Salva copia in HD sul dispositivo", isOn: $recordLocally)
-                
-                let hasEnoughRAM = ProcessInfo.processInfo.physicalMemory >= 5_500_000_000
-                if !hasEnoughRAM {
-                    Text("Replay non supportato su questo dispositivo (richiesti iPhone 12 Pro o superiori con 6GB+ RAM)").font(.caption).foregroundColor(.red)
-                } else {
-                    Picker("Durata Replay", selection: $replayDuration) {
-                        Text("5 Secondi").tag(5)
-                        Text("7 Secondi").tag(7)
-                        Text("10 Secondi").tag(10)
-                    }.pickerStyle(SegmentedPickerStyle())
-                    
-                    Picker("Velocita' Replay", selection: $replaySpeed) {
-                        Text("Normale (1x)").tag(1.0)
-                        Text("Rallenty (0.75x)").tag(0.75)
-                        Text("Slow Mo (0.5x)").tag(0.5)
-                    }
-                }
-            }
-            
-            Section(header: Text("youtube_config".localized)) {
-                if isYouTubeLoggedIn {
-                    Text("? Collegato al tuo canale YouTube").foregroundColor(.green)
-                } else {
-                    Button("login_youtube".localized) {
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                           let rootVC = windowScene.windows.first?.rootViewController {
-                            YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, _ in
-                                if success { isYouTubeLoggedIn = true }
-                            }
+                if streamPlatform == "YouTube" {
+                    if isYouTubeLoggedIn {
+                        Text("✅ Collegato al canale YouTube").foregroundColor(.green)
+                        Picker("Visibilità Video", selection: $streamVisibility) {
+                            Text("Pubblico").tag("Pubblico")
+                            Text("Non in elenco").tag("Non in elenco")
+                            Text("Privato").tag("Privato")
                         }
+                    } else {
+                        Button("Collega Canale YouTube") {
+                            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                  let rootVC = windowScene.windows.first?.rootViewController else { return }
+                            YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, _ in
+                                isYouTubeLoggedIn = success
+                            }
+                        }.foregroundColor(.red)
                     }
+                } else {
+                    TextField("URL Server RTMP", text: $rtmpUrl)
+                    TextField("Chiave Stream", text: $streamKey)
                 }
             }
             
-            Section(header: Text("Rete e Qualita'")) {
+            Section(header: Text("Qualità Video e Rete")) {
+                Picker("Risoluzione", selection: $streamResolution) {
+                    Text("480p").tag("480p")
+                    Text("720p").tag("720p")
+                    Text("1080p (HD)").tag("1080p")
+                }.pickerStyle(SegmentedPickerStyle())
+                
+                Picker("FPS", selection: $streamFPS) {
+                    Text("30 FPS").tag(30)
+                    Text("60 FPS").tag(60)
+                }.pickerStyle(SegmentedPickerStyle())
+                
                 HStack {
-                    Text("Stato Connessione:")
+                    Text("Stato Rete:")
                     Spacer()
                     Text(networkStatus).foregroundColor(.gray)
                 }
-                Button("Esegui Speed Test") {
-                    networkStatus = "Testing..."
+                Button("Esegui Test Connessione") {
+                    networkStatus = "Calcolo in corso..."
                     NetworkTester.shared.runSpeedTest { result in
                         networkStatus = result
                     }
                 }
             }
             
-            Section(header: Text("stream_details".localized)) {
-                TextField("stream_title_hint".localized, text: $streamTitle)
+            Section(header: Text("Dettagli Stream")) {
+                TextField("Titolo Video", text: $streamTitle)
+                TextField("Descrizione (Opzionale)", text: $streamDescription)
             }
             
-            Section(header: Text("fps_mode_title".localized), footer: Text("fps_info_desc".localized)) {
-                Toggle("fps_60_auto_title".localized, isOn: $fps60Enabled)
+            Section(header: Text("Registrazione e Replay")) {
+                Toggle("Registra match in locale (MP4)", isOn: $recordLocally)
+                
+                let hasEnoughRAM = ProcessInfo.processInfo.physicalMemory >= 5_500_000_000
+                if !hasEnoughRAM {
+                    Text("Replay non supportato (richiesti 6GB+ RAM)").font(.caption).foregroundColor(.red)
+                } else {
+                    Toggle("Abilita Instant Replay", isOn: .constant(true))
+                }
             }
             
             Section {
-                NavigationLink(destination: DirectorView(sport: selectedSport, theme: selectedTheme)) {
-                    Text("start_live".localized)
-                        .foregroundColor(.vspRed)
-                        .bold()
-                        .frame(maxWidth: .infinity, alignment: .center)
+                Button(action: startLiveAction) {
+                    HStack {
+                        if isCreatingEvent {
+                            ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            Text(" Creazione in corso...")
+                        } else {
+                            Text("start_live".localized)
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .bold()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+                    .background(Color.red)
+                    .cornerRadius(8)
+                }
+                .disabled(isCreatingEvent)
+                
+                NavigationLink(destination: DirectorView(sport: AppPreferences.shared.selectedSport, theme: AppPreferences.shared.selectedTheme), isActive: $navigateToDirector) {
+                    EmptyView()
                 }
             }
+            .listRowBackground(Color.clear)
         }
-        .navigationBarTitle("streaming_live".localized, displayMode: .inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: SettingsView()) {
-                    Image(systemName: "gear")
+        .navigationBarTitle("Impostazioni Diretta", displayMode: .inline)
+        .onAppear {
+            isYouTubeLoggedIn = YouTubeManager.shared.accessToken != nil
+        }
+    }
+    
+    private func startLiveAction() {
+        if streamPlatform == "YouTube" && isYouTubeLoggedIn {
+            isCreatingEvent = true
+            YouTubeManager.shared.createLiveEvent(title: streamTitle) { rtmp, key, err in
+                DispatchQueue.main.async {
+                    isCreatingEvent = false
+                    if err == nil, let rtmp = rtmp, let key = key {
+                        // Salva le coordinate per la Regia
+                        UserDefaults.standard.set(rtmp, forKey: "rtmp_url")
+                        UserDefaults.standard.set(key, forKey: "rtmp_key")
+                        UserDefaults.standard.set(recordLocally, forKey: "record_locally")
+                        navigateToDirector = true
+                    } else {
+                        networkStatus = "Errore creazione diretta YouTube"
+                    }
                 }
             }
+        } else {
+            UserDefaults.standard.set(rtmpUrl, forKey: "rtmp_url")
+            UserDefaults.standard.set(streamKey, forKey: "rtmp_key")
+            UserDefaults.standard.set(recordLocally, forKey: "record_locally")
+            navigateToDirector = true
         }
     }
 }

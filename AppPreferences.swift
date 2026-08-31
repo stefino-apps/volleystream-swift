@@ -42,4 +42,19 @@ class AppPreferences {
         get { defaults.bool(forKey: keyReplayEnabled) }
         set { defaults.set(newValue, forKey: keyReplayEnabled) }
     }
+    
+    var selectedTheme: String {
+        get { defaults.string(forKey: "selected_theme") ?? "neon" }
+        set { defaults.set(newValue, forKey: "selected_theme") }
+    }
+    
+    func saveImage(_ data: Data, name: String) {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name)
+        try? data.write(to: url)
+    }
+    
+    func loadImage(name: String) -> Data? {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name)
+        return try? Data(contentsOf: url)
+    }
 }

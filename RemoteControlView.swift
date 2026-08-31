@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RemoteControlView: View {
-    @State private var sessionCode: String = ""
+    @State private var sessionCode: String = UserDefaults.standard.string(forKey: "incoming_remote_id") ?? ""
     @State private var isConnected = false
     @State private var matchState = RemoteMatchState()
     
@@ -11,6 +11,12 @@ struct RemoteControlView: View {
                 setupView
             } else {
                 activeRemoteView
+            }
+        }
+        .onAppear {
+            if !sessionCode.isEmpty {
+                connectToSession()
+                UserDefaults.standard.removeObject(forKey: "incoming_remote_id")
             }
         }
     }
@@ -88,7 +94,7 @@ struct RemoteControlView: View {
     
     private func updateState() {
         matchState.lastUpdate = Int64(Date().timeIntervalSince1970 * 1000)
-        // Simulazione
+        FirebaseManager.shared.updateMatchState(matchState)
     }
 }
 

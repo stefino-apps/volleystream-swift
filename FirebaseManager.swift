@@ -93,9 +93,9 @@ class FirebaseManager {
         }
     }
     
-    // (HOST) Aggiorna lo stato sul server
+    // Aggiorna lo stato sul server (sia Host che Client)
     func updateMatchState(_ state: RemoteMatchState) {
-        guard isHost, let id = sessionId else { return }
+        guard let id = sessionId else { return }
         self.ref.child("sessions/\(id)/state").setValue(state.dictionary)
     }
     

@@ -8,6 +8,9 @@ class ScoreboardOverlayView: UIView {
     private let scoreLabel = UILabel()
     private let extraLabel = UILabel() // Per Set, Quarti, Leg
     
+    private let homeLogoView = UIImageView()
+    private let awayLogoView = UIImageView()
+    
     // Timeout
     private var homeTimeoutDots: [UIView] = []
     private var awayTimeoutDots: [UIView] = []
@@ -52,12 +55,20 @@ class ScoreboardOverlayView: UIView {
         
         let boldFont = UIFont.boldSystemFont(ofSize: 24)
         
-        homeNameLabel.frame = CGRect(x: 10, y: 10, width: 120, height: 30)
+        homeLogoView.frame = CGRect(x: 10, y: 10, width: 30, height: 30)
+        homeLogoView.contentMode = .scaleAspectFit
+        addSubview(homeLogoView)
+        
+        homeNameLabel.frame = CGRect(x: 45, y: 10, width: 90, height: 30)
         homeNameLabel.textColor = .white
         homeNameLabel.font = boldFont
         addSubview(homeNameLabel)
         
-        awayNameLabel.frame = CGRect(x: 10, y: 40, width: 120, height: 30)
+        awayLogoView.frame = CGRect(x: 10, y: 40, width: 30, height: 30)
+        awayLogoView.contentMode = .scaleAspectFit
+        addSubview(awayLogoView)
+        
+        awayNameLabel.frame = CGRect(x: 45, y: 40, width: 90, height: 30)
         awayNameLabel.textColor = .white
         awayNameLabel.font = boldFont
         addSubview(awayNameLabel)
@@ -141,6 +152,13 @@ class ScoreboardOverlayView: UIView {
         homeNameLabel.text = state.teamA
         awayNameLabel.text = state.teamB
         
+        if let homeData = AppPreferences.shared.loadImage(name: "logoHome.png") {
+            homeLogoView.image = UIImage(data: homeData)
+        }
+        if let awayData = AppPreferences.shared.loadImage(name: "logoAway.png") {
+            awayLogoView.image = UIImage(data: awayData)
+        }
+        
         // Colori in base al tema
         if state.overlayTheme == "neon" {
             backgroundView.backgroundColor = UIColor(red: 0.1, green: 0, blue: 0.3, alpha: 0.8)
@@ -157,10 +175,15 @@ class ScoreboardOverlayView: UIView {
         awayServeIcon.isHidden = true
         
         switch state.sportType {
-        case "volley":
+        case "volley", "beach volley":
             scoreLabel.text = "\(state.scoreA)\n\(state.scoreB)"
             extraLabel.text = "Set: \(state.setsA)\nSet: \(state.setsB)"
             updateTimeouts(countA: state.timeoutA, countB: state.timeoutB, max: 2)
+            if state.servingTeam == "A" {
+                homeServeIcon.isHidden = false
+            } else if state.servingTeam == "B" {
+                awayServeIcon.isHidden = false
+            }
             
         case "basket":
             scoreLabel.text = "\(state.scoreA)\n\(state.scoreB)"
@@ -169,14 +192,27 @@ class ScoreboardOverlayView: UIView {
             
         case "soccer":
             scoreLabel.text = "\(state.scoreA)\n\(state.scoreB)"
-            extraLabel.text = ""
+            let halfStr = state.currentSet == 1 ? "1°T" : "2°T"
+            extraLabel.text = "\(halfStr) | CR: \(state.redCardsA)-\(state.redCardsB)"
             timerLabel.isHidden = false
             timerLabel.text = formatTimer(state.timerSeconds)
             updateTimeouts(countA: 0, countB: 0, max: 0)
             
-        case "tennis":
+        case "pallamano":
+            scoreLabel.text = "\(state.scoreA)\n\(state.scoreB)"
+            let halfStr2 = state.currentSet == 1 ? "1°T" : "2°T"
+            extraLabel.text = halfStr2
+            timerLabel.isHidden = false
+            timerLabel.text = formatTimer(state.timerSeconds)
+            updateTimeouts(countA: state.timeoutA, countB: state.timeoutB, max: 3)
+            
+        case "tennis", "padel":
             scoreLabel.text = "\(formatTennisScore(state.tennisPointsA))\n\(formatTennisScore(state.tennisPointsB))"
-            extraLabel.text = "S:\(state.setsA) G:\(state.tennisGamesA)\nS:\(state.setsB) G:\(state.tennisGamesB)"
+            var extraStr = "S:\(state.setsA) G:\(state.tennisGamesA)\nS:\(state.setsB) G:\(state.tennisGamesB)"
+            if state.sportType == "padel" && state.isPuntoDeOro && state.tennisPointsA == 3 && state.tennisPointsB == 3 {
+                extraStr = "PUNTO DE ORO\n" + extraStr
+            }
+            extraLabel.text = extraStr
             updateTimeouts(countA: 0, countB: 0, max: 0)
             
         case "darts":
@@ -186,7 +222,12 @@ class ScoreboardOverlayView: UIView {
             
         case "cricket":
             scoreLabel.text = "\(state.scoreA)\n\(state.scoreB)"
-            extraLabel.text = "B:\(state.cricketBallsA)\nB:\(state.cricketBallsB)"
+            extraLabel.text = "Overs: \(state.currentSet)\nB:\(state.cricketBallsA)-\(state.cricketBallsB)"
+            updateTimeouts(countA: 0, countB: 0, max: 0)
+            
+        case "biliardo":
+            scoreLabel.text = "\(state.scoreA)\n\(state.scoreB)"
+            extraLabel.text = "Frame: \(state.currentSet)"
             updateTimeouts(countA: 0, countB: 0, max: 0)
             
         default:
@@ -198,6 +239,7 @@ class ScoreboardOverlayView: UIView {
         if state.showSponsor {
             sponsorImageView.isHidden = false
             if sponsorTimer == nil {
+                rotateSponsor() // Carica subito il primo
                 sponsorTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
                     self?.rotateSponsor()
                 }
@@ -210,7 +252,11 @@ class ScoreboardOverlayView: UIView {
         
         if state.fullScreenSponsor {
             fullScreenSponsorView.isHidden = false
-            fullScreenSponsorView.image = UIImage(systemName: "photo.fill")
+            if let sponsorData = AppPreferences.shared.loadImage(name: "sponsorFull.png") {
+                fullScreenSponsorView.image = UIImage(data: sponsorData)
+            } else {
+                fullScreenSponsorView.image = UIImage(systemName: "photo.fill")
+            }
         } else {
             fullScreenSponsorView.isHidden = true
         }
@@ -227,8 +273,15 @@ class ScoreboardOverlayView: UIView {
     }
     
     private func rotateSponsor() {
-        currentSponsorIndex = (currentSponsorIndex + 1) % sponsorImages.count
-        sponsorImageView.image = UIImage(systemName: "star") // Usa immagini reali
+        let count = UserDefaults.standard.integer(forKey: "rotating_sponsors_count")
+        guard count > 0 else {
+            sponsorImageView.image = nil
+            return
+        }
+        currentSponsorIndex = (currentSponsorIndex + 1) % count
+        if let data = AppPreferences.shared.loadImage(name: "sponsorRotating_\(currentSponsorIndex).png") {
+            sponsorImageView.image = UIImage(data: data)
+        }
     }
     
     private func startMarquee() {

@@ -38,8 +38,10 @@ class StreamVideoEffect: VideoEffect {
         }
         
         if let state = currentState {
-            // Aggiorna sempre il marquee per l'animazione
-            updateOverlayImage(state: state)
+            if state.lastUpdate != lastStateUpdate {
+                lastStateUpdate = state.lastUpdate
+                updateOverlayImage(state: state)
+            }
         } else if overlayImage == nil {
             updateOverlayImage(state: RemoteMatchState())
         }
@@ -52,6 +54,13 @@ class StreamVideoEffect: VideoEffect {
         filter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
         
         let finalImage = filter.outputImage ?? outputImage
+        
+        if LocalVideoRecorder.shared.isRecordingState {
+            if let sampleBuffer = info {
+                let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                LocalVideoRecorder.shared.appendVideo(image: finalImage, time: time)
+            }
+        }
         
         if isTransitioningToReplay {
             stingerFrameCount -= 1
