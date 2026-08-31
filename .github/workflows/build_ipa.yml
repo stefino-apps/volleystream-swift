@@ -16,16 +16,14 @@ jobs:
 
     - name: Select Xcode 15.4
       run: sudo xcode-select -s /Applications/Xcode_15.4.app
-      
-    - name: Install XcodeGen 2.39.0
+
+    - name: Install Mint and XcodeGen
       run: |
-        curl -LO https://github.com/yonaskolb/XcodeGen/releases/download/2.39.0/xcodegen.zip
-        unzip xcodegen.zip
-        cd xcodegen
-        make install
+        brew install mint
+        mint install yonaskolb/xcodegen@2.39.0
       
     - name: Generate Xcode Project
-      run: xcodegen generate
+      run: mint run yonaskolb/xcodegen@2.39.0 generate
       
     - name: Build Unsigned App
       run: |
