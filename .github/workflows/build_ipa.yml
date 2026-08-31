@@ -8,17 +8,22 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+
+    - name: Select Xcode 15.4
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app
       
-    - name: Install XcodeGen
-      run: brew install xcodegen
+    - name: Install XcodeGen 2.39.0
+      run: |
+        curl -LO https://github.com/yonaskolb/XcodeGen/releases/download/2.39.0/xcodegen.zip
+        unzip xcodegen.zip -d xcodegen_bin
       
     - name: Generate Xcode Project
-      run: xcodegen generate
+      run: ./xcodegen_bin/bin/xcodegen generate
       
     - name: Build Unsigned App
       run: |
