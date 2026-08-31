@@ -87,11 +87,11 @@ class MainViewController: UIViewController {
         if !UserDefaults.standard.bool(forKey: "has_seen_tutorial") {
             let tutorial = TutorialOverlayView()
             tutorial.startTutorial(in: self.view, steps: [
-                (view: startStreamButton, text: "Premi qui per andare LIVE e registrare!"),
-                (view: modeButton, text: "Cambia il layout (Normale, Griglia, Clean)"),
-                (view: btnScoreHome, text: "Tocca per assegnare i punti! (E cambia battuta in automatico)"),
-                (view: shareRemoteButton, text: "Condividi il Telecomando con un assistente!"),
-                (view: scoreboardView, text: "Questo è il tabellone che vedranno da casa!")
+                (view: startStreamButton as UIView?, text: "Premi qui per andare LIVE e registrare!"),
+                (view: modeButton as UIView?, text: "Cambia il layout (Normale, Griglia, Clean)"),
+                (view: btnScoreHome as UIView?, text: "Tocca per assegnare i punti! (E cambia battuta in automatico)"),
+                (view: shareRemoteButton as UIView?, text: "Condividi il Telecomando con un assistente!"),
+                (view: scoreboardView as UIView?, text: "Questo è il tabellone che vedranno da casa!")
             ])
         }
     }
