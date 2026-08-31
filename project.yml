@@ -11,7 +11,7 @@ packages:
     majorVersion: 8.0.0
   HaishinKit:
     url: https://github.com/shogo4405/HaishinKit.swift
-    exactVersion: 1.8.0
+    upToNextMajor: 1.8.0
 targets:
   MiaApp:
     type: application

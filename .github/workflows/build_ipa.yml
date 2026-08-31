@@ -8,14 +8,11 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
-      
-    - name: Select Xcode Version
-      run: sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_16.0.app || echo "Xcode selection failed, using default"
       
     - name: Install XcodeGen
       run: brew install xcodegen
