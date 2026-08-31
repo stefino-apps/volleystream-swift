@@ -12,7 +12,7 @@ jobs:
     
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       
     - name: Install XcodeGen
       run: brew install xcodegen
@@ -40,7 +40,7 @@ jobs:
         zip -r VolleyStreamPro.ipa Payload
         
     - name: Upload IPA Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: VolleyStreamPro-Sideload
         path: VolleyStreamPro.ipa
