@@ -7,7 +7,7 @@ packages:
     majorVersion: 10.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
-    majorVersion: 8.0.0
+    majorVersion: 7.0.0
   HaishinKit:
     url: https://github.com/shogo4405/HaishinKit.swift
     exactVersion: 1.8.0
