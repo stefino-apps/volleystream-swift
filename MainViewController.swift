@@ -47,7 +47,7 @@ class MainViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        localState.sportType = initialSport
+        self.localState.sportType = initialSport
         localState.overlayTheme = initialTheme
         localState.teamA = AppPreferences.shared.teamHome
         localState.teamB = AppPreferences.shared.teamAway
@@ -133,10 +133,8 @@ class MainViewController: UIViewController {
     private func handleRemoteCommand(_ command: String) {
         if command == "TRIGGER_REPLAY" {
             ReplayManager.shared.startPlayback()
-            if var state = getLocalState() {
-                state.isReplaying = true
-                FirebaseManager.shared.updateMatchState(state)
-            }
+            localState.isReplaying = true
+            FirebaseManager.shared.updateMatchState(localState)
         } else if command == "TRIGGER_HIGHLIGHT" {
             // Save highlight locally
         }
@@ -165,13 +163,13 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreA() {
-        if localState.sportType == "tennis" || localState.sportType == "padel" {
+        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
             if localState.tennisPointsA == 3 && localState.tennisPointsB < 3 {
                 localState.tennisGamesA += 1
                 localState.tennisPointsA = 0
                 localState.tennisPointsB = 0
             } else if localState.tennisPointsA == 3 && localState.tennisPointsB == 3 {
-                if localState.sportType == "padel" && localState.isPuntoDeOro {
+                if self.localState.sportType == "padel" && localState.isPuntoDeOro {
                     // Chi fa punto qui, vince il game
                     localState.tennisGamesA += 1
                     localState.tennisPointsA = 0
@@ -190,7 +188,7 @@ class MainViewController: UIViewController {
             }
         } else {
             localState.scoreA += 1
-            if localState.sportType == "volley" || localState.sportType == "beach volley" {
+            if self.localState.sportType == "volley" || self.localState.sportType == "beach volley" {
                 localState.servingTeam = "A"
             }
         }
@@ -201,7 +199,7 @@ class MainViewController: UIViewController {
     @objc func incScoreA3() { localState.scoreA += 3; updateLocalState() }
     
     @objc func decScoreA() {
-        if localState.sportType == "tennis" || localState.sportType == "padel" {
+        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
             if localState.tennisPointsA > 0 { localState.tennisPointsA -= 1 }
         } else {
             if localState.scoreA > 0 { localState.scoreA -= 1 }
@@ -210,9 +208,9 @@ class MainViewController: UIViewController {
     }
     
     @objc func toA() {
-        if localState.sportType == "soccer" {
+        if self.localState.sportType == "soccer" {
             localState.redCardsA += 1
-        } else if localState.sportType == "tennis" || localState.sportType == "padel" {
+        } else if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
             localState.tennisGamesA += 1
         } else {
             localState.timeoutA += 1
@@ -221,13 +219,13 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreB() {
-        if localState.sportType == "tennis" || localState.sportType == "padel" {
+        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
             if localState.tennisPointsB == 3 && localState.tennisPointsA < 3 {
                 localState.tennisGamesB += 1
                 localState.tennisPointsA = 0
                 localState.tennisPointsB = 0
             } else if localState.tennisPointsB == 3 && localState.tennisPointsA == 3 {
-                if localState.sportType == "padel" && localState.isPuntoDeOro {
+                if self.localState.sportType == "padel" && localState.isPuntoDeOro {
                     localState.tennisGamesB += 1
                     localState.tennisPointsA = 0
                     localState.tennisPointsB = 0
@@ -245,7 +243,7 @@ class MainViewController: UIViewController {
             }
         } else {
             localState.scoreB += 1
-            if localState.sportType == "volley" || localState.sportType == "beach volley" {
+            if self.localState.sportType == "volley" || self.localState.sportType == "beach volley" {
                 localState.servingTeam = "B"
             }
         }
@@ -256,7 +254,7 @@ class MainViewController: UIViewController {
     @objc func incScoreB3() { localState.scoreB += 3; updateLocalState() }
     
     @objc func decScoreB() {
-        if localState.sportType == "tennis" || localState.sportType == "padel" {
+        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
             if localState.tennisPointsB > 0 { localState.tennisPointsB -= 1 }
         } else {
             if localState.scoreB > 0 { localState.scoreB -= 1 }
@@ -265,9 +263,9 @@ class MainViewController: UIViewController {
     }
     
     @objc func toB() {
-        if localState.sportType == "soccer" {
+        if self.localState.sportType == "soccer" {
             localState.redCardsB += 1
-        } else if localState.sportType == "tennis" || localState.sportType == "padel" {
+        } else if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
             localState.tennisGamesB += 1
         } else {
             localState.timeoutB += 1
@@ -584,12 +582,12 @@ class MainViewController: UIViewController {
                     self.btnTimeoutAway.frame = CGRect(x: w - 250, y: by + 5, width: 50, height: 50)
                     self.btnTimeoutAway.layer.cornerRadius = 25
                     
-                    if localState.sportType == "soccer" {
+                    if self.localState.sportType == "soccer" {
                         self.btnTimeoutHome.setTitle("R", for: .normal)
                         self.btnTimeoutHome.backgroundColor = .systemRed
                         self.btnTimeoutAway.setTitle("R", for: .normal)
                         self.btnTimeoutAway.backgroundColor = .systemRed
-                    } else if localState.sportType == "tennis" || localState.sportType == "padel" {
+                    } else if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
                         self.btnTimeoutHome.setTitle("G", for: .normal)
                         self.btnTimeoutHome.backgroundColor = .systemPurple
                         self.btnTimeoutAway.setTitle("G", for: .normal)
@@ -612,7 +610,7 @@ class MainViewController: UIViewController {
                         self.btnScoreAway3.layer.cornerRadius = 30
                         self.btnEndQuarter.frame = CGRect(x: centerX - 50, y: by + 40, width: 100, height: 40)
                         self.btnEndQuarter.layer.cornerRadius = 20
-                    } else if isSoccer || localState.sportType == "biliardo" {
+                    } else if isSoccer || self.localState.sportType == "biliardo" {
                         self.btnEndQuarter.frame = CGRect(x: centerX - 50, y: by + 40, width: 100, height: 40)
                         self.btnEndQuarter.layer.cornerRadius = 20
                     }
@@ -688,12 +686,12 @@ class MainViewController: UIViewController {
                     self.btnTimeoutAway.frame = CGRect(x: rightX - 80, y: safeY - 40, width: 70, height: 40)
                     self.btnTimeoutAway.layer.cornerRadius = 8
                     
-                    if localState.sportType == "soccer" {
+                    if self.localState.sportType == "soccer" {
                         self.btnTimeoutHome.setTitle("RC", for: .normal)
                         self.btnTimeoutHome.backgroundColor = .systemRed
                         self.btnTimeoutAway.setTitle("RC", for: .normal)
                         self.btnTimeoutAway.backgroundColor = .systemRed
-                    } else if localState.sportType == "tennis" || localState.sportType == "padel" {
+                    } else if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
                         self.btnTimeoutHome.setTitle("GAME", for: .normal)
                         self.btnTimeoutHome.backgroundColor = .systemPurple
                         self.btnTimeoutAway.setTitle("GAME", for: .normal)
@@ -718,7 +716,7 @@ class MainViewController: UIViewController {
                         
                         self.btnEndQuarter.frame = CGRect(x: centerX - 50, y: topY, width: 100, height: 40)
                         self.btnEndQuarter.layer.cornerRadius = 8
-                    } else if isSoccer || localState.sportType == "biliardo" {
+                    } else if isSoccer || self.localState.sportType == "biliardo" {
                         self.btnEndQuarter.frame = CGRect(x: centerX - 50, y: topY, width: 100, height: 40)
                         self.btnEndQuarter.layer.cornerRadius = 8
                     }
