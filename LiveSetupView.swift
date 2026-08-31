@@ -20,6 +20,7 @@ struct LiveSetupView: View {
     @State private var streamKey = ""
     @State private var isCreatingEvent = false
     @State private var navigateToDirector = false
+    @State private var accettaTermini = false
     
     var body: some View {
         Form {
@@ -38,17 +39,30 @@ struct LiveSetupView: View {
                             Text("Privato").tag("Privato")
                         }
                     } else {
-                        Button("Collega Canale YouTube") {
-                            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                                  let rootVC = windowScene.windows.first?.rootViewController else { return }
-                            YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, _ in
-                                isYouTubeLoggedIn = success
-                            }
-                        }.foregroundColor(.red)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button("Collega Canale YouTube") {
+                                guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                      let rootVC = windowScene.windows.first?.rootViewController else { return }
+                                YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, _ in
+                                    isYouTubeLoggedIn = success
+                                }
+                            }.foregroundColor(.red)
+                            
+                            Text("⚠️ Attenzione: Assicurati di aver abilitato lo streaming dal vivo nelle impostazioni del tuo canale YouTube (l'abilitazione richiede 24 ore dal primo avvio via browser).")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
                     }
                 } else {
                     TextField("URL Server RTMP", text: $rtmpUrl)
                     TextField("Chiave Stream", text: $streamKey)
+                }
+            }
+            
+            Section(header: Text("Termini d'uso e Privacy")) {
+                Toggle(isOn: $accettaTermini) {
+                    Text("Dichiaro di aver raccolto le necessarie autorizzazioni e liberatorie per la ripresa di minorenni, manlevando gli sviluppatori da ogni responsabilità.")
+                        .font(.caption)
                 }
             }
             
@@ -107,10 +121,10 @@ struct LiveSetupView: View {
                     .bold()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding()
-                    .background(Color.red)
+                    .background((isCreatingEvent || !accettaTermini) ? Color.gray : Color.red)
                     .cornerRadius(8)
                 }
-                .disabled(isCreatingEvent)
+                .disabled(isCreatingEvent || !accettaTermini)
                 
                 NavigationLink(destination: DirectorView(sport: AppPreferences.shared.selectedSport, theme: AppPreferences.shared.selectedTheme), isActive: $navigateToDirector) {
                     EmptyView()
