@@ -23,6 +23,8 @@ targets:
           - ".git"
           - "project.yml"
           - "Info.plist"
+          - "Podfile"
+          - "*.ps1"
     resources:
       - path: GoogleService-Info.plist
     dependencies:
