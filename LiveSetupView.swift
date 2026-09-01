@@ -20,7 +20,9 @@ struct LiveSetupView: View {
     @State private var streamKey = ""
     @State private var isCreatingEvent = false
     @State private var navigateToDirector = false
-    @State private var accettaTermini = false
+    @State private var accettaTermini = true
+    @State private var showAlert = false
+    @State private var alertMessage = ""
     
     var body: some View {
         Form {
@@ -121,45 +123,73 @@ struct LiveSetupView: View {
                     .bold()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding()
-                    .background((isCreatingEvent || !accettaTermini) ? Color.gray : Color.red)
+                    .background(isCreatingEvent ? Color.gray : Color.red)
                     .cornerRadius(8)
                 }
-                .disabled(isCreatingEvent || !accettaTermini)
-                
-                NavigationLink(destination: DirectorView(sport: AppPreferences.shared.selectedSport, theme: AppPreferences.shared.selectedTheme), isActive: $navigateToDirector) {
-                    EmptyView()
-                }
+                .disabled(isCreatingEvent)
             }
             .listRowBackground(Color.clear)
         }
         .navigationBarTitle("Impostazioni Diretta", displayMode: .inline)
+        .background(
+            NavigationLink(
+                destination: DirectorView(sport: AppPreferences.shared.selectedSport, theme: AppPreferences.shared.selectedTheme).navigationBarHidden(true),
+                isActive: $navigateToDirector
+            ) {
+                EmptyView()
+            }
+            .hidden()
+        )
+        .fullScreenCover(isPresented: $navigateToDirector) {
+            DirectorView(sport: AppPreferences.shared.selectedSport, theme: AppPreferences.shared.selectedTheme)
+                .edgesIgnoringSafeArea(.all)
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text("Attenzione"),
+                message: Text(alertMessage),
+                primaryButton: .default(Text("Entra comunque in Regia")) {
+                    proceedToDirector(rtmp: rtmpUrl.isEmpty ? "rtmp://a.rtmp.youtube.com/live2" : rtmpUrl, key: streamKey.isEmpty ? "offline_test" : streamKey)
+                },
+                secondaryButton: .cancel(Text("Annulla"))
+            )
+        }
         .onAppear {
             isYouTubeLoggedIn = YouTubeManager.shared.accessToken != nil
         }
     }
     
+    private func proceedToDirector(rtmp: String, key: String) {
+        UserDefaults.standard.set(rtmp, forKey: "rtmp_url")
+        UserDefaults.standard.set(key, forKey: "rtmp_key")
+        UserDefaults.standard.set(recordLocally, forKey: "record_locally")
+        navigateToDirector = true
+    }
+    
     private func startLiveAction() {
+        if !accettaTermini {
+            alertMessage = "Devi accettare i termini relativi alle riprese prima di iniziare."
+            showAlert = true
+            return
+        }
+        
         if streamPlatform == "YouTube" && isYouTubeLoggedIn {
             isCreatingEvent = true
             YouTubeManager.shared.createLiveEvent(title: streamTitle) { rtmp, key, err in
                 DispatchQueue.main.async {
                     isCreatingEvent = false
                     if err == nil, let rtmp = rtmp, let key = key {
-                        // Salva le coordinate per la Regia
-                        UserDefaults.standard.set(rtmp, forKey: "rtmp_url")
-                        UserDefaults.standard.set(key, forKey: "rtmp_key")
-                        UserDefaults.standard.set(recordLocally, forKey: "record_locally")
-                        navigateToDirector = true
+                        proceedToDirector(rtmp: rtmp, key: key)
                     } else {
-                        networkStatus = "Errore creazione diretta YouTube"
+                        alertMessage = "Impossibile creare la diretta YouTube automatica (\(err?.localizedDescription ?? "Errore sconosciuto")).\nVuoi comunque accedere alla Regia?"
+                        showAlert = true
                     }
                 }
             }
         } else {
-            UserDefaults.standard.set(rtmpUrl, forKey: "rtmp_url")
-            UserDefaults.standard.set(streamKey, forKey: "rtmp_key")
-            UserDefaults.standard.set(recordLocally, forKey: "record_locally")
-            navigateToDirector = true
+            let finalRtmp = rtmpUrl.isEmpty ? "rtmp://a.rtmp.youtube.com/live2" : rtmpUrl
+            let finalKey = streamKey.isEmpty ? "test_stream_key" : streamKey
+            proceedToDirector(rtmp: finalRtmp, key: finalKey)
         }
     }
 }

@@ -146,7 +146,7 @@ struct WelcomeView: View {
                     }
                     
                     // Version Text
-                    Text("v1.0.56 (56)")
+                    Text("v1.0.69 (69)")
                         .font(.system(size: 10))
                         .foregroundColor(Color(hex: "#475569"))
                         .padding(.bottom, 8)
