@@ -27,21 +27,22 @@ jobs:
       
     - name: Build Unsigned App
       run: |
-        xcodebuild -project MiaApp.xcodeproj \
-        -scheme MiaApp \
-        -configuration Release \
-        -sdk iphoneos \
-        CODE_SIGNING_REQUIRED=NO \
-        CODE_SIGN_IDENTITY="" \
-        CODE_SIGN_ENTITLEMENTS="" \
-        CODE_SIGNING_ALLOWED=NO \
-        build \
-        CONFIGURATION_BUILD_DIR=$(pwd)/build
+        xcodebuild build \
+          -project MiaApp.xcodeproj \
+          -scheme MiaApp \
+          -configuration Release \
+          -sdk iphoneos \
+          -destination "generic/platform=iOS" \
+          -derivedDataPath DerivedData \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGN_ENTITLEMENTS="" \
+          CODE_SIGNING_ALLOWED=NO
         
     - name: Package into IPA
       run: |
         mkdir -p Payload
-        cp -r build/*.app Payload/
+        cp -r DerivedData/Build/Products/Release-iphoneos/*.app Payload/
         zip -r VolleyStreamPro.ipa Payload
         
     - name: Upload IPA Artifact
