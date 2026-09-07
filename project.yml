@@ -24,9 +24,9 @@ targets:
           - "project.yml"
           - "Info.plist"
           - "Podfile"
+          - "Podfile.lock"
           - "*.ps1"
-    resources:
-      - path: GoogleService-Info.plist
+          - "*.md"
     dependencies:
       - package: Firebase
         product: FirebaseDatabase
