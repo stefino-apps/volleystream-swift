@@ -58,9 +58,10 @@ class StoreKitManager: ObservableObject, @unchecked Sendable {
             }
         }
         
+        let active = hasActiveSub
         DispatchQueue.main.async {
-            self.isPremium = hasActiveSub
-            if hasActiveSub {
+            self.isPremium = active
+            if active {
                 self.subscriptionStatus = "sub_active_welcome".localized
             } else {
                 self.subscriptionStatus = "premium".localized

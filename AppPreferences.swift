@@ -90,4 +90,18 @@ class AppPreferences {
             try? FileManager.default.removeItem(at: u2)
         }
     }
+    
+    func clearAll() {
+        if let bundleID = Bundle.main.bundleIdentifier {
+            defaults.removePersistentDomain(forName: bundleID)
+        }
+        deleteImage(name: "logo_team_a.png")
+        deleteImage(name: "logo_team_b.png")
+        deleteImage(name: "sponsorFull.png")
+        for i in 1...4 { deleteImage(name: "sponsor_\(i).png") }
+        for i in 0...4 {
+            deleteImage(name: "banner_\(i + 1).png")
+            deleteImage(name: "sponsorRotating_\(i).png")
+        }
+    }
 }

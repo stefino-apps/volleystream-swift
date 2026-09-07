@@ -42,6 +42,10 @@ public class YouTubeManager: NSObject {
         self.accessToken = nil
     }
     
+    public func disconnect() {
+        signOut()
+    }
+    
     public func createLiveEvent(title: String, completion: @escaping (String?, String?, Error?) -> Void) {
         guard let token = accessToken else {
             completion(nil, nil, NSError(domain: "YouTube", code: 401, userInfo: [NSLocalizedDescriptionKey: "Non autenticato"]))
