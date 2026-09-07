@@ -191,9 +191,9 @@ struct VolleyRemote: View {
                 SportTeamBox(team: state.teamB.isEmpty ? "OSPITE" : state.teamB, score: $state.scoreB, sub: $state.setsB, subName: "Set", onPlus: { state.scoreB += 1; update() }, onMinus: { if state.scoreB > 0 { state.scoreB -= 1 }; update() }, onSubPlus: { state.setsB += 1; update() }, onSubMinus: { if state.setsB > 0 { state.setsB -= 1 }; update() })
             }
             HStack {
-                Button("TIMEOUT CASA") { state.timeoutA = true; update() }
+                Button("TIMEOUT CASA") { state.timeoutA += 1; update() }
                     .font(.caption).bold().padding(8).frame(maxWidth: .infinity).background(Color.yellow.opacity(0.2)).foregroundColor(.orange).cornerRadius(8)
-                Button("TIMEOUT OSPITE") { state.timeoutB = true; update() }
+                Button("TIMEOUT OSPITE") { state.timeoutB += 1; update() }
                     .font(.caption).bold().padding(8).frame(maxWidth: .infinity).background(Color.yellow.opacity(0.2)).foregroundColor(.orange).cornerRadius(8)
             }
         }

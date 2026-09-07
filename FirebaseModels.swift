@@ -77,6 +77,8 @@ struct RemoteMatchState: Codable {
     // Cricket specific
     var cricketBallsA: Int = 0
     var cricketBallsB: Int = 0
+    var cricketWicketsA: Int = 0
+    var cricketWicketsB: Int = 0
 
     var isReplayEnabled: Bool = false
     var isReplaying: Bool = false
