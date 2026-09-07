@@ -32,6 +32,7 @@ class TutorialOverlayView: UIView {
         self.steps = steps
         self.currentStep = 0
         self.frame = view.bounds
+        self.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(self)
         
         UIView.animate(withDuration: 0.3) {
@@ -39,6 +40,13 @@ class TutorialOverlayView: UIView {
         }
         
         showStep()
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if currentStep < steps.count {
+            showStep()
+        }
     }
     
     private func showStep() {
@@ -58,22 +66,22 @@ class TutorialOverlayView: UIView {
         
         var labelY: CGFloat = self.bounds.midY
         
-        if let targetView = step.view {
+        if let targetView = step.view, targetView.bounds.width > 0, targetView.bounds.height > 0 {
             let targetFrame = targetView.convert(targetView.bounds, to: self)
-            let highlightPath = UIBezierPath(roundedRect: targetFrame.insetBy(dx: -10, dy: -10), cornerRadius: 8)
+            let highlightPath = UIBezierPath(roundedRect: targetFrame.insetBy(dx: -8, dy: -8), cornerRadius: 10)
             path.append(highlightPath)
             
             if targetFrame.minY > self.bounds.midY {
-                labelY = targetFrame.minY - 60
+                labelY = max(60, targetFrame.minY - 50)
             } else {
-                labelY = targetFrame.maxY + 60
+                labelY = min(self.bounds.height - 60, targetFrame.maxY + 50)
             }
         }
         
         maskLayer.path = path.cgPath
         
         textLabel.text = step.text
-        textLabel.frame = CGRect(x: 20, y: labelY - 40, width: self.bounds.width - 40, height: 80)
+        textLabel.frame = CGRect(x: 20, y: labelY - 30, width: self.bounds.width - 40, height: 60)
     }
     
     @objc private func nextStep() {

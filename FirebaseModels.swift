@@ -13,9 +13,14 @@ struct RemoteMatchState: Codable {
     var scoreA: Int = 0
     var scoreB: Int = 0
     
-    // Set (solo volley)
+    // Set (solo volley/tennis)
     var setsA: Int = 0
     var setsB: Int = 0
+    var setScores: [[Int]] = []
+    var isFifthSet: Bool = false
+    var isSetFinished: Bool = false
+    var isMatchFinished: Bool = false
+    var tennisSetsToWin: Int = 2
     
     var currentSet: Int = 1
     

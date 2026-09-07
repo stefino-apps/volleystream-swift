@@ -55,6 +55,39 @@ class AppPreferences {
     
     func loadImage(name: String) -> Data? {
         let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name)
-        return try? Data(contentsOf: url)
+        if FileManager.default.fileExists(atPath: url.path) {
+            return try? Data(contentsOf: url)
+        }
+        // Fallback names check
+        if name == "logo_team_a.png" {
+            let altUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logoHome.png")
+            return try? Data(contentsOf: altUrl)
+        } else if name == "logo_team_b.png" {
+            let altUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logoAway.png")
+            return try? Data(contentsOf: altUrl)
+        } else if name == "logoHome.png" {
+            let altUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logo_team_a.png")
+            return try? Data(contentsOf: altUrl)
+        } else if name == "logoAway.png" {
+            let altUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logo_team_b.png")
+            return try? Data(contentsOf: altUrl)
+        }
+        return nil
+    }
+    
+    func deleteImage(name: String) {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name)
+        try? FileManager.default.removeItem(at: url)
+        if name == "logo_team_a.png" || name == "logoHome.png" {
+            let u1 = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logoHome.png")
+            let u2 = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logo_team_a.png")
+            try? FileManager.default.removeItem(at: u1)
+            try? FileManager.default.removeItem(at: u2)
+        } else if name == "logo_team_b.png" || name == "logoAway.png" {
+            let u1 = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logoAway.png")
+            let u2 = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("logo_team_b.png")
+            try? FileManager.default.removeItem(at: u1)
+            try? FileManager.default.removeItem(at: u2)
+        }
     }
 }

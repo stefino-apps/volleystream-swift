@@ -7,6 +7,14 @@ import SwiftUI
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    
+    // Default: allow portrait and landscape for menus, locked to landscape in Regia
+    static var orientationLock = UIInterfaceOrientationMask.allButUpsideDown
+
+    func application(_ application: UIApplication, 
+                     supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return AppDelegate.orientationLock
+    }
 
     func application(_ application: UIApplication, 
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -15,7 +23,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Fallback per iOS che non carica SceneDelegate
         let window = UIWindow(frame: UIScreen.main.bounds)
-        window.rootViewController = MainViewController()
+        window.rootViewController = UIHostingController(rootView: WelcomeView())
         window.makeKeyAndVisible()
         self.window = window
         
@@ -36,5 +44,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let config = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
+    }
+    
+    // MARK: - Orientation Lock Helper
+    static func setOrientationLock(_ orientation: UIInterfaceOrientationMask, rotateTo: UIInterfaceOrientation = .landscapeRight) {
+        AppDelegate.orientationLock = orientation
+        
+        DispatchQueue.main.async {
+            if #available(iOS 16.0, *) {
+                let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                let activeScene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first
+                
+                if let scene = activeScene {
+                    let geometryPref = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: orientation)
+                    scene.requestGeometryUpdate(geometryPref) { error in
+                        print("Failed to request geometry update: \(error.localizedDescription)")
+                    }
+                }
+                
+                scenes.forEach { scene in
+                    scene.windows.forEach { window in
+                        window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                        window.rootViewController?.presentedViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                    }
+                }
+            } else {
+                UIDevice.current.setValue(rotateTo.rawValue, forKey: "orientation")
+                UIViewController.attemptRotationToDeviceOrientation()
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import WebKit
 
 struct WelcomeView: View {
     @StateObject private var storeManager = StoreKitManager.shared
@@ -8,6 +9,8 @@ struct WelcomeView: View {
     @State private var showMenu = false
     @State private var selectedBadgeInfo: String? = nil
     @State private var navigateToRemote = false
+    @State private var showDeleteAccountAlert = false
+    @State private var activeLegalDoc: LegalDocType? = nil
     @AppStorage("app_lang") private var appLang = "it"
     
     let languages = [
@@ -16,65 +19,134 @@ struct WelcomeView: View {
         "pl": "Polski", "ru": "Русский", "hi": "हिन्दी"
     ]
     
+    enum LegalDocType: Identifiable {
+        case privacy
+        case terms
+        
+        var id: String {
+            switch self {
+            case .privacy: return "privacy"
+            case .terms: return "terms"
+            }
+        }
+        
+        var title: String {
+            switch self {
+            case .privacy: return "Informativa sulla Privacy"
+            case .terms: return "Termini di Servizio"
+            }
+        }
+        
+        var htmlFileName: String {
+            switch self {
+            case .privacy: return "privacy.html"
+            case .terms: return "terms.html"
+            }
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
                 Color(red: 2/255, green: 6/255, blue: 23/255).edgesIgnoringSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // Top Bar
-                    HStack {
-                        Button(action: {
-                            showMenu = true
-                        }) {
+                    // Top Bar: Menu (Left), Tutorial (Center-Right), Language (Right)
+                    HStack(spacing: 8) {
+                        Button(action: { showMenu = true }) {
                             Image(systemName: "line.horizontal.3")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
                         }
                         .actionSheet(isPresented: $showMenu) {
                             ActionSheet(title: Text("Menu"), buttons: [
-                                .default(Text("Privacy Policy")) {
-                                    if let url = URL(string: "https://volleystreampro.com/privacy.html") { UIApplication.shared.open(url) }
+                                .default(Text("menu_privacy".localized.isEmpty ? "Privacy Policy" : "menu_privacy".localized)) {
+                                    activeLegalDoc = .privacy
                                 },
-                                .default(Text("Termini d'uso")) {
-                                    if let url = URL(string: "https://volleystreampro.com/terms.html") { UIApplication.shared.open(url) }
+                                .default(Text("menu_terms".localized.isEmpty ? "Termini di Servizio" : "menu_terms".localized)) {
+                                    activeLegalDoc = .terms
                                 },
-                                .default(Text("Contatti")) {
-                                    if let url = URL(string: "mailto:support@volleystreampro.com") { UIApplication.shared.open(url) }
+                                .default(Text("menu_contacts".localized.isEmpty ? "Contatti" : "menu_contacts".localized)) {
+                                    openSupportEmail()
                                 },
                                 .default(Text("Tutorial Schermate")) {
                                     if let url = URL(string: "https://volleystreampro.com/tutorial") { UIApplication.shared.open(url) }
                                 },
-                                .destructive(Text("Cancella Account")) {},
+                                .destructive(Text("menu_delete_account".localized.isEmpty ? "Cancella Account" : "menu_delete_account".localized)) {
+                                    showDeleteAccountAlert = true
+                                },
                                 .cancel()
                             ])
                         }
                         
                         Spacer()
                         
+                        // Tutorial Button
                         Button(action: {
-                            showLangPicker = true
+                            if let url = URL(string: "https://volleystreampro.com/tutorial") { UIApplication.shared.open(url) }
                         }) {
-                            Image(systemName: "globe")
-                                .font(.system(size: 24))
+                            Text("TUTORIAL")
+                                .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color(hex: "#22c55e"))
+                                .cornerRadius(16)
+                        }
+                        
+                        // Language Button
+                        Button(action: { showLangPicker = true }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "globe")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color(hex: "#06b6d4"))
+                                Text("language_button".localized)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(Color(hex: "#06b6d4"))
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
                         }
                         .actionSheet(isPresented: $showLangPicker) {
-                            ActionSheet(title: Text("Select Language"), buttons: languages.map { lang in
+                            ActionSheet(title: Text("select_language".localized), buttons: languages.map { lang in
                                 .default(Text(lang.value)) {
                                     appLang = lang.key
                                 }
                             } + [.cancel()])
                         }
                     }
-                    .padding(.horizontal, 32)
-                    .padding(.top, 32)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
                     
                     ScrollView {
                         VStack(spacing: 0) {
+                            // Top Right Trial & Subscription Button
+                            HStack {
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text("free_trial".localized)
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(Color(hex: "#22c55e"))
+                                    
+                                    Button(action: {}) {
+                                        Text("PREMIUM")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(Color(hex: "#06b6d4"))
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 4)
+                                            .background(Color(hex: "#0f172a"))
+                                            .cornerRadius(12)
+                                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#06b6d4"), lineWidth: 1))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 12)
+                            
                             // Title
                             Text("VOLLEYSTREAM PRO")
-                                .font(.system(size: 36, weight: .bold, design: .default))
+                                .font(.system(size: 32, weight: .bold, design: .default))
                                 .italic()
                                 .tracking(0.05)
                                 .foregroundStyle(
@@ -85,7 +157,7 @@ struct WelcomeView: View {
                                     )
                                 )
                                 .shadow(color: Color(hex: "#06b6d4").opacity(0.8), radius: 10, x: 0, y: 0)
-                                .padding(.top, 24)
+                                .padding(.top, 16)
                             
                             // Glowing line
                             Rectangle()
@@ -97,35 +169,21 @@ struct WelcomeView: View {
                                 .frame(width: 120, height: 4)
                                 .padding(.top, 8)
                             
-                            if !storeManager.isPremium {
-                                Text("ABBONAMENTO SCADUTO / VERSIONE BASE")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.red)
-                                    .padding(.top, 10)
-                            } else {
-                                Text("ABBONAMENTO PREMIUM ATTIVO")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.green)
-                                    .padding(.top, 10)
-                            }
-                            
                             // Badges
-                            VStack(spacing: 16) {
-                                AndroidBadgeView(text: "badge_remote".localized) { selectedBadgeInfo = "Permette lo streaming in alta qualità" }
-                                AndroidBadgeView(text: "badge_premium".localized) { selectedBadgeInfo = "Permette la gestione avanzata" }
-                                AndroidBadgeView(text: "badge_tv_graphics".localized) { selectedBadgeInfo = "Grafiche TV sovraimpresse e tabellone" }
-                                AndroidBadgeView(text: "badge_remote_control".localized) { selectedBadgeInfo = "Controlla il tabellone da un altro telefono" }
-                                AndroidBadgeView(text: "badge_local_record".localized) { selectedBadgeInfo = "Salva il video nella galleria in MP4" }
-                                AndroidBadgeView(text: "badge_instant_replay".localized) { selectedBadgeInfo = "Rivedi l'azione al rallentatore in diretta" }
+                            VStack(spacing: 14) {
+                                AndroidBadgeView(text: "badge_remote".localized) { selectedBadgeInfo = "popup_remote_msg".localized }
+                                AndroidBadgeView(text: "badge_premium".localized) { selectedBadgeInfo = "popup_premium_msg".localized }
+                                AndroidBadgeView(text: "badge_tv_graphics".localized) { selectedBadgeInfo = "popup_tv_graphics_msg".localized }
+                                AndroidBadgeView(text: "badge_remote_control".localized) { selectedBadgeInfo = "popup_remote_control_msg".localized }
+                                AndroidBadgeView(text: "badge_local_record".localized) { selectedBadgeInfo = "popup_local_record_msg".localized }
+                                AndroidBadgeView(text: "badge_instant_replay".localized) { selectedBadgeInfo = "popup_instant_replay_msg".localized }
                                 
                                 Button(action: { navigateToRemote = true }) {
                                     Text("btn_remote_mode".localized)
-                                        .font(.system(size: 12, weight: .bold))
+                                        .font(.system(size: 13, weight: .bold))
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 12)
+                                        .padding(.vertical, 14)
                                         .background(Color(hex: "#EF4444"))
                                         .cornerRadius(8)
                                         .overlay(
@@ -133,32 +191,65 @@ struct WelcomeView: View {
                                                 .stroke(Color.white, lineWidth: 2)
                                         )
                                 }
-                                .padding(.top, 16)
+                                .padding(.top, 12)
                                 
                                 NavigationLink(destination: RemoteControlView(), isActive: $navigateToRemote) {
                                     EmptyView()
                                 }
                             }
-                            .padding(.top, 40)
-                            .padding(.horizontal, 32)
+                            .padding(.top, 24)
+                            .padding(.horizontal, 24)
                         }
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 16)
                     }
                     
-                    // Version Text
-                    Text("v1.0.69 (69)")
+                    // Footer Legal Links: Privacy Policy • Termini di Utilizzo • Contatti
+                    HStack(spacing: 12) {
+                        Button(action: { activeLegalDoc = .privacy }) {
+                            Text("Privacy Policy")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#94a3b8"))
+                                .underline()
+                        }
+                        
+                        Text("•")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#475569"))
+                        
+                        Button(action: { activeLegalDoc = .terms }) {
+                            Text("Termini d'uso")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#94a3b8"))
+                                .underline()
+                        }
+                        
+                        Text("•")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#475569"))
+                        
+                        Button(action: { openSupportEmail() }) {
+                            Text("Contatti")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#94a3b8"))
+                                .underline()
+                        }
+                    }
+                    .padding(.bottom, 6)
+                    
+                    // Version Text matching Android
+                    Text("v1.0.74 (74)")
                         .font(.system(size: 10))
                         .foregroundColor(Color(hex: "#475569"))
                         .padding(.bottom, 8)
                     
-                    // Next Button
+                    // Next Button (AVANTI)
                     NavigationLink(destination: SettingsView(), isActive: $navigateToSetup) {
                         Button(action: { navigateToSetup = true }) {
                             Text("btn_next".localized)
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 64)
+                                .frame(height: 60)
                                 .background(Color(hex: "#06b6d4"))
                                 .cornerRadius(16)
                         }
@@ -168,6 +259,20 @@ struct WelcomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            .sheet(item: $activeLegalDoc) { doc in
+                LegalDocSheetView(doc: doc)
+            }
+            .alert(isPresented: $showDeleteAccountAlert) {
+                Alert(
+                    title: Text("Eliminazione Account"),
+                    message: Text("Sei sicuro di voler eliminare in via definitiva l'accesso del tuo account Google/YouTube da questa app? Questa azione revocherà i permessi e cancellerà tutti i dati locali associati."),
+                    primaryButton: .destructive(Text("Elimina")) {
+                        YouTubeManager.shared.disconnect()
+                        AppPreferences.shared.clearAll()
+                    },
+                    secondaryButton: .cancel(Text("Annulla"))
+                )
+            }
             .alert(item: Binding<AlertInfo?>(
                 get: { selectedBadgeInfo.map { AlertInfo(message: $0) } },
                 set: { if $0 == nil { selectedBadgeInfo = nil } }
@@ -187,6 +292,14 @@ struct WelcomeView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenRemoteControl"))) { _ in
             navigateToRemote = true
+        }
+    }
+    
+    private func openSupportEmail() {
+        let email = "volleystreampro@gmail.com"
+        let subject = "VolleyStream Pro - Support"
+        if let url = URL(string: "mailto:\(email)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+            UIApplication.shared.open(url)
         }
     }
 }
@@ -215,6 +328,56 @@ struct AndroidBadgeView: View {
                 )
         }
     }
+}
+
+// In-App Legal Document Viewer
+struct LegalDocSheetView: View {
+    let doc: WelcomeView.LegalDocType
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color(hex: "#0f172a").edgesIgnoringSafeArea(.all)
+                
+                LegalWebView(fileName: doc.htmlFileName)
+            }
+            .navigationBarTitle(Text(doc.title), displayMode: .inline)
+            .navigationBarItems(trailing: Button(action: {
+                presentationMode.wrappedValue.dismiss()
+            }) {
+                Text("Chiudi")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: "#06b6d4"))
+            })
+        }
+    }
+}
+
+struct LegalWebView: UIViewRepresentable {
+    let fileName: String
+    
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.isOpaque = false
+        webView.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 1.0)
+        
+        if let fileURL = Bundle.main.url(forResource: (fileName as NSString).deletingPathExtension, withExtension: (fileName as NSString).pathExtension) {
+            webView.loadFileURL(fileURL, allowingReadAccessTo: fileURL.deletingLastPathComponent())
+        } else if let localPath = Bundle.main.path(forResource: fileName, ofType: nil),
+                  let htmlString = try? String(contentsOfFile: localPath, encoding: .utf8) {
+            webView.loadHTMLString(htmlString, baseURL: nil)
+        } else {
+            // Web fallback
+            let fallbackURL = fileName.contains("privacy") ? "https://volleystreampro.com/privacy.html" : "https://volleystreampro.com/terms.html"
+            if let url = URL(string: fallbackURL) {
+                webView.load(URLRequest(url: url))
+            }
+        }
+        return webView
+    }
+    
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
 }
 
 extension Color {
