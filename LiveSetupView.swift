@@ -545,10 +545,12 @@ struct LiveSetupView: View {
     private func signInYouTube() {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootVC = windowScene.windows.first?.rootViewController else { return }
-        YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, name in
+        YouTubeManager.shared.signIn(presentingViewController: rootVC) { success, name, error in
             DispatchQueue.main.async {
                 self.isYouTubeLoggedIn = success
-                self.channelName = name ?? "Canale YouTube"
+                if success {
+                    self.channelName = name ?? "stellaazzurramalnate-"
+                }
             }
         }
     }

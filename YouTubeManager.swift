@@ -12,7 +12,7 @@ public class YouTubeManager: NSObject {
         super.init()
     }
     
-    public func signIn(presentingViewController: UIViewController, completion: @escaping (Bool, Error?) -> Void) {
+    public func signIn(presentingViewController: UIViewController, completion: @escaping (Bool, String?, Error?) -> Void) {
         let scopes = [
             "https://www.googleapis.com/auth/youtube",
             "https://www.googleapis.com/auth/youtube.force-ssl",
@@ -21,18 +21,19 @@ public class YouTubeManager: NSObject {
         
         GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes) { result, error in
             if let error = error {
-                completion(false, error)
+                completion(false, nil, error)
                 return
             }
             
             guard let result = result else {
-                completion(false, nil)
+                completion(false, nil, nil)
                 return
             }
             
             self.userEmail = result.user.profile?.email
             self.accessToken = result.user.accessToken.tokenString
-            completion(true, nil)
+            let displayName = result.user.profile?.name ?? result.user.profile?.email ?? "Canale YouTube"
+            completion(true, displayName, nil)
         }
     }
     
