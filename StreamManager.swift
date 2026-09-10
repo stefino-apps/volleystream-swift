@@ -58,10 +58,13 @@ public class StreamManager: NSObject {
                 if let error = error { print("Camera error: \(error.localizedDescription)") }
             }
         }
+        
+        rtmpStream.videoOrientation = .landscapeRight
     }
     
     // Metodo per collegare la preview video Metal
     public func attachCamera(to view: MTHKView) {
+        view.videoGravity = .resizeAspectFill
         view.attachStream(rtmpStream)
     }
     

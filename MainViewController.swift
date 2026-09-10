@@ -94,7 +94,6 @@ class MainViewController: UIViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             guard let self = self else { return }
             self.layoutAllViews()
-            self.showTutorialIfNeeded()
         }
     }
     
@@ -111,19 +110,6 @@ class MainViewController: UIViewController {
             self?.layoutAllViews()
         }) { [weak self] _ in
             self?.layoutAllViews()
-        }
-    }
-    
-    private func showTutorialIfNeeded() {
-        if !UserDefaults.standard.bool(forKey: "has_seen_tutorial") {
-            let tutorial = TutorialOverlayView()
-            tutorial.startTutorial(in: self.view, steps: [
-                (view: startStreamButton as UIView?, text: "Premi qui per andare LIVE e registrare!"),
-                (view: modeButton as UIView?, text: "Cambia il layout (Normale, Griglia, Clean)"),
-                (view: btnScoreHome as UIView?, text: "Tocca per assegnare i punti! (E cambia battuta in automatico)"),
-                (view: shareRemoteButton as UIView?, text: "Condividi il Telecomando con un assistente!"),
-                (view: scoreboardView as UIView?, text: "Questo è il tabellone che vedranno da casa!")
-            ])
         }
     }
     
@@ -205,7 +191,7 @@ class MainViewController: UIViewController {
     }
     
     private func setupScoreboardOverlay() {
-        scoreboardView = ScoreboardOverlayView(frame: CGRect(x: 20, y: 15, width: 380, height: 74))
+        scoreboardView = ScoreboardOverlayView(frame: CGRect(x: 20, y: 15, width: 280, height: 62))
         view.addSubview(scoreboardView)
         StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
     }
@@ -434,8 +420,8 @@ class MainViewController: UIViewController {
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
             scoreboardView.transform = .identity
-            let scoreW: CGFloat = min(380, w * 0.42)
-            let scoreH: CGFloat = 74
+            let scoreW: CGFloat = min(280, w * 0.38)
+            let scoreH: CGFloat = 62
             scoreboardView.frame = CGRect(x: safeLeft, y: safeTop, width: scoreW, height: scoreH)
         }
         

@@ -9,10 +9,19 @@ class StreamVideoEffect: VideoEffect {
     private let filter = CIFilter(name: "CISourceOverCompositing")
     private var overlayImage: CIImage?
     private var lastStateUpdate: Int64 = 0
+    private let renderQueue = DispatchQueue(label: "com.volleypro.overlayRenderer")
+    private var isRenderingOverlay = false
     
     var scoreboardView: ScoreboardOverlayView?
     var marqueeView: MarqueeOverlayView? = MarqueeOverlayView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
-    var currentState: RemoteMatchState?
+    var currentState: RemoteMatchState? {
+        didSet {
+            if let state = currentState {
+                triggerOverlayUpdate(state: state)
+            }
+        }
+    }
+    
     var stingerFrameCount = 0
     var isTransitioningToReplay = false
     var lastReplayState = false
@@ -30,22 +39,10 @@ class StreamVideoEffect: VideoEffect {
         if currentlyReplaying {
             if let replayFrame = ReplayManager.shared.getPlaybackFrame() {
                 outputImage = replayFrame
-            } else {
-                ReplayManager.shared.recordFrame(image)
             }
-        } else {
-            ReplayManager.shared.recordFrame(image)
         }
         
-        if let state = currentState {
-            if state.lastUpdate != lastStateUpdate {
-                lastStateUpdate = state.lastUpdate
-                updateOverlayImage(state: state)
-            }
-        } else if overlayImage == nil {
-            updateOverlayImage(state: RemoteMatchState())
-        }
-        
+        // Non blocchiamo il rendering se non c'è overlay
         guard let overlay = overlayImage, let filter = filter else {
             return outputImage
         }
@@ -65,7 +62,6 @@ class StreamVideoEffect: VideoEffect {
         if isTransitioningToReplay {
             stingerFrameCount -= 1
             if stingerFrameCount <= 0 { isTransitioningToReplay = false }
-            // Disegna il flash bianco
             let flash = CIImage(color: CIColor.white).cropped(to: finalImage.extent)
             let mixFilter = CIFilter(name: "CISourceOverCompositing")!
             mixFilter.setValue(flash, forKey: kCIInputImageKey)
@@ -75,20 +71,22 @@ class StreamVideoEffect: VideoEffect {
         return finalImage
     }
     
-    private func updateOverlayImage(state: RemoteMatchState) {
-        DispatchQueue.main.sync {
-            // 1. Aggiorna lo stato delle view
+    func triggerOverlayUpdate(state: RemoteMatchState) {
+        guard !isRenderingOverlay else { return }
+        isRenderingOverlay = true
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
             self.scoreboardView?.updateFromState(state)
             self.marqueeView?.updateMessage(state.scrollMessage, show: state.showScrollText)
             
-            // 2. Crea un canvas vuoto 1920x1080
             let format = UIGraphicsImageRendererFormat()
             format.scale = 1.0
             format.opaque = false
             let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: 1080), format: format)
             
             let uiImage = renderer.image { context in
-                // Disegna il tabellone
                 if let sv = self.scoreboardView {
                     context.cgContext.saveGState()
                     context.cgContext.translateBy(x: 50, y: 50)
@@ -96,18 +94,17 @@ class StreamVideoEffect: VideoEffect {
                     context.cgContext.restoreGState()
                 }
                 
-                // Disegna il marquee
                 if let mv = self.marqueeView {
                     mv.layer.render(in: context.cgContext)
                 }
             }
             
             if let cgImage = uiImage.cgImage {
-                // Invertiamo l'asse Y per CIImage
                 let ciImage = CIImage(cgImage: cgImage)
                 let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: -1080)
                 self.overlayImage = ciImage.transformed(by: transform)
             }
+            self.isRenderingOverlay = false
         }
     }
 }
