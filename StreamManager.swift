@@ -58,8 +58,6 @@ public class StreamManager: NSObject {
                 if let error = error { print("Camera error: \(error.localizedDescription)") }
             }
         }
-        
-        rtmpStream.videoOrientation = .landscapeRight
     }
     
     // Metodo per collegare la preview video Metal
@@ -91,4 +89,3 @@ public class StreamManager: NSObject {
         rtmpConnection.close()
     }
 }
-
