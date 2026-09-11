@@ -70,8 +70,8 @@ public class StreamManager: NSObject {
         guard let device = currentCamera else { return }
         do {
             try device.lockForConfiguration()
-            let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 5.0)
-            let newZoom = min(device.videoZoomFactor + 0.5, maxZoom)
+            let maxZoom: CGFloat = min(device.activeFormat.videoMaxZoomFactor, CGFloat(5.0))
+            let newZoom: CGFloat = min(device.videoZoomFactor + CGFloat(0.5), maxZoom)
             device.videoZoomFactor = newZoom
             device.unlockForConfiguration()
         } catch { }
@@ -81,7 +81,7 @@ public class StreamManager: NSObject {
         guard let device = currentCamera else { return }
         do {
             try device.lockForConfiguration()
-            let newZoom = max(device.videoZoomFactor - 0.5, 1.0)
+            let newZoom: CGFloat = max(device.videoZoomFactor - CGFloat(0.5), CGFloat(1.0))
             device.videoZoomFactor = newZoom
             device.unlockForConfiguration()
         } catch { }
@@ -91,8 +91,8 @@ public class StreamManager: NSObject {
         guard let device = currentCamera else { return }
         do {
             try device.lockForConfiguration()
-            let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 5.0)
-            let clamped = max(1.0, min(factor, maxZoom))
+            let maxZoom: CGFloat = min(device.activeFormat.videoMaxZoomFactor, CGFloat(5.0))
+            let clamped: CGFloat = max(CGFloat(1.0), min(factor, maxZoom))
             device.videoZoomFactor = clamped
             device.unlockForConfiguration()
         } catch { }
