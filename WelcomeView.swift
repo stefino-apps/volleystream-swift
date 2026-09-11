@@ -266,12 +266,21 @@ struct WelcomeView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onOpenURL { url in
-            if url.scheme == "volleypro" && url.host == "remote" {
-                if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                   let id = components.queryItems?.first(where: { $0.name == "code" || $0.name == "id" })?.value {
-                    UserDefaults.standard.set(id, forKey: "incoming_remote_id")
-                    navigateToRemote = true
+            print("WelcomeView onOpenURL: \(url.absoluteString)")
+            var extractedCode: String?
+            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                extractedCode = components.queryItems?.first(where: { $0.name == "code" || $0.name == "id" })?.value
+            }
+            if extractedCode == nil || extractedCode?.isEmpty == true {
+                let last = url.lastPathComponent
+                if !last.isEmpty && last != "remote" && last != "/" {
+                    extractedCode = last
                 }
+            }
+            if let code = extractedCode, !code.isEmpty {
+                let clean = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                UserDefaults.standard.set(clean, forKey: "incoming_remote_id")
+                navigateToRemote = true
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenRemoteControl"))) { _ in

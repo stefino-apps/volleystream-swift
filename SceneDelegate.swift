@@ -9,6 +9,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if let url = connectionOptions.urlContexts.first?.url {
             handleURL(url)
         }
+        if let userActivity = connectionOptions.userActivities.first,
+           userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL {
+            handleURL(url)
+        }
         
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
@@ -24,13 +29,32 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
     }
     
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL {
+            handleURL(url)
+        }
+    }
+    
     private func handleURL(_ url: URL) {
-        guard url.scheme == "volleypro", url.host == "remote" else { return }
+        print("SceneDelegate handling URL: \(url.absoluteString)")
+        var extractedCode: String?
         
-        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-           let code = components.queryItems?.first(where: { $0.name == "code" })?.value {
-            UserDefaults.standard.set(code, forKey: "incoming_remote_id")
-            // Notifica l'app del cambiamento per navigare al telecomando
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            extractedCode = components.queryItems?.first(where: { $0.name == "code" || $0.name == "id" })?.value
+        }
+        
+        if extractedCode == nil || extractedCode?.isEmpty == true {
+            let lastSegment = url.lastPathComponent
+            if !lastSegment.isEmpty && lastSegment != "remote" && lastSegment != "/" {
+                extractedCode = lastSegment
+            }
+        }
+        
+        if let code = extractedCode, !code.isEmpty {
+            let cleanCode = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            print("SceneDelegate extracted remote code: \(cleanCode)")
+            UserDefaults.standard.set(cleanCode, forKey: "incoming_remote_id")
             NotificationCenter.default.post(name: NSNotification.Name("OpenRemoteControl"), object: nil)
         }
     }

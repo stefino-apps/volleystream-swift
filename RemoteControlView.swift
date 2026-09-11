@@ -297,6 +297,8 @@ struct RemoteControlView: View {
             soccerControlsView
         case "tennis", "padel":
             tennisControlsView
+        case "darts":
+            dartsControlsView
         default:
             volleyControlsView
         }
@@ -309,12 +311,11 @@ struct RemoteControlView: View {
             HStack(spacing: 10) {
                 Button(action: {
                     triggerHaptic()
-                    matchState.servingTeam = "A"
-                    updateState()
+                    FirebaseManager.shared.sendCommand("POINT_A")
                 }) {
                     HStack {
                         Image(systemName: "volleyball.fill")
-                        Text(matchState.servingTeam == "A" ? "BATTUTA CASA" : "Cambio Palla")
+                        Text(matchState.servingTeam == "A" ? "BATTUTA CASA" : "Cambio Palla A")
                     }
                     .font(.system(size: 11, weight: .bold))
                     .frame(maxWidth: .infinity)
@@ -326,12 +327,11 @@ struct RemoteControlView: View {
                 
                 Button(action: {
                     triggerHaptic()
-                    matchState.servingTeam = "B"
-                    updateState()
+                    FirebaseManager.shared.sendCommand("POINT_B")
                 }) {
                     HStack {
                         Image(systemName: "volleyball.fill")
-                        Text(matchState.servingTeam == "B" ? "BATTUTA OSPITE" : "Cambio Palla")
+                        Text(matchState.servingTeam == "B" ? "BATTUTA OSPITE" : "Cambio Palla B")
                     }
                     .font(.system(size: 11, weight: .bold))
                     .frame(maxWidth: .infinity)
@@ -347,9 +347,7 @@ struct RemoteControlView: View {
                 // CASA Giant Pad (Pink)
                 Button(action: {
                     triggerHaptic()
-                    matchState.scoreA += 1
-                    matchState.servingTeam = "A"
-                    updateState()
+                    FirebaseManager.shared.sendCommand("POINT_A")
                 }) {
                     VStack(spacing: 4) {
                         Text(matchState.teamA.isEmpty ? "CASA" : matchState.teamA.uppercased())
@@ -375,9 +373,7 @@ struct RemoteControlView: View {
                 // OSPITE Giant Pad (Cyan)
                 Button(action: {
                     triggerHaptic()
-                    matchState.scoreB += 1
-                    matchState.servingTeam = "B"
-                    updateState()
+                    FirebaseManager.shared.sendCommand("POINT_B")
                 }) {
                     VStack(spacing: 4) {
                         Text(matchState.teamB.isEmpty ? "OSPITE" : matchState.teamB.uppercased())
@@ -408,8 +404,7 @@ struct RemoteControlView: View {
                 HStack(spacing: 8) {
                     Button(action: {
                         triggerHaptic()
-                        matchState.timeoutA = min(2, matchState.timeoutA + 1)
-                        updateState()
+                        FirebaseManager.shared.sendCommand("TIMEOUT_A")
                     }) {
                         HStack(spacing: 4) {
                             Text("T.O.")
@@ -428,7 +423,7 @@ struct RemoteControlView: View {
                     
                     Button(action: {
                         triggerHaptic()
-                        if matchState.scoreA > 0 { matchState.scoreA -= 1; updateState() }
+                        FirebaseManager.shared.sendCommand("MINUS_A")
                     }) {
                         Text("−1")
                             .font(.system(size: 16, weight: .black))
@@ -445,7 +440,7 @@ struct RemoteControlView: View {
                 HStack(spacing: 8) {
                     Button(action: {
                         triggerHaptic()
-                        if matchState.scoreB > 0 { matchState.scoreB -= 1; updateState() }
+                        FirebaseManager.shared.sendCommand("MINUS_B")
                     }) {
                         Text("−1")
                             .font(.system(size: 16, weight: .black))
@@ -458,8 +453,7 @@ struct RemoteControlView: View {
                     
                     Button(action: {
                         triggerHaptic()
-                        matchState.timeoutB = min(2, matchState.timeoutB + 1)
-                        updateState()
+                        FirebaseManager.shared.sendCommand("TIMEOUT_B")
                     }) {
                         HStack(spacing: 4) {
                             Text("T.O.")
@@ -490,20 +484,20 @@ struct RemoteControlView: View {
                     Text(matchState.teamA.isEmpty ? "CASA" : matchState.teamA)
                         .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
                     HStack(spacing: 6) {
-                        Button("+1") { triggerHaptic(); matchState.scoreA += 1; updateState() }
+                        Button("+1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_A") }
                             .font(.system(size: 14, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10).background(Color(red: 255/255, green: 42/255, blue: 133/255)).cornerRadius(8)
-                        Button("+2") { triggerHaptic(); matchState.scoreA += 2; updateState() }
+                        Button("+2") { triggerHaptic(); FirebaseManager.shared.sendCommand("PLUS_2_A") }
                             .font(.system(size: 14, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10).background(Color(red: 255/255, green: 42/255, blue: 133/255).opacity(0.85)).cornerRadius(8)
-                        Button("+3") { triggerHaptic(); matchState.scoreA += 3; updateState() }
+                        Button("+3") { triggerHaptic(); FirebaseManager.shared.sendCommand("PLUS_3_A") }
                             .font(.system(size: 14, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10).background(Color(red: 255/255, green: 42/255, blue: 133/255).opacity(0.7)).cornerRadius(8)
                     }
                     HStack {
-                        Button("-1") { triggerHaptic(); if matchState.scoreA > 0 { matchState.scoreA -= 1; updateState() } }
+                        Button("-1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_A") }
                             .font(.caption).foregroundColor(.gray).padding(4)
                         Spacer()
                         Text("Falli: \(matchState.foulsA)")
                             .font(.system(size: 11, weight: .bold)).foregroundColor(.yellow)
-                        Button("+F") { triggerHaptic(); matchState.foulsA += 1; updateState() }
+                        Button("+F") { triggerHaptic(); FirebaseManager.shared.sendCommand("FOUL_A") }
                             .font(.caption).foregroundColor(.white).padding(4).background(Color.white.opacity(0.1)).cornerRadius(4)
                     }
                 }
@@ -516,20 +510,20 @@ struct RemoteControlView: View {
                     Text(matchState.teamB.isEmpty ? "OSPITE" : matchState.teamB)
                         .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
                     HStack(spacing: 6) {
-                        Button("+1") { triggerHaptic(); matchState.scoreB += 1; updateState() }
+                        Button("+1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_B") }
                             .font(.system(size: 14, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10).background(Color(red: 0/255, green: 229/255, blue: 255/255)).cornerRadius(8)
-                        Button("+2") { triggerHaptic(); matchState.scoreB += 2; updateState() }
+                        Button("+2") { triggerHaptic(); FirebaseManager.shared.sendCommand("PLUS_2_B") }
                             .font(.system(size: 14, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10).background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.85)).cornerRadius(8)
-                        Button("+3") { triggerHaptic(); matchState.scoreB += 3; updateState() }
+                        Button("+3") { triggerHaptic(); FirebaseManager.shared.sendCommand("PLUS_3_B") }
                             .font(.system(size: 14, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 10).background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.7)).cornerRadius(8)
                     }
                     HStack {
-                        Button("-1") { triggerHaptic(); if matchState.scoreB > 0 { matchState.scoreB -= 1; updateState() } }
+                        Button("-1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_B") }
                             .font(.caption).foregroundColor(.gray).padding(4)
                         Spacer()
                         Text("Falli: \(matchState.foulsB)")
                             .font(.system(size: 11, weight: .bold)).foregroundColor(.yellow)
-                        Button("+F") { triggerHaptic(); matchState.foulsB += 1; updateState() }
+                        Button("+F") { triggerHaptic(); FirebaseManager.shared.sendCommand("FOUL_B") }
                             .font(.caption).foregroundColor(.white).padding(4).background(Color.white.opacity(0.1)).cornerRadius(4)
                     }
                 }
@@ -546,9 +540,9 @@ struct RemoteControlView: View {
             VStack(spacing: 8) {
                 Text(matchState.teamA.isEmpty ? "CASA" : matchState.teamA).font(.headline).bold().foregroundColor(.white)
                 HStack {
-                    Button("−1") { triggerHaptic(); if matchState.scoreA > 0 { matchState.scoreA -= 1; updateState() } }
+                    Button("−1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_A") }
                         .font(.title3).foregroundColor(.gray).padding(10).background(Color.white.opacity(0.08)).cornerRadius(8)
-                    Button("GOL +1") { triggerHaptic(); matchState.scoreA += 1; updateState() }
+                    Button("GOL +1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_A") }
                         .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(12).background(Color(red: 255/255, green: 42/255, blue: 133/255)).cornerRadius(10)
                 }
             }
@@ -557,9 +551,9 @@ struct RemoteControlView: View {
             VStack(spacing: 8) {
                 Text(matchState.teamB.isEmpty ? "OSPITE" : matchState.teamB).font(.headline).bold().foregroundColor(.white)
                 HStack {
-                    Button("−1") { triggerHaptic(); if matchState.scoreB > 0 { matchState.scoreB -= 1; updateState() } }
+                    Button("−1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_B") }
                         .font(.title3).foregroundColor(.gray).padding(10).background(Color.white.opacity(0.08)).cornerRadius(8)
-                    Button("GOL +1") { triggerHaptic(); matchState.scoreB += 1; updateState() }
+                    Button("GOL +1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_B") }
                         .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(12).background(Color(red: 0/255, green: 229/255, blue: 255/255)).cornerRadius(10)
                 }
             }
@@ -572,25 +566,86 @@ struct RemoteControlView: View {
         HStack(spacing: 12) {
             VStack(spacing: 6) {
                 Text(matchState.teamA.isEmpty ? "CASA" : matchState.teamA).font(.subheadline).bold().foregroundColor(.white)
-                Button("PUNTO +") { triggerHaptic(); matchState.tennisPointsA = min(4, matchState.tennisPointsA + 1); updateState() }
+                Button("PUNTO +") { triggerHaptic(); FirebaseManager.shared.sendCommand("TENNIS_POINT_A") }
                     .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(10).background(Color(red: 255/255, green: 42/255, blue: 133/255)).cornerRadius(8)
                 HStack {
-                    Button("+G") { triggerHaptic(); matchState.tennisGamesA += 1; updateState() }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
-                    Button("+S") { triggerHaptic(); matchState.setsA += 1; updateState() }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
+                    Button("-1") { triggerHaptic(); FirebaseManager.shared.sendCommand("TENNIS_MINUS_A") }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
+                    Button("+G") { triggerHaptic(); FirebaseManager.shared.sendCommand("TENNIS_GAME_A") }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
+                    Button("+S") { triggerHaptic(); FirebaseManager.shared.sendCommand("NEXT_SET") }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
                 }
             }
             .padding(10).background(Color.white.opacity(0.06)).cornerRadius(12)
             
             VStack(spacing: 6) {
                 Text(matchState.teamB.isEmpty ? "OSPITE" : matchState.teamB).font(.subheadline).bold().foregroundColor(.white)
-                Button("PUNTO +") { triggerHaptic(); matchState.tennisPointsB = min(4, matchState.tennisPointsB + 1); updateState() }
+                Button("PUNTO +") { triggerHaptic(); FirebaseManager.shared.sendCommand("TENNIS_POINT_B") }
                     .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(10).background(Color(red: 0/255, green: 229/255, blue: 255/255)).cornerRadius(8)
                 HStack {
-                    Button("+G") { triggerHaptic(); matchState.tennisGamesB += 1; updateState() }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
-                    Button("+S") { triggerHaptic(); matchState.setsB += 1; updateState() }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
+                    Button("-1") { triggerHaptic(); FirebaseManager.shared.sendCommand("TENNIS_MINUS_B") }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
+                    Button("+G") { triggerHaptic(); FirebaseManager.shared.sendCommand("TENNIS_GAME_B") }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
+                    Button("+S") { triggerHaptic(); FirebaseManager.shared.sendCommand("NEXT_SET") }.font(.caption).padding(6).background(Color.white.opacity(0.1)).cornerRadius(6)
                 }
             }
             .padding(10).background(Color.white.opacity(0.06)).cornerRadius(12)
+        }
+    }
+    
+    // MARK: - Darts (Freccette) Controls
+    var dartsControlsView: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                // CASA Darts
+                VStack(spacing: 6) {
+                    Text(matchState.teamA.isEmpty ? "GIOCATORE 1" : matchState.teamA)
+                        .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+                    HStack(spacing: 4) {
+                        Button("-20") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_20_A") }
+                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 255/255, green: 42/255, blue: 133/255)).cornerRadius(6)
+                        Button("-60") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_60_A") }
+                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 255/255, green: 42/255, blue: 133/255).opacity(0.85)).cornerRadius(6)
+                        Button("-100") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_100_A") }
+                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 255/255, green: 42/255, blue: 133/255).opacity(0.7)).cornerRadius(6)
+                    }
+                    HStack {
+                        Button("BUST") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_BUST") }
+                            .font(.caption).foregroundColor(.red).padding(4)
+                        Spacer()
+                        Text("Leg: \(matchState.dartsLegsA)")
+                            .font(.system(size: 11, weight: .bold)).foregroundColor(.yellow)
+                        Button("+LEG") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_LEG_A") }
+                            .font(.caption).foregroundColor(.white).padding(4).background(Color.white.opacity(0.1)).cornerRadius(4)
+                    }
+                }
+                .padding(8)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(10)
+                
+                // OSPITE Darts
+                VStack(spacing: 6) {
+                    Text(matchState.teamB.isEmpty ? "GIOCATORE 2" : matchState.teamB)
+                        .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+                    HStack(spacing: 4) {
+                        Button("-20") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_20_B") }
+                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 0/255, green: 229/255, blue: 255/255)).cornerRadius(6)
+                        Button("-60") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_60_B") }
+                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.85)).cornerRadius(6)
+                        Button("-100") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_100_B") }
+                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.7)).cornerRadius(6)
+                    }
+                    HStack {
+                        Button("BUST") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_BUST") }
+                            .font(.caption).foregroundColor(.red).padding(4)
+                        Spacer()
+                        Text("Leg: \(matchState.dartsLegsB)")
+                            .font(.system(size: 11, weight: .bold)).foregroundColor(.yellow)
+                        Button("+LEG") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_LEG_B") }
+                            .font(.caption).foregroundColor(.white).padding(4).background(Color.white.opacity(0.1)).cornerRadius(4)
+                    }
+                }
+                .padding(8)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(10)
+            }
         }
     }
     
@@ -602,8 +657,7 @@ struct RemoteControlView: View {
                 // News Ticker / Text
                 Button(action: {
                     triggerHaptic()
-                    matchState.showScrollText.toggle()
-                    updateState()
+                    FirebaseManager.shared.sendCommand("TOGGLE_TEXT")
                 }) {
                     HStack(spacing: 3) {
                         Image(systemName: "character.textbox")
@@ -657,12 +711,11 @@ struct RemoteControlView: View {
                 // Audio Toggle
                 Button(action: {
                     triggerHaptic()
-                    isAudioMuted.toggle()
-                    FirebaseManager.shared.sendCommand(isAudioMuted ? "MUTE" : "UNMUTE")
+                    FirebaseManager.shared.sendCommand("TOGGLE_MUTE")
                 }) {
-                    Image(systemName: isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    Image(systemName: matchState.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
                         .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(isAudioMuted ? .red : Color(red: 56/255, green: 189/255, blue: 248/255))
+                        .foregroundColor(matchState.isMuted ? .red : Color(red: 56/255, green: 189/255, blue: 248/255))
                         .frame(width: 42)
                         .padding(.vertical, 8)
                         .background(Color.white.opacity(0.08))
@@ -673,18 +726,10 @@ struct RemoteControlView: View {
             // Row 2: Sponsor Banners (S1, S2, S3, S4)
             HStack(spacing: 8) {
                 ForEach(1...4, id: \.self) { index in
-                    let isSelected = matchState.showSponsor && (selectedSponsorIndex == index)
+                    let isSelected = matchState.showSponsor && (matchState.currentSponsorIdx == index - 1)
                     Button(action: {
                         triggerHaptic()
-                        if selectedSponsorIndex == index && matchState.showSponsor {
-                            matchState.showSponsor = false
-                            selectedSponsorIndex = nil
-                        } else {
-                            matchState.showSponsor = true
-                            selectedSponsorIndex = index
-                            FirebaseManager.shared.sendCommand("SPONSOR_\(index)")
-                        }
-                        updateState()
+                        FirebaseManager.shared.sendCommand("SPONSOR_\(index)")
                     }) {
                         Text("S\(index)")
                             .font(.system(size: 12, weight: .heavy))
@@ -708,22 +753,26 @@ struct RemoteControlView: View {
     
     // MARK: - Helper Methods
     private func connectToSession() {
-        guard !sessionCode.isEmpty else { return }
-        FirebaseManager.shared.joinSession(id: sessionCode) { success in
-            if success {
-                FirebaseManager.shared.onStateUpdated = { state in
-                    DispatchQueue.main.async {
-                        self.matchState = state
-                    }
-                }
-                DispatchQueue.main.async { self.isConnected = true }
+        let clean = sessionCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !clean.isEmpty else { return }
+        sessionCode = clean
+        print("RemoteControlView: Connecting to session \(clean)...")
+        
+        FirebaseManager.shared.onStateUpdated = { state in
+            DispatchQueue.main.async {
+                print("RemoteControlView: State received \(state.scoreA)-\(state.scoreB)")
+                self.matchState = state
+                self.isConnected = true
             }
         }
-    }
-    
-    private func updateState() {
-        matchState.lastUpdate = Int64(Date().timeIntervalSince1970 * 1000)
-        FirebaseManager.shared.updateMatchState(matchState)
+        
+        FirebaseManager.shared.joinSession(id: clean) { success in
+            DispatchQueue.main.async {
+                if success {
+                    self.isConnected = true
+                }
+            }
+        }
     }
     
     private func triggerHaptic() {

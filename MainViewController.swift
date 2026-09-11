@@ -1579,6 +1579,143 @@ class MainViewController: UIViewController {
         }
     }
     
+    // MARK: - Remote Control Command Handler
+    
+    func handleRemoteCommand(_ command: String) {
+        print("MainViewController received remote command: \(command)")
+        let isDarts = (self.localState.sportType.lowercased() == "darts")
+        
+        switch command {
+        case "POINT_A", "TENNIS_POINT_A":
+            if isDarts {
+                checkDartsLeg(isHome: true, subtract: 60)
+            } else {
+                incScoreA()
+            }
+        case "POINT_B", "TENNIS_POINT_B":
+            if isDarts {
+                checkDartsLeg(isHome: false, subtract: 60)
+            } else {
+                incScoreB()
+            }
+        case "MINUS_A", "TENNIS_MINUS_A":
+            if isDarts {
+                checkDartsLeg(isHome: true, subtract: -60)
+            } else {
+                decScoreA()
+            }
+        case "MINUS_B", "TENNIS_MINUS_B":
+            if isDarts {
+                checkDartsLeg(isHome: false, subtract: -60)
+            } else {
+                decScoreB()
+            }
+        case "PLUS_2_A":
+            if isDarts { checkDartsLeg(isHome: true, subtract: 20) }
+            else { incScoreA2() }
+        case "PLUS_3_A":
+            if isDarts { checkDartsLeg(isHome: true, subtract: 100) }
+            else { incScoreA3() }
+        case "PLUS_2_B":
+            if isDarts { checkDartsLeg(isHome: false, subtract: 20) }
+            else { incScoreB2() }
+        case "PLUS_3_B":
+            if isDarts { checkDartsLeg(isHome: false, subtract: 100) }
+            else { incScoreB3() }
+        case "DARTS_SUB_20_A":
+            checkDartsLeg(isHome: true, subtract: 20)
+        case "DARTS_SUB_60_A":
+            checkDartsLeg(isHome: true, subtract: 60)
+        case "DARTS_SUB_100_A":
+            checkDartsLeg(isHome: true, subtract: 100)
+        case "DARTS_SUB_20_B":
+            checkDartsLeg(isHome: false, subtract: 20)
+        case "DARTS_SUB_60_B":
+            checkDartsLeg(isHome: false, subtract: 60)
+        case "DARTS_SUB_100_B":
+            checkDartsLeg(isHome: false, subtract: 100)
+        case "DARTS_LEG_A":
+            localState.dartsLegsA += 1
+            resetDartsScores()
+            refreshMatchState()
+        case "DARTS_LEG_B":
+            localState.dartsLegsB += 1
+            resetDartsScores()
+            refreshMatchState()
+        case "DARTS_BUST":
+            showToast(message: "🎯 BUST!")
+            localState.dartsActivePlayer = (localState.dartsActivePlayer == "A") ? "B" : "A"
+            refreshMatchState()
+        case "DARTS_RESET_LEG":
+            resetDartsScores()
+            refreshMatchState()
+        case "TIMEOUT_A":
+            toA()
+        case "TIMEOUT_B":
+            toB()
+        case "FOUL_A":
+            localState.foulsA += 1
+            refreshMatchState()
+        case "FOUL_B":
+            localState.foulsB += 1
+            refreshMatchState()
+        case "TENNIS_GAME_A":
+            localState.tennisGamesA += 1
+            localState.tennisPointsA = 0
+            localState.tennisPointsB = 0
+            refreshMatchState()
+        case "TENNIS_GAME_B":
+            localState.tennisGamesB += 1
+            localState.tennisPointsA = 0
+            localState.tennisPointsB = 0
+            refreshMatchState()
+        case "NEXT_SET", "END_PERIOD":
+            endQuarter()
+        case "SOCCER_RED_A":
+            localState.redCardsA = (localState.redCardsA > 0) ? 0 : 1
+            refreshMatchState()
+        case "SOCCER_RED_B":
+            localState.redCardsB = (localState.redCardsB > 0) ? 0 : 1
+            refreshMatchState()
+        case "SOCCER_TIMER_TOGGLE":
+            localState.timerRunning.toggle()
+            refreshMatchState()
+        case "TOGGLE_SPONSOR":
+            toggleSponsor()
+        case "SPONSOR_1":
+            localState.currentSponsorIdx = 0
+            localState.showSponsor = true
+            refreshMatchState()
+        case "SPONSOR_2":
+            localState.currentSponsorIdx = 1
+            localState.showSponsor = true
+            refreshMatchState()
+        case "SPONSOR_3":
+            localState.currentSponsorIdx = 2
+            localState.showSponsor = true
+            refreshMatchState()
+        case "SPONSOR_4":
+            localState.currentSponsorIdx = 3
+            localState.showSponsor = true
+            refreshMatchState()
+        case "TOGGLE_TEXT":
+            localState.showScrollText.toggle()
+            refreshMatchState()
+        case "TOGGLE_MUTE", "MUTE", "UNMUTE":
+            toggleMute()
+        case "TOGGLE_STREAMING", "START_STREAM", "STOP_STREAM":
+            startLive()
+        case "HIGHLIGHT":
+            triggerHighlight()
+        case "INSTANT_REPLAY":
+            triggerReplay()
+        case "UNDO":
+            undoLastAction()
+        default:
+            print("Unknown remote command: \(command)")
+        }
+    }
+    
     // MARK: - Toast Message Helper
     
     func showToast(message: String) {
