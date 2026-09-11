@@ -507,9 +507,9 @@ class MainViewController: UIViewController {
         
         updateGridPath()
         
-        // Mode 0: Normal ("L"), Mode 1: Clean ("C"), Mode 2: Grid ("G")
-        let isClean = (currentMode == 1)
-        let isGrid = (currentMode == 2)
+        // Mode 0: Normal ("L"), Mode 1: Grid ("G"), Mode 2: Clean ("C")
+        let isGrid = (currentMode == 1)
+        let isClean = (currentMode == 2)
         
         let allControls: [UIView] = [
             closeButton, modeButton, shareLiveButton, shareRemoteButton, replayButton, highlightButton,
@@ -733,6 +733,42 @@ class MainViewController: UIViewController {
             btnMinusAway.isHidden = false
             btnTimeoutAway.isHidden = false
             
+            // Bring all 4-quadrant views to front
+            view.bringSubviewToFront(gridContainerTR)
+            view.bringSubviewToFront(closeButton)
+            view.bringSubviewToFront(modeButton)
+            view.bringSubviewToFront(shareLiveButton)
+            view.bringSubviewToFront(shareRemoteButton)
+            view.bringSubviewToFront(replayButton)
+            view.bringSubviewToFront(highlightButton)
+            view.bringSubviewToFront(muteButton)
+            view.bringSubviewToFront(sponsorButton)
+            view.bringSubviewToFront(startStreamButton)
+            view.bringSubviewToFront(btnSetMinusGrid)
+            view.bringSubviewToFront(lblSetGrid)
+            view.bringSubviewToFront(btnSetPlusGrid)
+            view.bringSubviewToFront(btnEndQuarter)
+            
+            view.bringSubviewToFront(gridContainerBL)
+            view.bringSubviewToFront(lblTeamAGrid)
+            view.bringSubviewToFront(lblScoreAGrid)
+            view.bringSubviewToFront(btnScoreHome)
+            view.bringSubviewToFront(btnMinusHome)
+            view.bringSubviewToFront(btnTimeoutHome)
+            view.bringSubviewToFront(btnScoreHome2)
+            view.bringSubviewToFront(btnScoreHome3)
+            
+            view.bringSubviewToFront(gridContainerBR)
+            view.bringSubviewToFront(lblTeamBGrid)
+            view.bringSubviewToFront(lblScoreBGrid)
+            view.bringSubviewToFront(btnScoreAway)
+            view.bringSubviewToFront(btnMinusAway)
+            view.bringSubviewToFront(btnTimeoutAway)
+            view.bringSubviewToFront(btnScoreAway2)
+            view.bringSubviewToFront(btnScoreAway3)
+            
+            view.bringSubviewToFront(scoreboardView)
+            
         } else {
             // ==========================================
             // === MODE 0: NORMAL FULLSCREEN REGIA ===
@@ -867,7 +903,7 @@ class MainViewController: UIViewController {
     // MARK: - Actions & Mode Switching
     
     @objc func handleScreenTap() {
-        if currentMode == 1 {
+        if currentMode == 2 {
             currentMode = 0
             modeButton.setTitle("L", for: .normal)
             UIView.animate(withDuration: 0.25) {
@@ -880,8 +916,8 @@ class MainViewController: UIViewController {
         currentMode = (currentMode + 1) % 3
         switch currentMode {
         case 0: modeButton.setTitle("L", for: .normal)
-        case 1: modeButton.setTitle("C", for: .normal)
-        case 2: modeButton.setTitle("G", for: .normal)
+        case 1: modeButton.setTitle("G", for: .normal)
+        case 2: modeButton.setTitle("C", for: .normal)
         default: break
         }
         

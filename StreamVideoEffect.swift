@@ -107,8 +107,10 @@ class StreamVideoEffect: VideoEffect {
             
             if let cgImage = uiImage.cgImage {
                 let ciImage = CIImage(cgImage: cgImage)
-                let transform = CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: -1080)
-                self.overlayImage = ciImage.transformed(by: transform)
+                // CoreImage origin (0,0) is bottom-left, while CGImage is top-left.
+                // Flip vertically by mapping y -> 1080 - y so that overlay is right-side up at top-left.
+                let flipTransform = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 1080)
+                self.overlayImage = ciImage.transformed(by: flipTransform)
             }
             self.isRenderingOverlay = false
         }
