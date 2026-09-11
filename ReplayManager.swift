@@ -1,6 +1,8 @@
 import Foundation
 import CoreImage
 import CoreMedia
+import AVFoundation
+import UIKit
 
 class ReplayManager {
     static let shared = ReplayManager()

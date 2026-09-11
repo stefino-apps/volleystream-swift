@@ -1,5 +1,6 @@
 import SwiftUI
 import AudioToolbox
+import UIKit
 
 struct RemoteControlView: View {
     @State private var sessionCode: String = UserDefaults.standard.string(forKey: "incoming_remote_id") ?? ""
