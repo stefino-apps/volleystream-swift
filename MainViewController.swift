@@ -67,6 +67,7 @@ class MainViewController: UIViewController {
     
     var localState = RemoteMatchState()
     var isAudioMuted = false
+    private var stateHistory: [RemoteMatchState] = []
     
     // MARK: - Lifecycle & Orientation
     
@@ -1028,7 +1029,13 @@ class MainViewController: UIViewController {
     
     // MARK: - Match State & Scoring (Volleyball & Multi-Sport)
     
-    func updateLocalState() {
+    func updateLocalState(saveHistory: Bool = true) {
+        if saveHistory {
+            stateHistory.append(localState)
+            if stateHistory.count > 20 {
+                stateHistory.removeFirst()
+            }
+        }
         localState.lastUpdate = Int64(Date().timeIntervalSince1970 * 1000)
         scoreboardView.updateFromState(localState)
         StreamManager.shared.videoEffect.currentState = localState
@@ -1059,6 +1066,26 @@ class MainViewController: UIViewController {
                 lblSet.text = "SET \(localState.currentSet)"
             }
         }
+    }
+    
+    func undoLastAction() {
+        guard !stateHistory.isEmpty else {
+            showToast(message: "Nessuna azione da annullare")
+            return
+        }
+        let previous = stateHistory.removeLast()
+        localState = previous
+        updateLocalState(saveHistory: false)
+        showToast(message: "↩️ Azione annullata (UNDO)")
+    }
+    
+    func resetDartsScores() {
+        let initial = getDartsInitialScore()
+        localState.scoreA = initial
+        localState.scoreB = initial
+        localState.dartsTurnScore = 0
+        localState.dartsThrows = ["", "", ""]
+        localState.isDartsBust = false
     }
     
     @objc func decSetAction() {
