@@ -70,9 +70,6 @@ struct WelcomeView: View {
                                 .default(Text("menu_contacts".localized.isEmpty ? "Contatti" : "menu_contacts".localized)) {
                                     openSupportEmail()
                                 },
-                                .default(Text("Tutorial Schermate")) {
-                                    if let url = URL(string: "https://volleystreampro.com/tutorial") { UIApplication.shared.open(url) }
-                                },
                                 .destructive(Text("menu_delete_account".localized.isEmpty ? "Cancella Account" : "menu_delete_account".localized)) {
                                     showDeleteAccountAlert = true
                                 },
@@ -81,19 +78,6 @@ struct WelcomeView: View {
                         }
                         
                         Spacer()
-                        
-                        // Tutorial Button
-                        Button(action: {
-                            if let url = URL(string: "https://volleystreampro.com/tutorial") { UIApplication.shared.open(url) }
-                        }) {
-                            Text("TUTORIAL")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color(hex: "#22c55e"))
-                                .cornerRadius(16)
-                        }
                         
                         // Language Button
                         Button(action: { showLangPicker = true }) {
@@ -316,15 +300,20 @@ struct AndroidBadgeView: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundColor(Color(hex: "#00FFCC"))
                 .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity)
-                .padding(16)
-                .background(Color.clear)
+                .frame(minHeight: 56)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color(hex: "#0f172a").opacity(0.4))
+                .cornerRadius(8)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color(hex: "#FACC15"), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(hex: "#FACC15"), lineWidth: 1.5)
                 )
         }
     }

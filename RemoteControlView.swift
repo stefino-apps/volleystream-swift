@@ -30,78 +30,89 @@ struct RemoteControlView: View {
     
     // MARK: - Setup / Connection View
     var setupView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
+            // Header with Back Button
             HStack {
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(12)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .bold))
+                        Text("Indietro")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                    .foregroundColor(Color(hex: "#64748b"))
+                    .padding(8)
                 }
                 Spacer()
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
             
             Spacer()
             
-            VStack(spacing: 12) {
+            // Connection Card matching Android
+            VStack(spacing: 20) {
                 Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 56))
-                    .foregroundColor(Color(red: 0/255, green: 229/255, blue: 255/255))
-                    .shadow(color: Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.5), radius: 15)
+                    .font(.system(size: 52))
+                    .foregroundColor(Color(hex: "#FACC15"))
+                    .shadow(color: Color(hex: "#FACC15").opacity(0.4), radius: 12)
                 
-                Text("CONTROLLO REMOTO")
-                    .font(.system(size: 24, weight: .black))
-                    .foregroundColor(.white)
+                VStack(spacing: 6) {
+                    Text("CONTROLLO REMOTO")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.white)
+                        .tracking(1.0)
+                    
+                    Text("Inserisci il codice generato dalla Regia per collegarti al match")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "#94A3B8"))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                }
                 
-                Text("Inserisci il codice mostrato nella schermata Regia")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+                TextField("REGIA_01", text: $sessionCode)
+                    .font(.system(size: 26, weight: .bold, design: .monospaced))
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-            
-            VStack(spacing: 16) {
-                TextField("Codice Regia (es. REGIA_01)", text: $sessionCode)
-                    .font(.system(size: 18, weight: .bold))
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .background(Color.white.opacity(0.08))
+                    .autocapitalization(.allCharacters)
+                    .disableAutocorrection(true)
+                    .foregroundColor(Color(hex: "#FACC15"))
+                    .frame(maxWidth: 260)
+                    .frame(height: 60)
+                    .background(Color(hex: "#050b16"))
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.5), lineWidth: 1.5)
+                            .stroke(Color(hex: "#06B6D4"), lineWidth: 1.5)
                     )
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 32)
+                    .padding(.top, 4)
                 
                 Button(action: { connectToSession() }) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "bolt.fill")
                         Text("CONNETTI TELECOMANDO")
                     }
-                    .font(.system(size: 16, weight: .heavy))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 0/255, green: 245/255, blue: 155/255), Color(red: 0/255, green: 229/255, blue: 255/255)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .frame(height: 54)
+                    .background(Color(hex: "#06B6D4"))
                     .cornerRadius(14)
-                    .shadow(color: Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.4), radius: 10, y: 4)
+                    .shadow(color: Color(hex: "#06B6D4").opacity(0.4), radius: 8, y: 3)
                 }
-                .padding(.horizontal, 32)
+                .padding(.horizontal, 8)
+                .padding(.top, 8)
             }
+            .padding(28)
+            .background(Color(hex: "#09111e"))
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color(hex: "#1e293b"), lineWidth: 1)
+            )
+            .padding(.horizontal, 24)
             
             Spacer()
         }
-        .padding(.vertical)
     }
     
     // MARK: - Active Broadcast Remote View

@@ -796,16 +796,34 @@ struct SettingsView: View {
     }
     
     private func colorRadio(name: String, hex: String, color: Color) -> some View {
-        Button(action: { scrollTextColorHex = hex }) {
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 14, height: 14)
-                    .overlay(Circle().stroke(Color.white, lineWidth: scrollTextColorHex == hex ? 2 : 0))
+        let isSelected = scrollTextColorHex.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(hex) == .orderedSame
+        return Button(action: { scrollTextColorHex = hex }) {
+            HStack(spacing: 6) {
+                ZStack {
+                    Circle()
+                        .fill(color)
+                        .frame(width: 18, height: 18)
+                    if isSelected {
+                        Circle()
+                            .stroke(Color.white, lineWidth: 2)
+                            .frame(width: 22, height: 22)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundColor(hex.uppercased() == "#FFFFFF" || hex.uppercased() == "#FACC15" ? .black : .white)
+                    }
+                }
                 Text(name)
-                    .font(.system(size: 12))
-                    .foregroundColor(color)
+                    .font(.system(size: 12, weight: isSelected ? .bold : .regular))
+                    .foregroundColor(isSelected ? .white : Color(hex: "#94a3b8"))
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(isSelected ? Color(hex: "#1e293b") : Color.clear)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color(hex: "#06b6d4") : Color.clear, lineWidth: 1)
+            )
         }
     }
     

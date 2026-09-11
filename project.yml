@@ -42,6 +42,7 @@ targets:
       GENERATE_INFOPLIST_FILE: NO
       PRODUCT_NAME: VolleyStream Pro
       PRODUCT_BUNDLE_IDENTIFIER: com.sviluppo.MiaApp
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: Info.plist
       properties:

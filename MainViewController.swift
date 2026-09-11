@@ -132,6 +132,16 @@ class MainViewController: UIViewController {
         self.localState.teamA = AppPreferences.shared.teamHome
         self.localState.teamB = AppPreferences.shared.teamAway
         self.localState.isPuntoDeOro = UserDefaults.standard.bool(forKey: "punto_de_oro")
+        
+        if self.localState.sportType.lowercased() == "darts" {
+            let startScore = UserDefaults.standard.integer(forKey: "darts_initial_score")
+            let initial = (startScore == 301) ? 301 : 501
+            if self.localState.scoreA == 0 && self.localState.scoreB == 0 {
+                self.localState.scoreA = initial
+                self.localState.scoreB = initial
+                self.localState.dartsActivePlayer = "A"
+            }
+        }
         updateLocalState()
     }
     
@@ -152,6 +162,14 @@ class MainViewController: UIViewController {
         self.localState.teamA = AppPreferences.shared.teamHome
         self.localState.teamB = AppPreferences.shared.teamAway
         self.localState.isPuntoDeOro = UserDefaults.standard.bool(forKey: "punto_de_oro")
+        
+        if self.localState.sportType.lowercased() == "darts" {
+            let startScore = UserDefaults.standard.integer(forKey: "darts_initial_score")
+            let initial = (startScore == 301) ? 301 : 501
+            self.localState.scoreA = initial
+            self.localState.scoreB = initial
+            self.localState.dartsActivePlayer = "A"
+        }
         
         setupCameraView()
         setupScoreboardOverlay()
@@ -536,6 +554,8 @@ class MainViewController: UIViewController {
         let isSoccer = (self.localState.sportType.lowercased() == "soccer")
         let isBiliardo = (self.localState.sportType.lowercased() == "biliardo" || self.localState.sportType.lowercased() == "billiards")
         let isTennis = (self.localState.sportType.lowercased() == "tennis" || self.localState.sportType.lowercased() == "padel")
+        let isDarts = (self.localState.sportType.lowercased() == "darts")
+        let hasExtraScoreBtns = isBasket || isDarts
         
         // Dynamic labels for sports
         if isSoccer {
@@ -544,19 +564,57 @@ class MainViewController: UIViewController {
             btnTimeoutAway.setTitle("RC", for: .normal)
             btnTimeoutAway.backgroundColor = .systemRed
             btnEndQuarter.setTitle("FINE TEMPO", for: .normal)
+            btnScoreHome.setTitle("+1", for: .normal)
+            btnScoreAway.setTitle("+1", for: .normal)
+            btnMinusHome.setTitle("−", for: .normal)
+            btnMinusAway.setTitle("−", for: .normal)
         } else if isTennis {
             btnTimeoutHome.setTitle("GAME", for: .normal)
             btnTimeoutHome.backgroundColor = .systemPurple
             btnTimeoutAway.setTitle("GAME", for: .normal)
             btnTimeoutAway.backgroundColor = .systemPurple
+            btnScoreHome.setTitle("+1", for: .normal)
+            btnScoreAway.setTitle("+1", for: .normal)
+            btnMinusHome.setTitle("−", for: .normal)
+            btnMinusAway.setTitle("−", for: .normal)
         } else if isBiliardo {
             btnEndQuarter.setTitle("NEXT FRAME", for: .normal)
+            btnTimeoutHome.setTitle("FOUL", for: .normal)
+            btnTimeoutAway.setTitle("FOUL", for: .normal)
+            btnScoreHome.setTitle("+1", for: .normal)
+            btnScoreAway.setTitle("+1", for: .normal)
+            btnMinusHome.setTitle("−", for: .normal)
+            btnMinusAway.setTitle("−", for: .normal)
+        } else if isDarts {
+            btnTimeoutHome.setTitle("LEG", for: .normal)
+            btnTimeoutHome.backgroundColor = UIColor(red: 234/255, green: 179/255, blue: 8/255, alpha: 0.95)
+            btnTimeoutAway.setTitle("LEG", for: .normal)
+            btnTimeoutAway.backgroundColor = UIColor(red: 234/255, green: 179/255, blue: 8/255, alpha: 0.95)
+            btnScoreHome.setTitle("-60", for: .normal)
+            btnScoreAway.setTitle("-60", for: .normal)
+            btnMinusHome.setTitle("+", for: .normal)
+            btnMinusAway.setTitle("+", for: .normal)
+            btnScoreHome2.setTitle("-20", for: .normal)
+            btnScoreHome3.setTitle("-100", for: .normal)
+            btnScoreAway2.setTitle("-20", for: .normal)
+            btnScoreAway3.setTitle("-100", for: .normal)
+            btnEndQuarter.setTitle("NEW LEG", for: .normal)
         } else {
             btnTimeoutHome.setTitle("T.O.", for: .normal)
             btnTimeoutHome.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.85)
             btnTimeoutAway.setTitle("T.O.", for: .normal)
             btnTimeoutAway.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.85)
             btnEndQuarter.setTitle("FINE QUARTO", for: .normal)
+            btnScoreHome.setTitle("+1", for: .normal)
+            btnScoreAway.setTitle("+1", for: .normal)
+            btnMinusHome.setTitle("−", for: .normal)
+            btnMinusAway.setTitle("−", for: .normal)
+            if isBasket {
+                btnScoreHome2.setTitle("+2", for: .normal)
+                btnScoreHome3.setTitle("+3", for: .normal)
+                btnScoreAway2.setTitle("+2", for: .normal)
+                btnScoreAway3.setTitle("+3", for: .normal)
+            }
         }
         
         if isGrid {
@@ -642,7 +700,7 @@ class MainViewController: UIViewController {
             
             let eqX = setStartX + setBtnW + 4.0 + lblSetW + 4.0 + setBtnW + 8.0
             let eqW = trX + trW - pad - eqX
-            if (isBasket || isSoccer || isBiliardo) && eqW > 40 {
+            if (isBasket || isSoccer || isBiliardo || isDarts) && eqW > 40 {
                 btnEndQuarter.frame = CGRect(x: eqX, y: row2Y, width: eqW, height: row2H)
                 btnEndQuarter.isHidden = false
             } else {
@@ -670,7 +728,7 @@ class MainViewController: UIViewController {
             let subW: CGFloat = 46.0
             let btnG: CGFloat = 6.0
             
-            if isBasket {
+            if hasExtraScoreBtns {
                 let bskW: CGFloat = 36.0
                 let mainScoreW = blW - 24 - subW - subW - (bskW * 2) - (btnG * 4)
                 btnScoreHome.frame = CGRect(x: blX + 12, y: aBtnsY, width: mainScoreW, height: aBtnsH)
@@ -711,7 +769,7 @@ class MainViewController: UIViewController {
             let bBtnsY = brY + 34
             let bBtnsH = brH - 40
             
-            if isBasket {
+            if hasExtraScoreBtns {
                 let bskW: CGFloat = 36.0
                 let mainScoreW = brW - 24 - subW - subW - (bskW * 2) - (btnG * 4)
                 btnScoreAway.frame = CGRect(x: brX + 12, y: bBtnsY, width: mainScoreW, height: bBtnsH)
@@ -845,7 +903,7 @@ class MainViewController: UIViewController {
             sponsorButton.frame = CGRect(x: centerX + streamBtnW / 2 + 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
             sponsorButton.isHidden = false
             
-            if isBasket || isSoccer || isBiliardo {
+            if isBasket || isSoccer || isBiliardo || isDarts {
                 btnEndQuarter.frame = CGRect(x: centerX - 60, y: bottomCenterY - 36, width: 120, height: 30)
                 btnEndQuarter.isHidden = false
             } else {
@@ -865,7 +923,7 @@ class MainViewController: UIViewController {
             btnMinusHome.isHidden = false
             btnScoreHome.isHidden = false
             
-            if isBasket {
+            if hasExtraScoreBtns {
                 let basketW: CGFloat = isPortrait ? 34 : 44
                 btnScoreHome2.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY, width: basketW, height: subBtnH)
                 btnScoreHome3.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
@@ -887,7 +945,7 @@ class MainViewController: UIViewController {
             btnMinusAway.isHidden = false
             btnScoreAway.isHidden = false
             
-            if isBasket {
+            if hasExtraScoreBtns {
                 let basketW: CGFloat = isPortrait ? 34 : 44
                 btnScoreAway2.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY, width: basketW, height: subBtnH)
                 btnScoreAway3.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
@@ -1029,9 +1087,50 @@ class MainViewController: UIViewController {
         }
     }
     
+    private func getDartsInitialScore() -> Int {
+        let startScore = UserDefaults.standard.integer(forKey: "darts_initial_score")
+        return (startScore == 301) ? 301 : 501
+    }
+    
+    private func checkDartsLeg(isHome: Bool, subtract: Int) {
+        let current = isHome ? localState.scoreA : localState.scoreB
+        let remaining = current - subtract
+        if remaining == 0 {
+            if isHome {
+                localState.dartsLegsA += 1
+            } else {
+                localState.dartsLegsB += 1
+            }
+            let initial = getDartsInitialScore()
+            localState.scoreA = initial
+            localState.scoreB = initial
+            localState.dartsActivePlayer = isHome ? "B" : "A"
+            showToast(message: "🎯 LEG VINTA! (\(isHome ? localState.teamA : localState.teamB))")
+        } else if remaining > 1 {
+            if isHome {
+                localState.scoreA = remaining
+                localState.dartsActivePlayer = "B"
+            } else {
+                localState.scoreB = remaining
+                localState.dartsActivePlayer = "A"
+            }
+        } else {
+            showToast(message: "💥 BUST! Punteggio non valido.")
+            if isHome {
+                localState.dartsActivePlayer = "B"
+            } else {
+                localState.dartsActivePlayer = "A"
+            }
+        }
+        updateLocalState()
+    }
+    
     @objc func incScoreA() {
         let sport = localState.sportType.lowercased()
-        if sport == "tennis" || sport == "padel" {
+        if sport == "darts" {
+            checkDartsLeg(isHome: true, subtract: 60)
+            return
+        } else if sport == "tennis" || sport == "padel" {
             advanceTennisGame(isHome: true)
         } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
             localState.scoreA += 1
@@ -1043,12 +1142,32 @@ class MainViewController: UIViewController {
         updateLocalState()
     }
     
-    @objc func incScoreA2() { localState.scoreA += 2; updateLocalState() }
-    @objc func incScoreA3() { localState.scoreA += 3; updateLocalState() }
+    @objc func incScoreA2() {
+        let sport = localState.sportType.lowercased()
+        if sport == "darts" {
+            checkDartsLeg(isHome: true, subtract: 20)
+            return
+        }
+        localState.scoreA += 2
+        updateLocalState()
+    }
+    
+    @objc func incScoreA3() {
+        let sport = localState.sportType.lowercased()
+        if sport == "darts" {
+            checkDartsLeg(isHome: true, subtract: 100)
+            return
+        }
+        localState.scoreA += 3
+        updateLocalState()
+    }
     
     @objc func decScoreA() {
         let sport = localState.sportType.lowercased()
-        if sport == "tennis" || sport == "padel" {
+        if sport == "darts" {
+            let initial = getDartsInitialScore()
+            localState.scoreA = min(initial, localState.scoreA + 20)
+        } else if sport == "tennis" || sport == "padel" {
             if localState.tennisPointsA > 0 { localState.tennisPointsA -= 1 }
         } else {
             if localState.scoreA > 0 {
@@ -1062,7 +1181,14 @@ class MainViewController: UIViewController {
     
     @objc func toA() {
         let sport = localState.sportType.lowercased()
-        if sport == "soccer" {
+        if sport == "darts" {
+            localState.dartsLegsA += 1
+            let initial = getDartsInitialScore()
+            localState.scoreA = initial
+            localState.scoreB = initial
+            localState.dartsActivePlayer = "B"
+            showToast(message: "🎯 Leg assegnata a \(localState.teamA)")
+        } else if sport == "soccer" {
             localState.redCardsA = (localState.redCardsA + 1) % 4
         } else if sport == "tennis" || sport == "padel" {
             localState.tennisGamesA += 1
@@ -1079,7 +1205,10 @@ class MainViewController: UIViewController {
     
     @objc func incScoreB() {
         let sport = localState.sportType.lowercased()
-        if sport == "tennis" || sport == "padel" {
+        if sport == "darts" {
+            checkDartsLeg(isHome: false, subtract: 60)
+            return
+        } else if sport == "tennis" || sport == "padel" {
             advanceTennisGame(isHome: false)
         } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
             localState.scoreB += 1
@@ -1091,12 +1220,32 @@ class MainViewController: UIViewController {
         updateLocalState()
     }
     
-    @objc func incScoreB2() { localState.scoreB += 2; updateLocalState() }
-    @objc func incScoreB3() { localState.scoreB += 3; updateLocalState() }
+    @objc func incScoreB2() {
+        let sport = localState.sportType.lowercased()
+        if sport == "darts" {
+            checkDartsLeg(isHome: false, subtract: 20)
+            return
+        }
+        localState.scoreB += 2
+        updateLocalState()
+    }
+    
+    @objc func incScoreB3() {
+        let sport = localState.sportType.lowercased()
+        if sport == "darts" {
+            checkDartsLeg(isHome: false, subtract: 100)
+            return
+        }
+        localState.scoreB += 3
+        updateLocalState()
+    }
     
     @objc func decScoreB() {
         let sport = localState.sportType.lowercased()
-        if sport == "tennis" || sport == "padel" {
+        if sport == "darts" {
+            let initial = getDartsInitialScore()
+            localState.scoreB = min(initial, localState.scoreB + 20)
+        } else if sport == "tennis" || sport == "padel" {
             if localState.tennisPointsB > 0 { localState.tennisPointsB -= 1 }
         } else {
             if localState.scoreB > 0 {
@@ -1110,7 +1259,14 @@ class MainViewController: UIViewController {
     
     @objc func toB() {
         let sport = localState.sportType.lowercased()
-        if sport == "soccer" {
+        if sport == "darts" {
+            localState.dartsLegsB += 1
+            let initial = getDartsInitialScore()
+            localState.scoreA = initial
+            localState.scoreB = initial
+            localState.dartsActivePlayer = "A"
+            showToast(message: "🎯 Leg assegnata a \(localState.teamB)")
+        } else if sport == "soccer" {
             localState.redCardsB = (localState.redCardsB + 1) % 4
         } else if sport == "tennis" || sport == "padel" {
             localState.tennisGamesB += 1
@@ -1278,6 +1434,12 @@ class MainViewController: UIViewController {
             localState.currentSet += 1
             localState.scoreA = 0
             localState.scoreB = 0
+        } else if sport == "darts" {
+            localState.currentSet += 1
+            let initial = getDartsInitialScore()
+            localState.scoreA = initial
+            localState.scoreB = initial
+            showToast(message: "🎯 Nuova Leg Iniziata")
         } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
             localState.setScores.append([localState.scoreA, localState.scoreB])
             if localState.scoreA > localState.scoreB {
@@ -1317,10 +1479,28 @@ class MainViewController: UIViewController {
     
     @objc func triggerReplay() {
         ReplayManager.shared.startPlayback()
+        showToast(message: "⏪ Replay Istantaneo")
     }
     
     @objc func triggerHighlight() {
-        // Salva clip highlight
+        let origBg = highlightButton.backgroundColor
+        highlightButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+        highlightButton.setTitleColor(.black, for: .normal)
+        
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        
+        showToast(message: "⏳ Elaborazione clip highlight...")
+        
+        ReplayManager.shared.saveHighlightClip { [weak self] success, errorMsg in
+            DispatchQueue.main.async {
+                self?.highlightButton.backgroundColor = origBg
+                self?.highlightButton.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
+                
+                let msg = success ? "⭐ Highlight salvato in Galleria!" : (errorMsg ?? "Errore salvataggio highlight")
+                self?.showToast(message: msg)
+            }
+        }
     }
     
     private func handleRemoteCommand(_ command: String) {
@@ -1372,25 +1552,67 @@ class MainViewController: UIViewController {
             
             StreamManager.shared.startStreaming(url: rtmpUrl, streamKey: rtmpKey)
             
-            if UserDefaults.standard.bool(forKey: "record_locally") {
+            let shouldRecord = UserDefaults.standard.object(forKey: "record_locally") == nil ? true : UserDefaults.standard.bool(forKey: "record_locally")
+            if shouldRecord {
                 LocalVideoRecorder.shared.startRecording()
             }
             
             startStreamButton.setTitle("STOP", for: .normal)
             startStreamButton.backgroundColor = .systemGray
+            showToast(message: "🔴 LIVE & Registrazione avviata")
         } else {
             StreamManager.shared.stopStreaming()
             
             if LocalVideoRecorder.shared.isRecordingState {
-                LocalVideoRecorder.shared.stopRecording { savedUrl in
-                    if let _ = savedUrl {
-                        print("Video salvato.")
+                LocalVideoRecorder.shared.stopRecording { [weak self] savedUrl in
+                    DispatchQueue.main.async {
+                        if let _ = savedUrl {
+                            self?.showToast(message: "🎬 Match salvato in Galleria!")
+                        }
                     }
                 }
             }
             
             startStreamButton.setTitle("GO\nLIVE", for: .normal)
             startStreamButton.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+            showToast(message: "⏹️ LIVE terminata")
+        }
+    }
+    
+    // MARK: - Toast Message Helper
+    
+    func showToast(message: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            let toastLabel = UILabel()
+            toastLabel.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.95)
+            toastLabel.textColor = .white
+            toastLabel.textAlignment = .center
+            toastLabel.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+            toastLabel.text = message
+            toastLabel.alpha = 0.0
+            toastLabel.layer.cornerRadius = 16
+            toastLabel.layer.borderWidth = 1.2
+            toastLabel.layer.borderColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.8).cgColor
+            toastLabel.clipsToBounds = true
+            
+            let textSize = (message as NSString).size(withAttributes: [.font: toastLabel.font!])
+            let toastWidth = min(self.view.bounds.width - 40, textSize.width + 36)
+            toastLabel.frame = CGRect(x: (self.view.bounds.width - toastWidth) / 2, y: self.view.bounds.height - 70, width: toastWidth, height: 36)
+            
+            self.view.addSubview(toastLabel)
+            self.view.bringSubviewToFront(toastLabel)
+            
+            UIView.animate(withDuration: 0.25, animations: {
+                toastLabel.alpha = 1.0
+            }) { _ in
+                UIView.animate(withDuration: 0.3, delay: 2.2, options: .curveEaseOut, animations: {
+                    toastLabel.alpha = 0.0
+                }) { _ in
+                    toastLabel.removeFromSuperview()
+                }
+            }
         }
     }
 }

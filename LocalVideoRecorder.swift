@@ -3,6 +3,8 @@ import AVFoundation
 import CoreImage
 import UIKit
 
+import Photos
+
 class LocalVideoRecorder {
     static let shared = LocalVideoRecorder()
     
@@ -13,16 +15,16 @@ class LocalVideoRecorder {
     
     private var isRecording = false
     private var startTime: CMTime = .zero
-    
-    private var outputUrl: URL {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return dir.appendingPathComponent("VolleyStream_Match.mp4")
-    }
+    private var currentFileUrl: URL?
     
     func startRecording() {
         if isRecording { return }
         
-        let url = outputUrl
+        let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let url = dir.appendingPathComponent("VolleyStream_Match_\(timestamp).mp4")
+        self.currentFileUrl = url
+        
         if FileManager.default.fileExists(atPath: url.path) {
             try? FileManager.default.removeItem(at: url)
         }
@@ -67,6 +69,7 @@ class LocalVideoRecorder {
             assetWriter?.startWriting()
             isRecording = true
             startTime = .zero
+            print("LocalVideoRecorder: Registrazione avviata su \(url.path)")
             
         } catch {
             print("Errore avvio registrazione: \(error)")
@@ -74,7 +77,10 @@ class LocalVideoRecorder {
     }
     
     func stopRecording(completion: @escaping (URL?) -> Void) {
-        guard isRecording else { return }
+        guard isRecording, let url = currentFileUrl else {
+            completion(nil)
+            return
+        }
         isRecording = false
         
         videoInput?.markAsFinished()
@@ -82,10 +88,20 @@ class LocalVideoRecorder {
         
         assetWriter?.finishWriting {
             DispatchQueue.main.async {
-                if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(self.outputUrl.path) {
-                    UISaveVideoAtPathToSavedPhotosAlbum(self.outputUrl.path, nil, nil, nil)
+                PHPhotoLibrary.requestAuthorization { status in
+                    if status == .authorized || status == .limited {
+                        PHPhotoLibrary.shared().performChanges({
+                            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+                        }) { success, error in
+                            print("Match salvato in galleria: \(success), error: \(String(describing: error))")
+                        }
+                    } else {
+                        if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(url.path) {
+                            UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil)
+                        }
+                    }
                 }
-                completion(self.outputUrl)
+                completion(url)
             }
         }
     }

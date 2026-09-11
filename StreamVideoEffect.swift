@@ -27,6 +27,9 @@ class StreamVideoEffect: VideoEffect {
     var lastReplayState = false
     
     override func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
+        // Registra sempre i frame per Replay istantaneo e Highlights
+        ReplayManager.shared.recordFrame(image)
+        
         var outputImage = image
         
         let currentlyReplaying = ReplayManager.shared.isReplaying
