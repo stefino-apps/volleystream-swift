@@ -381,7 +381,7 @@ class ScoreboardOverlayView: UIView {
         
         // Timeouts dashes positioned directly UNDER team name
         for i in 0..<maxTos {
-            let toRect = CGRect(x: curX + CGFloat(i * 7.5), y: y + 11.5, width: 5.5, height: 2.2)
+            let toRect = CGRect(x: curX + CGFloat(i) * 7.5, y: y + 11.5, width: 5.5, height: 2.2)
             let toColor = (i < tos) ? style.timeoutActiveColor : style.timeoutInactiveColor
             toColor.setFill()
             UIBezierPath(roundedRect: toRect, cornerRadius: 0.6).fill()
@@ -445,7 +445,7 @@ class ScoreboardOverlayView: UIView {
         
         let toX = x + (w * 0.42)
         for i in 0..<3 {
-            let toRect = CGRect(x: toX + CGFloat(i * 7), y: y + 4.5, width: 5, height: 3)
+            let toRect = CGRect(x: toX + CGFloat(i) * 7.0, y: y + 4.5, width: 5, height: 3)
             let toColor = (i < tos) ? style.timeoutActiveColor : style.timeoutInactiveColor
             toColor.setFill()
             UIBezierPath(roundedRect: toRect, cornerRadius: 1.0).fill()
