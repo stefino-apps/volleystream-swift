@@ -811,6 +811,11 @@ struct SettingsView: View {
     
     // MARK: - Actions & Persistence
     private func loadAllState() {
+        selectedSport = AppPreferences.shared.selectedSport
+        selectedTheme = AppPreferences.shared.selectedTheme
+        teamHome = AppPreferences.shared.teamHome
+        teamAway = AppPreferences.shared.teamAway
+        
         if let d = AppPreferences.shared.loadImage(name: "logo_team_a.png") { logoHomeImage = UIImage(data: d) }
         if let d = AppPreferences.shared.loadImage(name: "logo_team_b.png") { logoAwayImage = UIImage(data: d) }
         

@@ -50,9 +50,12 @@ public class YouTubeManager: NSObject {
         signOut()
     }
     
-    public func createLiveEvent(title: String, completion: @escaping (String?, String?, Error?) -> Void) {
+    public var currentBroadcastId: String?
+    public var currentLiveUrl: String?
+    
+    public func createLiveEvent(title: String, completion: @escaping (String?, String?, String?, Error?) -> Void) {
         guard let token = accessToken else {
-            completion(nil, nil, NSError(domain: "YouTube", code: 401, userInfo: [NSLocalizedDescriptionKey: "Non autenticato"]))
+            completion(nil, nil, nil, NSError(domain: "YouTube", code: 401, userInfo: [NSLocalizedDescriptionKey: "Non autenticato"]))
             return
         }
         
@@ -83,38 +86,43 @@ public class YouTubeManager: NSObject {
         bReq.httpBody = try? JSONSerialization.data(withJSONObject: bBody)
         
         URLSession.shared.dataTask(with: bReq) { data, response, err in
-            if let err = err { completion(nil, nil, err); return }
+            if let err = err { completion(nil, nil, nil, err); return }
             guard let data = data else {
-                completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Nessuna risposta dal server"]))
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Nessuna risposta dal server"]))
                 return
             }
             
             guard let bJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Risposta non valida da YouTube"]))
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Risposta non valida da YouTube"]))
                 return
             }
             
             if let errorObj = bJson["error"] as? [String: Any],
                let message = errorObj["message"] as? String {
-                completion(nil, nil, NSError(domain: "YouTube", code: (errorObj["code"] as? Int) ?? 500, userInfo: [NSLocalizedDescriptionKey: message]))
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: (errorObj["code"] as? Int) ?? 500, userInfo: [NSLocalizedDescriptionKey: message]))
                 return
             }
             
             guard let broadcastId = bJson["id"] as? String else {
-                completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore creazione Broadcast (ID mancante)"]))
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore creazione Broadcast (ID mancante)"]))
                 return
             }
             
             self.createStream(token: token, title: title) { streamId, rtmpUrl, streamKey, sErr in
-                if let sErr = sErr { completion(nil, nil, sErr); return }
+                if let sErr = sErr { completion(nil, nil, nil, sErr); return }
                 guard let streamId = streamId, let rtmpUrl = rtmpUrl, let streamKey = streamKey else {
-                    completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore Stream"]))
+                    completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore Stream"]))
                     return
                 }
                 
                 self.bindBroadcast(token: token, broadcastId: broadcastId, streamId: streamId) { bindErr in
-                    if let bindErr = bindErr { completion(nil, nil, bindErr); return }
-                    completion(rtmpUrl, streamKey, nil)
+                    if let bindErr = bindErr { completion(nil, nil, nil, bindErr); return }
+                    self.currentBroadcastId = broadcastId
+                    let liveUrl = "https://youtube.com/live/\(broadcastId)"
+                    self.currentLiveUrl = liveUrl
+                    UserDefaults.standard.set(broadcastId, forKey: "youtube_broadcast_id")
+                    UserDefaults.standard.set(liveUrl, forKey: "live_share_url")
+                    completion(rtmpUrl, streamKey, liveUrl, nil)
                 }
             }
         }.resume()

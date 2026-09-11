@@ -154,13 +154,15 @@ class MainViewController: UIViewController {
         self.backgroundTapGesture = tap
         
         let sessionId = UserDefaults.standard.string(forKey: "remote_session_id") ?? "REGIA_01"
-        FirebaseManager.shared.createSession(id: sessionId) { success in
+        FirebaseManager.shared.createSession(id: sessionId, initialState: self.localState) { success in
             print("Firebase Host Session Created: \(success)")
         }
         
         FirebaseManager.shared.onStateUpdated = { [weak self] state in
             DispatchQueue.main.async {
-                self?.scoreboardView.updateFromState(state)
+                guard let self = self else { return }
+                self.localState = state
+                self.scoreboardView.updateFromState(state)
                 StreamManager.shared.videoEffect.currentState = state
                 if state.isReplaying {
                     ReplayManager.shared.startPlayback()
@@ -1033,8 +1035,20 @@ class MainViewController: UIViewController {
     }
     
     @objc func shareLive() {
-        let link = "https://youtube.com/live/YOUR_STREAM_ID"
-        let activity = UIActivityViewController(activityItems: [link], applicationActivities: nil)
+        var link = UserDefaults.standard.string(forKey: "live_share_url") ?? ""
+        if link.isEmpty {
+            if let broadcastId = UserDefaults.standard.string(forKey: "youtube_broadcast_id"), !broadcastId.isEmpty {
+                link = "https://youtube.com/live/\(broadcastId)"
+            } else if let liveUrl = YouTubeManager.shared.currentLiveUrl, !liveUrl.isEmpty {
+                link = liveUrl
+            } else if let broadcastId = YouTubeManager.shared.currentBroadcastId, !broadcastId.isEmpty {
+                link = "https://youtube.com/live/\(broadcastId)"
+            } else {
+                link = "https://youtube.com"
+            }
+        }
+        let msg = "🏐 VolleyPro Live - Segui la diretta streaming del match:\n\(link)"
+        let activity = UIActivityViewController(activityItems: [msg], applicationActivities: nil)
         if let popover = activity.popoverPresentationController {
             popover.sourceView = shareLiveButton
         }

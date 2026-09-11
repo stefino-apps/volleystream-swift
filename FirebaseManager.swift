@@ -35,7 +35,7 @@ class FirebaseManager {
     }
     
     // (HOST) Crea o si collega come Director
-    func createSession(id: String, completion: @escaping (Bool) -> Void) {
+    func createSession(id: String, initialState: RemoteMatchState = RemoteMatchState(), completion: @escaping (Bool) -> Void) {
         ensureAuth { uid in
             guard let uid = uid else {
                 completion(false)
@@ -46,9 +46,9 @@ class FirebaseManager {
             
             self.ref.child("sessions/\(id)/owner").setValue(uid) { error, _ in
                 if error == nil {
-                    let initialState = RemoteMatchState()
                     self.ref.child("sessions/\(id)/state").setValue(initialState.dictionary)
                     self.listenForCommands()
+                    self.startListeningToState()
                     completion(true)
                 } else {
                     completion(false)

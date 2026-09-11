@@ -578,9 +578,12 @@ struct LiveSetupView: View {
         }
     }
     
-    private func proceedToDirector(rtmp: String, key: String) {
+    private func proceedToDirector(rtmp: String, key: String, liveUrl: String? = nil) {
         UserDefaults.standard.set(rtmp, forKey: "rtmp_url")
         UserDefaults.standard.set(key, forKey: "rtmp_key")
+        if let liveUrl = liveUrl, !liveUrl.isEmpty {
+            UserDefaults.standard.set(liveUrl, forKey: "live_share_url")
+        }
         UserDefaults.standard.set(recordLocally, forKey: "record_locally")
         AppDelegate.setOrientationLock(.landscape, rotateTo: .landscapeRight)
         navigateToDirector = true
@@ -589,11 +592,11 @@ struct LiveSetupView: View {
     private func startLiveAction() {
         if streamPlatform == "YouTube" && isYouTubeLoggedIn {
             isCreatingEvent = true
-            YouTubeManager.shared.createLiveEvent(title: streamTitle) { rtmp, key, err in
+            YouTubeManager.shared.createLiveEvent(title: streamTitle) { rtmp, key, liveUrl, err in
                 DispatchQueue.main.async {
                     self.isCreatingEvent = false
                     if err == nil, let rtmp = rtmp, let key = key {
-                        self.proceedToDirector(rtmp: rtmp, key: key)
+                        self.proceedToDirector(rtmp: rtmp, key: key, liveUrl: liveUrl)
                     } else {
                         let errText = err?.localizedDescription ?? "Errore Broadcast"
                         self.alertTitle = "❌ Errore creazione diretta"

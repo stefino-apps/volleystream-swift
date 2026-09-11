@@ -14,7 +14,7 @@ class AppPreferences {
     private let keyIsPremium = "is_premium"
     
     var selectedSport: String {
-        get { defaults.string(forKey: keySport) ?? "VOLLEY" }
+        get { defaults.string(forKey: keySport) ?? "volley" }
         set { defaults.set(newValue, forKey: keySport) }
     }
     

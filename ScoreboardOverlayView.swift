@@ -428,8 +428,8 @@ class ScoreboardOverlayView: UIView {
         let row1Y = y + headerH + (rowH - 13) / 2
         let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        drawTeamRowBasket(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, fouls: state.foulsA, tos: state.timeoutA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
-        drawTeamRowBasket(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, fouls: state.foulsB, tos: state.timeoutB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
+        drawTeamRowBasket(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, fouls: state.foulsA, tos: state.timeoutA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
+        drawTeamRowBasket(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, fouls: state.foulsB, tos: state.timeoutB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRowBasket(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, fouls: Int, tos: Int, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
@@ -471,8 +471,8 @@ class ScoreboardOverlayView: UIView {
         let row1Y = y + headerH + (rowH - 13) / 2
         let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        drawTeamRowSoccer(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, redCards: state.redCardsA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
-        drawTeamRowSoccer(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, redCards: state.redCardsB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
+        drawTeamRowSoccer(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, redCards: state.redCardsA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
+        drawTeamRowSoccer(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, redCards: state.redCardsB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRowSoccer(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, redCards: Int, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
@@ -512,8 +512,8 @@ class ScoreboardOverlayView: UIView {
         let row1Y = y + headerH + (rowH - 13) / 2
         let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.tennisPointsA, games: state.tennisGamesA, sets: state.setsA, isTiebreak: state.isTiebreak, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
-        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.tennisPointsB, games: state.tennisGamesB, sets: state.setsB, isTiebreak: state.isTiebreak, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
+        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.tennisPointsA, games: state.tennisGamesA, sets: state.setsA, isTiebreak: state.isTiebreak, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
+        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.tennisPointsB, games: state.tennisGamesB, sets: state.setsB, isTiebreak: state.isTiebreak, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRowTennis(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, games: Int, sets: Int, isTiebreak: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
@@ -579,8 +579,8 @@ class ScoreboardOverlayView: UIView {
         let sizeA = (ptsStrA as NSString).size(withAttributes: [.font: ptsFont])
         let sizeB = (ptsStrB as NSString).size(withAttributes: [.font: ptsFont])
         
-        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
-        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
+        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: style.scoreColorA])
+        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: style.scoreColorB])
     }
     
     // MARK: - Billiards & Cricket Scoreboards
@@ -606,8 +606,8 @@ class ScoreboardOverlayView: UIView {
         let sizeA = (ptsStrA as NSString).size(withAttributes: [.font: ptsFont])
         let sizeB = (ptsStrB as NSString).size(withAttributes: [.font: ptsFont])
         
-        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
-        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
+        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: style.scoreColorA])
+        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: style.scoreColorB])
     }
     
     private func drawCricketScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
@@ -634,8 +634,8 @@ class ScoreboardOverlayView: UIView {
         let sizeA = (ptsStrA as NSString).size(withAttributes: [.font: ptsFont])
         let sizeB = (ptsStrB as NSString).size(withAttributes: [.font: ptsFont])
         
-        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
-        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
+        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: style.scoreColorA])
+        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: style.scoreColorB])
     }
     
     // MARK: - Attached Set Point / Match Point Badge (Right Side of Scoreboard)
