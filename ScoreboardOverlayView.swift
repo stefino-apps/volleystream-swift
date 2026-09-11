@@ -290,7 +290,7 @@ class ScoreboardOverlayView: UIView {
     
     private func drawScoreboardBase(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, headerH: CGFloat, infoText: String, style: ThemeStyles) {
         let boxRect = CGRect(x: x, y: y, width: w, height: h)
-        let radius = min(style.boxCornerRadius, 14.0)
+        let radius = min(style.boxCornerRadius, 10.0)
         let path = UIBezierPath(roundedRect: boxRect, cornerRadius: radius)
         
         // Fill box
@@ -313,7 +313,7 @@ class ScoreboardOverlayView: UIView {
         }
         
         // Header text
-        let font = UIFont.systemFont(ofSize: 9.5, weight: .black)
+        let font = UIFont.systemFont(ofSize: 8.5, weight: .black)
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
         let attrs: [NSAttributedString.Key: Any] = [
@@ -321,24 +321,26 @@ class ScoreboardOverlayView: UIView {
             .foregroundColor: style.headerTextColor,
             .paragraphStyle: paragraph
         ]
-        let textRect = CGRect(x: x + 4, y: y + 2.5, width: w - 8, height: headerH)
+        let textRect = CGRect(x: x + 2, y: y + 1.5, width: w - 4, height: headerH)
         infoText.draw(in: textRect, withAttributes: attrs)
         
         // Divider line between Team A and Team B
         let divY = y + headerH + (h - headerH) / 2
         let divPath = UIBezierPath()
-        divPath.move(to: CGPoint(x: x + 6, y: divY))
-        divPath.addLine(to: CGPoint(x: x + w - 6, y: divY))
+        divPath.move(to: CGPoint(x: x + 4, y: divY))
+        divPath.addLine(to: CGPoint(x: x + w - 4, y: divY))
         style.dividerColor.setStroke()
-        divPath.lineWidth = 1.0
+        divPath.lineWidth = 0.8
         divPath.stroke()
     }
     
     // MARK: - Volley / Beach Volley Scoreboard
     
     private func drawVolleyScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let row1Y = y + 20
-        let row2Y = y + 39
+        let headerH: CGFloat = 14
+        let rowH = (h - headerH) / 2
+        let row1Y = y + headerH + (rowH - 13) / 2
+        let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
         let isBeach = (state.sportType.lowercased() == "beach_volley" || state.sportType.lowercased() == "beach volley")
         let maxTos = isBeach ? 1 : 2
@@ -348,42 +350,42 @@ class ScoreboardOverlayView: UIView {
         let srvB = hasStarted && state.servingTeam == "B"
         
         // Row Home (Team A)
-        drawTeamRow(ctx: ctx, x: x + 6, y: row1Y, name: state.teamA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 12)
+        drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
         
         // Row Away (Team B)
-        drawTeamRow(ctx: ctx, x: x + 6, y: row2Y, name: state.teamB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 12)
+        drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRow(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, tos: Int, maxTos: Int, isSrv: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
         var curX = x
         if let logo = logo {
-            logo.draw(in: CGRect(x: curX, y: y + 1, width: 15, height: 15))
-            curX += 19
+            logo.draw(in: CGRect(x: curX, y: y + 1, width: 12, height: 12))
+            curX += 15
         }
         
         if isSrv {
-            drawVolleyBall(ctx: ctx, cx: curX + 5, cy: y + 8, r: 5.5)
-            curX += 14
+            drawVolleyBall(ctx: ctx, cx: curX + 4, cy: y + 6, r: 4.5)
+            curX += 11
         }
         
-        let nameFont = UIFont.systemFont(ofSize: 12, weight: .bold)
+        let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
         let nameAttrs: [NSAttributedString.Key: Any] = [.font: nameFont, .foregroundColor: UIColor.white]
         let trimName = name.count > 10 ? String(name.prefix(10)) : name
         trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: nameAttrs)
         
-        let toX = x + 106
+        let toX = x + (w * 0.48)
         for i in 0..<maxTos {
-            let toRect = CGRect(x: toX + CGFloat(i * 10), y: y + 4, width: 7, height: 3.5)
+            let toRect = CGRect(x: toX + CGFloat(i * 8), y: y + 4.5, width: 5.5, height: 3)
             let toColor = (i < tos) ? style.timeoutActiveColor : style.timeoutInactiveColor
             toColor.setFill()
             UIBezierPath(roundedRect: toRect, cornerRadius: 1.0).fill()
         }
         
-        let scoreFont = UIFont.systemFont(ofSize: 19, weight: .heavy)
+        let scoreFont = UIFont.systemFont(ofSize: 15.5, weight: .heavy)
         let scoreAttrs: [NSAttributedString.Key: Any] = [.font: scoreFont, .foregroundColor: color]
         let scoreStr = "\(pts)"
         let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)
-        let scoreX = x + w - scoreSize.width - 10
+        let scoreX = x + w - scoreSize.width - 4
         scoreStr.draw(at: CGPoint(x: scoreX, y: y - 2), withAttributes: scoreAttrs)
     }
     
@@ -415,27 +417,29 @@ class ScoreboardOverlayView: UIView {
     // MARK: - Basketball Scoreboard
     
     private func drawBasketScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let row1Y = y + 20
-        let row2Y = y + 39
+        let headerH: CGFloat = 14
+        let rowH = (h - headerH) / 2
+        let row1Y = y + headerH + (rowH - 13) / 2
+        let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        drawTeamRowBasket(ctx: ctx, x: x + 6, y: row1Y, name: state.teamA, pts: state.scoreA, fouls: state.foulsA, tos: state.timeoutA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 12)
-        drawTeamRowBasket(ctx: ctx, x: x + 6, y: row2Y, name: state.teamB, pts: state.scoreB, fouls: state.foulsB, tos: state.timeoutB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 12)
+        drawTeamRowBasket(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, fouls: state.foulsA, tos: state.timeoutA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
+        drawTeamRowBasket(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, fouls: state.foulsB, tos: state.timeoutB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRowBasket(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, fouls: Int, tos: Int, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
         var curX = x
         if let logo = logo {
-            logo.draw(in: CGRect(x: curX, y: y + 1, width: 15, height: 15))
-            curX += 19
+            logo.draw(in: CGRect(x: curX, y: y + 1, width: 12, height: 12))
+            curX += 15
         }
         
-        let nameFont = UIFont.systemFont(ofSize: 12, weight: .bold)
+        let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
         let trimName = name.count > 8 ? String(name.prefix(8)) : name
         trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: [.font: nameFont, .foregroundColor: UIColor.white])
         
-        let toX = x + 96
+        let toX = x + (w * 0.42)
         for i in 0..<3 {
-            let toRect = CGRect(x: toX + CGFloat(i * 8), y: y + 4, width: 6, height: 3.5)
+            let toRect = CGRect(x: toX + CGFloat(i * 7), y: y + 4.5, width: 5, height: 3)
             let toColor = (i < tos) ? style.timeoutActiveColor : style.timeoutInactiveColor
             toColor.setFill()
             UIBezierPath(roundedRect: toRect, cornerRadius: 1.0).fill()
@@ -444,47 +448,49 @@ class ScoreboardOverlayView: UIView {
         let isBonus = fouls >= 5
         let foulStr = isBonus ? "F:\(fouls)B" : "F:\(fouls)"
         let foulColor = isBonus ? UIColor.red : UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-        foulStr.draw(at: CGPoint(x: x + 128, y: y + 2), withAttributes: [.font: UIFont.systemFont(ofSize: 9.5, weight: .bold), .foregroundColor: foulColor])
+        foulStr.draw(at: CGPoint(x: x + (w * 0.58), y: y + 2), withAttributes: [.font: UIFont.systemFont(ofSize: 8.5, weight: .bold), .foregroundColor: foulColor])
         
-        let scoreFont = UIFont.systemFont(ofSize: 19, weight: .heavy)
+        let scoreFont = UIFont.systemFont(ofSize: 15.5, weight: .heavy)
         let scoreStr = "\(pts)"
         let scoreSize = (scoreStr as NSString).size(withAttributes: [.font: scoreFont])
-        let scoreX = x + w - scoreSize.width - 10
+        let scoreX = x + w - scoreSize.width - 4
         scoreStr.draw(at: CGPoint(x: scoreX, y: y - 2), withAttributes: [.font: scoreFont, .foregroundColor: color])
     }
     
     // MARK: - Soccer & Handball Scoreboards
     
     private func drawSoccerScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let row1Y = y + 20
-        let row2Y = y + 39
+        let headerH: CGFloat = 14
+        let rowH = (h - headerH) / 2
+        let row1Y = y + headerH + (rowH - 13) / 2
+        let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        drawTeamRowSoccer(ctx: ctx, x: x + 6, y: row1Y, name: state.teamA, pts: state.scoreA, redCards: state.redCardsA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 12)
-        drawTeamRowSoccer(ctx: ctx, x: x + 6, y: row2Y, name: state.teamB, pts: state.scoreB, redCards: state.redCardsB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 12)
+        drawTeamRowSoccer(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, redCards: state.redCardsA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
+        drawTeamRowSoccer(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, redCards: state.redCardsB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRowSoccer(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, redCards: Int, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
         var curX = x
         if let logo = logo {
-            logo.draw(in: CGRect(x: curX, y: y + 1, width: 15, height: 15))
-            curX += 19
+            logo.draw(in: CGRect(x: curX, y: y + 1, width: 12, height: 12))
+            curX += 15
         }
         
-        let nameFont = UIFont.systemFont(ofSize: 12, weight: .bold)
+        let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
         let trimName = name.count > 10 ? String(name.prefix(10)) : name
         trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: [.font: nameFont, .foregroundColor: UIColor.white])
         
         if redCards > 0 {
-            let rcRect = CGRect(x: x + 115, y: y + 2, width: 6, height: 10)
+            let rcRect = CGRect(x: x + (w * 0.58), y: y + 2, width: 5, height: 8)
             UIColor.red.setFill()
             UIBezierPath(roundedRect: rcRect, cornerRadius: 1).fill()
-            "\(redCards)".draw(at: CGPoint(x: x + 124, y: y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 9.5, weight: .bold), .foregroundColor: UIColor.white])
+            "\(redCards)".draw(at: CGPoint(x: x + (w * 0.58) + 7, y: y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 8.5, weight: .bold), .foregroundColor: UIColor.white])
         }
         
-        let scoreFont = UIFont.systemFont(ofSize: 19, weight: .heavy)
+        let scoreFont = UIFont.systemFont(ofSize: 15.5, weight: .heavy)
         let scoreStr = "\(pts)"
         let scoreSize = (scoreStr as NSString).size(withAttributes: [.font: scoreFont])
-        let scoreX = x + w - scoreSize.width - 10
+        let scoreX = x + w - scoreSize.width - 4
         scoreStr.draw(at: CGPoint(x: scoreX, y: y - 2), withAttributes: [.font: scoreFont, .foregroundColor: color])
     }
     
@@ -495,26 +501,28 @@ class ScoreboardOverlayView: UIView {
     // MARK: - Tennis / Padel Scoreboard
     
     private func drawTennisScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let row1Y = y + 20
-        let row2Y = y + 39
+        let headerH: CGFloat = 14
+        let rowH = (h - headerH) / 2
+        let row1Y = y + headerH + (rowH - 13) / 2
+        let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        drawTeamRowTennis(ctx: ctx, x: x + 6, y: row1Y, name: state.teamA, pts: state.tennisPointsA, games: state.tennisGamesA, sets: state.setsA, isTiebreak: state.isTiebreak, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 12)
-        drawTeamRowTennis(ctx: ctx, x: x + 6, y: row2Y, name: state.teamB, pts: state.tennisPointsB, games: state.tennisGamesB, sets: state.setsB, isTiebreak: state.isTiebreak, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 12)
+        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.tennisPointsA, games: state.tennisGamesA, sets: state.setsA, isTiebreak: state.isTiebreak, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
+        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.tennisPointsB, games: state.tennisGamesB, sets: state.setsB, isTiebreak: state.isTiebreak, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRowTennis(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, games: Int, sets: Int, isTiebreak: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
         var curX = x
         if let logo = logo {
-            logo.draw(in: CGRect(x: curX, y: y + 1, width: 15, height: 15))
-            curX += 19
+            logo.draw(in: CGRect(x: curX, y: y + 1, width: 12, height: 12))
+            curX += 15
         }
         
-        let nameFont = UIFont.systemFont(ofSize: 12, weight: .bold)
+        let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
         let trimName = name.count > 8 ? String(name.prefix(8)) : name
         trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: [.font: nameFont, .foregroundColor: UIColor.white])
         
         let sgStr = "S:\(sets) G:\(games)"
-        sgStr.draw(at: CGPoint(x: x + 100, y: y + 2), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
+        sgStr.draw(at: CGPoint(x: x + (w * 0.44), y: y + 2), withAttributes: [.font: UIFont.systemFont(ofSize: 9, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
         
         let ptsStr: String
         if isTiebreak {
@@ -529,17 +537,19 @@ class ScoreboardOverlayView: UIView {
             }
         }
         
-        let scoreFont = UIFont.systemFont(ofSize: 18, weight: .heavy)
+        let scoreFont = UIFont.systemFont(ofSize: 15, weight: .heavy)
         let scoreSize = (ptsStr as NSString).size(withAttributes: [.font: scoreFont])
-        let scoreX = x + w - scoreSize.width - 10
+        let scoreX = x + w - scoreSize.width - 4
         ptsStr.draw(at: CGPoint(x: scoreX, y: y - 2), withAttributes: [.font: scoreFont, .foregroundColor: color])
     }
     
     // MARK: - Darts Scoreboard
     
     private func drawDartsScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let row1Y = y + 20
-        let row2Y = y + 39
+        let headerH: CGFloat = 14
+        let rowH = (h - headerH) / 2
+        let row1Y = y + headerH + (rowH - 13) / 2
+        let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
         let trimA = state.teamA.count > 8 ? String(state.teamA.prefix(8)) : state.teamA
         let trimB = state.teamB.count > 8 ? String(state.teamB.prefix(8)) : state.teamB
@@ -550,51 +560,55 @@ class ScoreboardOverlayView: UIView {
         let arrowA = isA ? "▶ " : ""
         let arrowB = isB ? "▶ " : ""
         
-        "\(arrowA)\(trimA.uppercased())".draw(at: CGPoint(x: x + 6, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 11, weight: .bold), .foregroundColor: UIColor.white])
-        "\(arrowB)\(trimB.uppercased())".draw(at: CGPoint(x: x + 6, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 11, weight: .bold), .foregroundColor: UIColor.white])
+        "\(arrowA)\(trimA.uppercased())".draw(at: CGPoint(x: x + 4, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
+        "\(arrowB)\(trimB.uppercased())".draw(at: CGPoint(x: x + 4, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
         
-        "Legs: \(state.dartsLegsA)".draw(at: CGPoint(x: x + 110, y: row1Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
-        "Legs: \(state.dartsLegsB)".draw(at: CGPoint(x: x + 110, y: row2Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
+        "L:\(state.dartsLegsA)".draw(at: CGPoint(x: x + (w * 0.48), y: row1Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 9, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
+        "L:\(state.dartsLegsB)".draw(at: CGPoint(x: x + (w * 0.48), y: row2Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 9, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
         
-        let ptsFont = UIFont.systemFont(ofSize: 18, weight: .heavy)
+        let ptsFont = UIFont.systemFont(ofSize: 15, weight: .heavy)
         let ptsStrA = "\(state.scoreA)"
         let ptsStrB = "\(state.scoreB)"
         
         let sizeA = (ptsStrA as NSString).size(withAttributes: [.font: ptsFont])
         let sizeB = (ptsStrB as NSString).size(withAttributes: [.font: ptsFont])
         
-        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 10, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
-        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 10, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
+        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
+        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
     }
     
     // MARK: - Billiards & Cricket Scoreboards
     
     private func drawBilliardsScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let row1Y = y + 20
-        let row2Y = y + 39
+        let headerH: CGFloat = 14
+        let rowH = (h - headerH) / 2
+        let row1Y = y + headerH + (rowH - 13) / 2
+        let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
         let trimA = state.teamA.count > 8 ? String(state.teamA.prefix(8)) : state.teamA
         let trimB = state.teamB.count > 8 ? String(state.teamB.prefix(8)) : state.teamB
         
-        trimA.uppercased().draw(at: CGPoint(x: x + 6, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 11, weight: .bold), .foregroundColor: UIColor.white])
-        trimB.uppercased().draw(at: CGPoint(x: x + 6, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 11, weight: .bold), .foregroundColor: UIColor.white])
+        trimA.uppercased().draw(at: CGPoint(x: x + 4, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
+        trimB.uppercased().draw(at: CGPoint(x: x + 4, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
         
-        "Frames: \(state.setsA)".draw(at: CGPoint(x: x + 105, y: row1Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
-        "Frames: \(state.setsB)".draw(at: CGPoint(x: x + 105, y: row2Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
+        "F:\(state.setsA)".draw(at: CGPoint(x: x + (w * 0.48), y: row1Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 9, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
+        "F:\(state.setsB)".draw(at: CGPoint(x: x + (w * 0.48), y: row2Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 9, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
         
-        let ptsFont = UIFont.systemFont(ofSize: 18, weight: .heavy)
+        let ptsFont = UIFont.systemFont(ofSize: 15, weight: .heavy)
         let ptsStrA = "\(state.scoreA)"
         let ptsStrB = "\(state.scoreB)"
         let sizeA = (ptsStrA as NSString).size(withAttributes: [.font: ptsFont])
         let sizeB = (ptsStrB as NSString).size(withAttributes: [.font: ptsFont])
         
-        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 10, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
-        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 10, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
+        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
+        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
     }
     
     private func drawCricketScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let row1Y = y + 20
-        let row2Y = y + 39
+        let headerH: CGFloat = 14
+        let rowH = (h - headerH) / 2
+        let row1Y = y + headerH + (rowH - 13) / 2
+        let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
         let oversA = "\(state.cricketBallsA / 6).\(state.cricketBallsA % 6)"
         let oversB = "\(state.cricketBallsB / 6).\(state.cricketBallsB % 6)"
@@ -602,20 +616,20 @@ class ScoreboardOverlayView: UIView {
         let trimA = state.teamA.count > 8 ? String(state.teamA.prefix(8)) : state.teamA
         let trimB = state.teamB.count > 8 ? String(state.teamB.prefix(8)) : state.teamB
         
-        trimA.uppercased().draw(at: CGPoint(x: x + 6, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 11, weight: .bold), .foregroundColor: UIColor.white])
-        trimB.uppercased().draw(at: CGPoint(x: x + 6, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 11, weight: .bold), .foregroundColor: UIColor.white])
+        trimA.uppercased().draw(at: CGPoint(x: x + 4, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
+        trimB.uppercased().draw(at: CGPoint(x: x + 4, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
         
-        "(\(oversA)ov)".draw(at: CGPoint(x: x + 98, y: row1Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 9.5, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
-        "(\(oversB)ov)".draw(at: CGPoint(x: x + 98, y: row2Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 9.5, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
+        "(\(oversA)ov)".draw(at: CGPoint(x: x + (w * 0.44), y: row1Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 8.5, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
+        "(\(oversB)ov)".draw(at: CGPoint(x: x + (w * 0.44), y: row2Y + 1), withAttributes: [.font: UIFont.systemFont(ofSize: 8.5, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
         
-        let ptsFont = UIFont.systemFont(ofSize: 16, weight: .heavy)
+        let ptsFont = UIFont.systemFont(ofSize: 14.5, weight: .heavy)
         let ptsStrA = "\(state.scoreA)/\(state.foulsA)"
         let ptsStrB = "\(state.scoreB)/\(state.foulsB)"
         let sizeA = (ptsStrA as NSString).size(withAttributes: [.font: ptsFont])
         let sizeB = (ptsStrB as NSString).size(withAttributes: [.font: ptsFont])
         
-        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 10, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
-        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 10, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
+        ptsStrA.draw(at: CGPoint(x: x + w - sizeA.width - 4, y: row1Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)])
+        ptsStrB.draw(at: CGPoint(x: x + w - sizeB.width - 4, y: row2Y - 2), withAttributes: [.font: ptsFont, .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)])
     }
     
     // MARK: - Attached Set Point / Match Point Badge (Right Side of Scoreboard)

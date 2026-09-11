@@ -80,15 +80,16 @@ class MainViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
-        // Lock app to landscape for Regia screen
         AppDelegate.setOrientationLock(.landscape, rotateTo: .landscapeRight)
+        StreamManager.shared.updateOrientation(.landscapeRight)
+        refreshMatchState()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
         AppDelegate.setOrientationLock(.landscape, rotateTo: .landscapeRight)
+        StreamManager.shared.updateOrientation(.landscapeRight)
+        refreshMatchState()
         layoutAllViews()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
@@ -99,18 +100,27 @@ class MainViewController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        
-        // Unlock orientation for return to menus
         AppDelegate.setOrientationLock(.allButUpsideDown, rotateTo: .portrait)
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         coordinator.animate(alongsideTransition: { [weak self] _ in
+            let orient: AVCaptureVideoOrientation = (UIDevice.current.orientation == .landscapeLeft) ? .landscapeLeft : .landscapeRight
+            StreamManager.shared.updateOrientation(orient)
             self?.layoutAllViews()
         }) { [weak self] _ in
             self?.layoutAllViews()
         }
+    }
+    
+    func refreshMatchState() {
+        self.localState.sportType = AppPreferences.shared.selectedSport
+        self.localState.overlayTheme = AppPreferences.shared.selectedTheme
+        self.localState.teamA = AppPreferences.shared.teamHome
+        self.localState.teamB = AppPreferences.shared.teamAway
+        self.localState.isPuntoDeOro = UserDefaults.standard.bool(forKey: "punto_de_oro")
+        updateLocalState()
     }
     
     private func forceLandscapeOrientation() {
@@ -125,11 +135,11 @@ class MainViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         
-        self.localState.sportType = initialSport
-        localState.overlayTheme = initialTheme
-        localState.teamA = AppPreferences.shared.teamHome
-        localState.teamB = AppPreferences.shared.teamAway
-        localState.isPuntoDeOro = UserDefaults.standard.bool(forKey: "punto_de_oro")
+        self.localState.sportType = AppPreferences.shared.selectedSport
+        self.localState.overlayTheme = AppPreferences.shared.selectedTheme
+        self.localState.teamA = AppPreferences.shared.teamHome
+        self.localState.teamB = AppPreferences.shared.teamAway
+        self.localState.isPuntoDeOro = UserDefaults.standard.bool(forKey: "punto_de_oro")
         
         setupCameraView()
         setupScoreboardOverlay()
@@ -420,8 +430,8 @@ class MainViewController: UIViewController {
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
             scoreboardView.transform = .identity
-            let scoreW: CGFloat = min(280, w * 0.38)
-            let scoreH: CGFloat = 62
+            let scoreW: CGFloat = min(210, max(185, w * 0.27))
+            let scoreH: CGFloat = 50
             scoreboardView.frame = CGRect(x: safeLeft, y: safeTop, width: scoreW, height: scoreH)
         }
         

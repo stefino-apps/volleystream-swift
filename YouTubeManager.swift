@@ -7,6 +7,7 @@ public class YouTubeManager: NSObject {
     
     public var userEmail: String?
     public var accessToken: String?
+    public var displayName: String?
     
     private override init() {
         super.init()
@@ -32,8 +33,9 @@ public class YouTubeManager: NSObject {
             
             self.userEmail = result.user.profile?.email
             self.accessToken = result.user.accessToken.tokenString
-            let displayName = result.user.profile?.name ?? result.user.profile?.email ?? "Canale YouTube"
-            completion(true, displayName, nil)
+            let name = result.user.profile?.name ?? result.user.profile?.email ?? "Canale YouTube"
+            self.displayName = name
+            completion(true, name, nil)
         }
     }
     
@@ -41,6 +43,7 @@ public class YouTubeManager: NSObject {
         GIDSignIn.sharedInstance.signOut()
         self.userEmail = nil
         self.accessToken = nil
+        self.displayName = nil
     }
     
     public func disconnect() {
@@ -62,17 +65,43 @@ public class YouTubeManager: NSObject {
         let startTime = Date().addingTimeInterval(300)
         let formatter = ISO8601DateFormatter()
         let bBody: [String: Any] = [
-            "snippet": ["title": title, "scheduledStartTime": formatter.string(from: startTime)],
-            "status": ["privacyStatus": "unlisted"]
+            "snippet": [
+                "title": title,
+                "scheduledStartTime": formatter.string(from: startTime)
+            ],
+            "status": [
+                "privacyStatus": "unlisted",
+                "selfDeclaredMadeForKids": false
+            ],
+            "contentDetails": [
+                "enableAutoStart": true,
+                "monitorStream": [
+                    "enableMonitorStream": false
+                ]
+            ]
         ]
         bReq.httpBody = try? JSONSerialization.data(withJSONObject: bBody)
         
-        URLSession.shared.dataTask(with: bReq) { data, _, err in
+        URLSession.shared.dataTask(with: bReq) { data, response, err in
             if let err = err { completion(nil, nil, err); return }
-            guard let data = data,
-                  let bJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let broadcastId = bJson["id"] as? String else {
-                completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore Broadcast"]))
+            guard let data = data else {
+                completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Nessuna risposta dal server"]))
+                return
+            }
+            
+            guard let bJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Risposta non valida da YouTube"]))
+                return
+            }
+            
+            if let errorObj = bJson["error"] as? [String: Any],
+               let message = errorObj["message"] as? String {
+                completion(nil, nil, NSError(domain: "YouTube", code: (errorObj["code"] as? Int) ?? 500, userInfo: [NSLocalizedDescriptionKey: message]))
+                return
+            }
+            
+            guard let broadcastId = bJson["id"] as? String else {
+                completion(nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore creazione Broadcast (ID mancante)"]))
                 return
             }
             
@@ -92,28 +121,49 @@ public class YouTubeManager: NSObject {
     }
     
     private func createStream(token: String, title: String, completion: @escaping (String?, String?, String?, Error?) -> Void) {
-        let streamUrl = URL(string: "https://youtube.googleapis.com/youtube/v3/liveStreams?part=snippet,cdn,contentDetails")!
+        let streamUrl = URL(string: "https://youtube.googleapis.com/youtube/v3/liveStreams?part=snippet,cdn")!
         var sReq = URLRequest(url: streamUrl)
         sReq.httpMethod = "POST"
         sReq.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         sReq.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let sBody: [String: Any] = [
-            "snippet": ["title": title],
-            "cdn": ["frameRate": "60fps", "ingestionType": "rtmp", "resolution": "1080p"]
+            "snippet": [
+                "title": "\(title) - Stream"
+            ],
+            "cdn": [
+                "format": "1080p",
+                "ingestionType": "rtmp",
+                "frameRate": "variable",
+                "resolution": "variable"
+            ]
         ]
         sReq.httpBody = try? JSONSerialization.data(withJSONObject: sBody)
         
         URLSession.shared.dataTask(with: sReq) { data, _, err in
             if let err = err { completion(nil, nil, nil, err); return }
-            guard let data = data,
-                  let sJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let streamId = sJson["id"] as? String,
+            guard let data = data else {
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Nessuna risposta per Stream"]))
+                return
+            }
+            
+            guard let sJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Risposta non valida"]))
+                return
+            }
+            
+            if let errorObj = sJson["error"] as? [String: Any],
+               let message = errorObj["message"] as? String {
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: (errorObj["code"] as? Int) ?? 500, userInfo: [NSLocalizedDescriptionKey: message]))
+                return
+            }
+            
+            guard let streamId = sJson["id"] as? String,
                   let cdn = sJson["cdn"] as? [String: Any],
                   let ingestion = cdn["ingestionInfo"] as? [String: Any],
                   let streamName = ingestion["streamName"] as? String,
                   let ingestionAddress = ingestion["ingestionAddress"] as? String else {
-                completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore creazione Stream"]))
+                completion(nil, nil, nil, NSError(domain: "YouTube", code: 500, userInfo: [NSLocalizedDescriptionKey: "Errore creazione Stream (dati mancanti)"]))
                 return
             }
             completion(streamId, ingestionAddress, streamName, nil)
@@ -126,8 +176,16 @@ public class YouTubeManager: NSObject {
         bReq.httpMethod = "POST"
         bReq.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
-        URLSession.shared.dataTask(with: bReq) { _, _, err in
-            completion(err)
+        URLSession.shared.dataTask(with: bReq) { data, _, err in
+            if let err = err { completion(err); return }
+            if let data = data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let errorObj = json["error"] as? [String: Any],
+               let message = errorObj["message"] as? String {
+                completion(NSError(domain: "YouTube", code: (errorObj["code"] as? Int) ?? 500, userInfo: [NSLocalizedDescriptionKey: message]))
+                return
+            }
+            completion(nil)
         }.resume()
     }
 }

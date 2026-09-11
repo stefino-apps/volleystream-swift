@@ -33,6 +33,7 @@ public class StreamManager: NSObject {
         // Capture & Camera Settings
         rtmpStream.frameRate = 60.0
         rtmpStream.sessionPreset = .hd1920x1080
+        rtmpStream.videoOrientation = .landscapeRight
         
         // Registra il Video Effect per sovrimpressione
         _ = rtmpStream.registerVideoEffect(videoEffect)
@@ -57,13 +58,20 @@ public class StreamManager: NSObject {
             rtmpStream.attachCamera(camera) { unit, error in
                 if let error = error { print("Camera error: \(error.localizedDescription)") }
             }
+            rtmpStream.videoOrientation = .landscapeRight
         }
     }
     
     // Metodo per collegare la preview video Metal
     public func attachCamera(to view: MTHKView) {
         view.videoGravity = .resizeAspectFill
+        view.videoOrientation = .landscapeRight
         view.attachStream(rtmpStream)
+        rtmpStream.videoOrientation = .landscapeRight
+    }
+    
+    public func updateOrientation(_ orientation: AVCaptureVideoOrientation) {
+        rtmpStream.videoOrientation = orientation
     }
     
     public func startStreaming(url: String, streamKey: String) {

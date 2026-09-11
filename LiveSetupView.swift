@@ -167,7 +167,9 @@ struct LiveSetupView: View {
         .onAppear {
             AppDelegate.setOrientationLock(.allButUpsideDown, rotateTo: .portrait)
             isYouTubeLoggedIn = YouTubeManager.shared.accessToken != nil
-            if isYouTubeLoggedIn { channelName = "stellaazzurramalnate-" }
+            if isYouTubeLoggedIn {
+                channelName = YouTubeManager.shared.displayName ?? YouTubeManager.shared.userEmail ?? "Canale Connesso"
+            }
         }
     }
     
@@ -593,8 +595,9 @@ struct LiveSetupView: View {
                     if err == nil, let rtmp = rtmp, let key = key {
                         self.proceedToDirector(rtmp: rtmp, key: key)
                     } else {
-                        self.alertTitle = "live_create_error".localized
-                        self.alertMessage = "Impossibile creare la diretta YouTube automatica (\(err?.localizedDescription ?? "Errore")).\nVuoi comunque accedere alla Regia?"
+                        let errText = err?.localizedDescription ?? "Errore Broadcast"
+                        self.alertTitle = "❌ Errore creazione diretta"
+                        self.alertMessage = "Impossibile creare la diretta YouTube automatica (\(errText)).\n\nVuoi comunque accedere alla Regia?"
                         self.showAlert = true
                     }
                 }

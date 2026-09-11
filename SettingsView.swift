@@ -214,7 +214,10 @@ struct SettingsView: View {
             
             Menu {
                 ForEach(sports) { sport in
-                    Button(action: { selectedSport = sport.id }) {
+                    Button(action: {
+                        selectedSport = sport.id
+                        AppPreferences.shared.selectedSport = sport.id
+                    }) {
                         Text(sport.name)
                     }
                 }
@@ -317,13 +320,16 @@ struct SettingsView: View {
                 
                 Menu {
                     ForEach(themes) { theme in
-                        Button(action: { selectedTheme = theme.id }) {
+                        Button(action: {
+                            selectedTheme = theme.id
+                            AppPreferences.shared.selectedTheme = theme.id
+                        }) {
                             Text(theme.name)
                         }
                     }
                 } label: {
                     HStack {
-                        Text(themes.first(where: { $0.id == selectedTheme })?.name ?? "PRO BLUE")
+                        Text(themes.first(where: { $0.id == selectedTheme })?.name ?? "NEON GLOW (DEFAULT)")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
