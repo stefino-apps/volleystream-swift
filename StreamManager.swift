@@ -9,6 +9,8 @@ public class StreamManager: NSObject {
     public var rtmpConnection = RTMPConnection()
     public var rtmpStream: RTMPStream!
     private var streamKeyToPublish: String = ""
+    public var currentCamera: AVCaptureDevice?
+    public var isPublishing: Bool = false
     
     // Effetto Video per Replay e Grafica
     let videoEffect = StreamVideoEffect()
@@ -55,11 +57,45 @@ public class StreamManager: NSObject {
         }
         
         if let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
+            self.currentCamera = camera
             rtmpStream.attachCamera(camera) { unit, error in
                 if let error = error { print("Camera error: \(error.localizedDescription)") }
             }
             rtmpStream.videoOrientation = .landscapeRight
         }
+    }
+    
+    // Zoom Controls
+    public func zoomIn() {
+        guard let device = currentCamera else { return }
+        do {
+            try device.lockForConfiguration()
+            let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 5.0)
+            let newZoom = min(device.videoZoomFactor + 0.5, maxZoom)
+            device.videoZoomFactor = newZoom
+            device.unlockForConfiguration()
+        } catch { }
+    }
+    
+    public func zoomOut() {
+        guard let device = currentCamera else { return }
+        do {
+            try device.lockForConfiguration()
+            let newZoom = max(device.videoZoomFactor - 0.5, 1.0)
+            device.videoZoomFactor = newZoom
+            device.unlockForConfiguration()
+        } catch { }
+    }
+    
+    public func setZoom(factor: CGFloat) {
+        guard let device = currentCamera else { return }
+        do {
+            try device.lockForConfiguration()
+            let maxZoom = min(device.activeFormat.videoMaxZoomFactor, 5.0)
+            let clamped = max(1.0, min(factor, maxZoom))
+            device.videoZoomFactor = clamped
+            device.unlockForConfiguration()
+        } catch { }
     }
     
     // Metodo per collegare la preview video Metal
@@ -89,10 +125,12 @@ public class StreamManager: NSObject {
         
         if code == RTMPConnection.Code.connectSuccess.rawValue {
             rtmpStream.publish(streamKeyToPublish)
+            self.isPublishing = true
         }
     }
     
     public func stopStreaming() {
+        self.isPublishing = false
         rtmpStream.close()
         rtmpConnection.close()
     }

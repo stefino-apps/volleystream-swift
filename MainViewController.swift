@@ -188,6 +188,9 @@ class MainViewController: UIViewController {
         lfView.videoGravity = AVLayerVideoGravity.resizeAspectFill
         view.addSubview(lfView)
         
+        let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+        lfView.addGestureRecognizer(pinch)
+        
         AVCaptureDevice.requestAccess(for: .video) { granted in
             if granted {
                 AVCaptureDevice.requestAccess(for: .audio) { _ in
@@ -201,7 +204,7 @@ class MainViewController: UIViewController {
     }
     
     private func setupScoreboardOverlay() {
-        scoreboardView = ScoreboardOverlayView(frame: CGRect(x: 20, y: 15, width: 280, height: 62))
+        scoreboardView = ScoreboardOverlayView(frame: CGRect(x: 20, y: 15, width: 280, height: 54))
         view.addSubview(scoreboardView)
         StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
     }
@@ -417,26 +420,6 @@ class MainViewController: UIViewController {
         let isGrid = (currentMode == 1)
         let isClean = (currentMode == 2)
         
-        // Camera View Frame
-        if isGrid {
-            let gridW = (w - safeLeft - safeRight) * 0.52
-            let gridH = (h - safeTop - safeBottom) * 0.52
-            lfView.frame = CGRect(x: safeLeft, y: safeTop, width: gridW, height: gridH)
-            lfView.layer.cornerRadius = 12
-            lfView.clipsToBounds = true
-            scoreboardView.transform = CGAffineTransform(scaleX: 0.55, y: 0.55)
-            scoreboardView.frame.origin = CGPoint(x: safeLeft + 8, y: safeTop + 8)
-        } else {
-            lfView.frame = view.bounds
-            lfView.layer.cornerRadius = 0
-            scoreboardView.transform = .identity
-            let scoreW: CGFloat = min(210, max(185, w * 0.27))
-            let scoreH: CGFloat = 50
-            scoreboardView.frame = CGRect(x: safeLeft, y: safeTop, width: scoreW, height: scoreH)
-        }
-        
-        gridLayer?.isHidden = !isGrid
-        
         // Hide / Show controls based on Clean mode
         let allControls: [UIView] = [
             closeButton, modeButton, shareLiveButton, shareRemoteButton, replayButton, highlightButton,
@@ -446,16 +429,21 @@ class MainViewController: UIViewController {
         ]
         
         if isClean {
+            lfView.frame = view.bounds
+            lfView.layer.cornerRadius = 0
+            scoreboardView.transform = .identity
+            scoreboardView.frame = CGRect(x: safeLeft, y: safeTop, width: 280, height: 54)
+            gridLayer?.isHidden = true
             allControls.forEach { $0.isHidden = true }
             return
         } else {
             allControls.forEach { $0.isHidden = false }
         }
         
-        let isBasket = (self.localState.sportType == "basket")
-        let isSoccer = (self.localState.sportType == "soccer")
-        let isBiliardo = (self.localState.sportType == "biliardo")
-        let isTennis = (self.localState.sportType == "tennis" || self.localState.sportType == "padel")
+        let isBasket = (self.localState.sportType.lowercased() == "basket")
+        let isSoccer = (self.localState.sportType.lowercased() == "soccer")
+        let isBiliardo = (self.localState.sportType.lowercased() == "biliardo" || self.localState.sportType.lowercased() == "billiards")
+        let isTennis = (self.localState.sportType.lowercased() == "tennis" || self.localState.sportType.lowercased() == "padel")
         
         btnScoreHome2.isHidden = !isBasket
         btnScoreHome3.isHidden = !isBasket
@@ -485,91 +473,169 @@ class MainViewController: UIViewController {
             btnEndQuarter.setTitle("FINE QUARTO", for: .normal)
         }
         
-        // --- 1. TOP RIGHT ACTION BAR ---
-        let isPortrait = w < h
-        let btnSize: CGFloat = isPortrait ? min(34, (w - safeLeft - safeRight) / 8) : 40
-        let btnGap: CGFloat = isPortrait ? 4 : 8
-        var currentRightX = w - safeRight - btnSize
-        
-        // Close Button (Rightmost)
-        closeButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
-        currentRightX -= (btnSize + btnGap)
-        
-        // Mode Button (L/G/C)
-        modeButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
-        currentRightX -= (btnSize + btnGap)
-        
-        // Share Live Button
-        shareLiveButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
-        currentRightX -= (btnSize + btnGap)
-        
-        // Remote Control Button
-        shareRemoteButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
-        currentRightX -= (btnSize + btnGap)
-        
-        // Replay Button
-        replayButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
-        currentRightX -= (btnSize + btnGap)
-        
-        // Highlight Button
-        highlightButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
-        
-        // Zoom Buttons (Right Column under close/mode button)
-        let zoomW: CGFloat = isPortrait ? 28 : 36
-        let zoomH: CGFloat = isPortrait ? 26 : 32
-        let zoomX = w - safeRight - zoomW
-        zoomInButton.frame = CGRect(x: zoomX, y: safeTop + btnSize + 10, width: zoomW, height: zoomH)
-        zoomOutButton.frame = CGRect(x: zoomX, y: safeTop + btnSize + 10 + zoomH + 4, width: zoomW, height: zoomH)
-        
-        // --- 2. BOTTOM CENTER CONTROLS (Broadcast Control) ---
-        let centerX = w / 2
-        let streamBtnW: CGFloat = isPortrait ? 60 : 72
-        let streamBtnH: CGFloat = isPortrait ? 46 : 54
-        let bottomCenterY = h - safeBottom - streamBtnH
-        let sideBtnSize: CGFloat = isPortrait ? 38 : 44
-        
-        startStreamButton.frame = CGRect(x: centerX - streamBtnW / 2, y: bottomCenterY, width: streamBtnW, height: streamBtnH)
-        muteButton.frame = CGRect(x: centerX - streamBtnW / 2 - sideBtnSize - 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
-        sponsorButton.frame = CGRect(x: centerX + streamBtnW / 2 + 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
-        
-        // End Quarter (above center bar if needed)
-        btnEndQuarter.frame = CGRect(x: centerX - 60, y: bottomCenterY - 36, width: 120, height: 30)
-        
-        // --- 3. BOTTOM LEFT CONTROLS (Team Home / A) ---
-        let scoreBtnSize: CGFloat = isPortrait ? min(54, (w - 180) / 2) : 70
-        let subBtnW: CGFloat = isPortrait ? 40 : 50
-        let subBtnH: CGFloat = (scoreBtnSize - 4) / 2
-        let bottomScoreY = h - safeBottom - scoreBtnSize
-        
-        // Sub buttons column on the far left
-        btnTimeoutHome.frame = CGRect(x: safeLeft, y: bottomScoreY, width: subBtnW, height: subBtnH)
-        btnMinusHome.frame = CGRect(x: safeLeft, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
-        
-        // Main +1 Score Button
-        btnScoreHome.frame = CGRect(x: safeLeft + subBtnW + 8, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
-        
-        // Basketball +2 / +3 buttons
-        if isBasket {
-            let basketW: CGFloat = isPortrait ? 34 : 44
-            btnScoreHome2.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY, width: basketW, height: subBtnH)
-            btnScoreHome3.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
-        }
-        
-        // --- 4. BOTTOM RIGHT CONTROLS (Team Away / B) ---
-        // Sub buttons column on the far right
-        let rightSubX = w - safeRight - subBtnW
-        btnTimeoutAway.frame = CGRect(x: rightSubX, y: bottomScoreY, width: subBtnW, height: subBtnH)
-        btnMinusAway.frame = CGRect(x: rightSubX, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
-        
-        // Main +1 Score Button (To the left of sub buttons)
-        let rightScoreX = rightSubX - scoreBtnSize - 8
-        btnScoreAway.frame = CGRect(x: rightScoreX, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
-        
-        // Basketball +2 / +3 buttons
-        if isBasket {
-            let basketW: CGFloat = isPortrait ? 34 : 44
-            btnScoreAway2.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY, width: basketW, height: subBtnH)
-            btnScoreAway3.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
+        if isGrid {
+            // === GRID MODE: PREVIEW ON LEFT, FULL CONTROLS ON RIGHT ===
+            let safeW = w - safeLeft - safeRight
+            let safeH = h - safeTop - safeBottom
+            let previewW = safeW * 0.48
+            let previewH = safeH
+            
+            lfView.frame = CGRect(x: safeLeft, y: safeTop, width: previewW, height: previewH)
+            lfView.layer.cornerRadius = 12
+            lfView.clipsToBounds = true
+            scoreboardView.transform = CGAffineTransform(scaleX: 0.62, y: 0.62)
+            scoreboardView.frame.origin = CGPoint(x: safeLeft + 6, y: safeTop + 6)
+            gridLayer?.isHidden = false
+            
+            let panelX = safeLeft + previewW + 10
+            let panelW = safeW - previewW - 10
+            
+            // Row 1: Top Tools (8 buttons)
+            let row1Y = safeTop
+            let numTopBtns: CGFloat = 8
+            let topGap: CGFloat = 5
+            let topBtnW = (panelW - (numTopBtns - 1) * topGap) / numTopBtns
+            let topBtnH = min(36, topBtnW)
+            
+            closeButton.frame = CGRect(x: panelX + 0 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            modeButton.frame = CGRect(x: panelX + 1 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            shareLiveButton.frame = CGRect(x: panelX + 2 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            shareRemoteButton.frame = CGRect(x: panelX + 3 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            replayButton.frame = CGRect(x: panelX + 4 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            highlightButton.frame = CGRect(x: panelX + 5 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            zoomInButton.frame = CGRect(x: panelX + 6 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            zoomOutButton.frame = CGRect(x: panelX + 7 * (topBtnW + topGap), y: row1Y, width: topBtnW, height: topBtnH)
+            
+            // Row 2: Stream & Broadcast Action Bar
+            let row2Y = row1Y + topBtnH + 8
+            let row2H: CGFloat = 40
+            let liveW: CGFloat = max(70, panelW * 0.28)
+            let sideBtnW: CGFloat = 38
+            
+            startStreamButton.frame = CGRect(x: panelX, y: row2Y, width: liveW, height: row2H)
+            muteButton.frame = CGRect(x: panelX + liveW + 6, y: row2Y, width: sideBtnW, height: row2H)
+            sponsorButton.frame = CGRect(x: panelX + liveW + 6 + sideBtnW + 6, y: row2Y, width: sideBtnW, height: row2H)
+            
+            let eqX = panelX + liveW + 6 + sideBtnW + 6 + sideBtnW + 6
+            let eqW = panelX + panelW - eqX
+            btnEndQuarter.frame = CGRect(x: eqX, y: row2Y, width: max(80, eqW), height: row2H)
+            
+            // Row 3 & 4: Scoring Buttons (Home on left, Away on right)
+            let row3Y = row2Y + row2H + 10
+            let row3H = safeTop + previewH - row3Y
+            let teamColW = (panelW - 10) / 2
+            
+            // Team Home Controls
+            let teamAX = panelX
+            let subBtnW: CGFloat = 42
+            let mainScoreW = teamColW - subBtnW - 6
+            let subH = (row3H - 6) / 2
+            
+            btnTimeoutHome.frame = CGRect(x: teamAX, y: row3Y, width: subBtnW, height: subH)
+            btnMinusHome.frame = CGRect(x: teamAX, y: row3Y + subH + 6, width: subBtnW, height: subH)
+            btnScoreHome.frame = CGRect(x: teamAX + subBtnW + 6, y: row3Y, width: mainScoreW, height: row3H)
+            
+            if isBasket {
+                let basketW: CGFloat = 30
+                btnScoreHome.frame = CGRect(x: teamAX + subBtnW + 6, y: row3Y, width: mainScoreW - basketW - 4, height: row3H)
+                btnScoreHome2.frame = CGRect(x: teamAX + subBtnW + 6 + mainScoreW - basketW, y: row3Y, width: basketW, height: subH)
+                btnScoreHome3.frame = CGRect(x: teamAX + subBtnW + 6 + mainScoreW - basketW, y: row3Y + subH + 6, width: basketW, height: subH)
+            }
+            
+            // Team Away Controls
+            let teamBX = panelX + teamColW + 10
+            if isBasket {
+                let basketW: CGFloat = 30
+                btnScoreAway2.frame = CGRect(x: teamBX, y: row3Y, width: basketW, height: subH)
+                btnScoreAway3.frame = CGRect(x: teamBX, y: row3Y + subH + 6, width: basketW, height: subH)
+                btnScoreAway.frame = CGRect(x: teamBX + basketW + 4, y: row3Y, width: mainScoreW - basketW - 4, height: row3H)
+                btnTimeoutAway.frame = CGRect(x: teamBX + mainScoreW + 6, y: row3Y, width: subBtnW, height: subH)
+                btnMinusAway.frame = CGRect(x: teamBX + mainScoreW + 6, y: row3Y + subH + 6, width: subBtnW, height: subH)
+            } else {
+                btnScoreAway.frame = CGRect(x: teamBX, y: row3Y, width: mainScoreW, height: row3H)
+                btnTimeoutAway.frame = CGRect(x: teamBX + mainScoreW + 6, y: row3Y, width: subBtnW, height: subH)
+                btnMinusAway.frame = CGRect(x: teamBX + mainScoreW + 6, y: row3Y + subH + 6, width: subBtnW, height: subH)
+            }
+            
+        } else {
+            // === NORMAL FULLSCREEN MODE ===
+            lfView.frame = view.bounds
+            lfView.layer.cornerRadius = 0
+            scoreboardView.transform = .identity
+            scoreboardView.frame = CGRect(x: safeLeft, y: safeTop, width: 280, height: 54)
+            gridLayer?.isHidden = true
+            
+            // 1. TOP RIGHT ACTION BAR
+            let isPortrait = w < h
+            let btnSize: CGFloat = isPortrait ? min(34, (w - safeLeft - safeRight) / 8) : 40
+            let btnGap: CGFloat = isPortrait ? 4 : 8
+            var currentRightX = w - safeRight - btnSize
+            
+            closeButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            currentRightX -= (btnSize + btnGap)
+            
+            modeButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            currentRightX -= (btnSize + btnGap)
+            
+            shareLiveButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            currentRightX -= (btnSize + btnGap)
+            
+            shareRemoteButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            currentRightX -= (btnSize + btnGap)
+            
+            replayButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            currentRightX -= (btnSize + btnGap)
+            
+            highlightButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            
+            // Zoom Buttons
+            let zoomW: CGFloat = isPortrait ? 28 : 36
+            let zoomH: CGFloat = isPortrait ? 26 : 32
+            let zoomX = w - safeRight - zoomW
+            zoomInButton.frame = CGRect(x: zoomX, y: safeTop + btnSize + 10, width: zoomW, height: zoomH)
+            zoomOutButton.frame = CGRect(x: zoomX, y: safeTop + btnSize + 10 + zoomH + 4, width: zoomW, height: zoomH)
+            
+            // 2. BOTTOM CENTER CONTROLS
+            let centerX = w / 2
+            let streamBtnW: CGFloat = isPortrait ? 60 : 72
+            let streamBtnH: CGFloat = isPortrait ? 46 : 54
+            let bottomCenterY = h - safeBottom - streamBtnH
+            let sideBtnSize: CGFloat = isPortrait ? 38 : 44
+            
+            startStreamButton.frame = CGRect(x: centerX - streamBtnW / 2, y: bottomCenterY, width: streamBtnW, height: streamBtnH)
+            muteButton.frame = CGRect(x: centerX - streamBtnW / 2 - sideBtnSize - 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
+            sponsorButton.frame = CGRect(x: centerX + streamBtnW / 2 + 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
+            btnEndQuarter.frame = CGRect(x: centerX - 60, y: bottomCenterY - 36, width: 120, height: 30)
+            
+            // 3. BOTTOM LEFT CONTROLS (Team A)
+            let scoreBtnSize: CGFloat = isPortrait ? min(54, (w - 180) / 2) : 70
+            let subBtnW: CGFloat = isPortrait ? 40 : 50
+            let subBtnH: CGFloat = (scoreBtnSize - 4) / 2
+            let bottomScoreY = h - safeBottom - scoreBtnSize
+            
+            btnTimeoutHome.frame = CGRect(x: safeLeft, y: bottomScoreY, width: subBtnW, height: subBtnH)
+            btnMinusHome.frame = CGRect(x: safeLeft, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
+            btnScoreHome.frame = CGRect(x: safeLeft + subBtnW + 8, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
+            
+            if isBasket {
+                let basketW: CGFloat = isPortrait ? 34 : 44
+                btnScoreHome2.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY, width: basketW, height: subBtnH)
+                btnScoreHome3.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
+            }
+            
+            // 4. BOTTOM RIGHT CONTROLS (Team B)
+            let rightSubX = w - safeRight - subBtnW
+            btnTimeoutAway.frame = CGRect(x: rightSubX, y: bottomScoreY, width: subBtnW, height: subBtnH)
+            btnMinusAway.frame = CGRect(x: rightSubX, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
+            
+            let rightScoreX = rightSubX - scoreBtnSize - 8
+            btnScoreAway.frame = CGRect(x: rightScoreX, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
+            
+            if isBasket {
+                let basketW: CGFloat = isPortrait ? 34 : 44
+                btnScoreAway2.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY, width: basketW, height: subBtnH)
+                btnScoreAway3.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
+            }
         }
     }
     
@@ -577,7 +643,6 @@ class MainViewController: UIViewController {
     
     @objc func handleScreenTap() {
         if currentMode == 2 {
-            // Se eravamo in Clean Mode, un tap ripristina la modalità Normale
             currentMode = 0
             modeButton.setTitle("L", for: .normal)
             UIView.animate(withDuration: 0.25) {
@@ -588,11 +653,10 @@ class MainViewController: UIViewController {
     
     @objc func toggleMode() {
         currentMode = (currentMode + 1) % 3
-        
         switch currentMode {
-        case 0: modeButton.setTitle("L", for: .normal) // Classic Landscape
-        case 1: modeButton.setTitle("G", for: .normal) // Grid Mode
-        case 2: modeButton.setTitle("C", for: .normal) // Clean Broadcast Mode
+        case 0: modeButton.setTitle("L", for: .normal)
+        case 1: modeButton.setTitle("G", for: .normal)
+        case 2: modeButton.setTitle("C", for: .normal)
         default: break
         }
         
@@ -623,30 +687,27 @@ class MainViewController: UIViewController {
         }
     }
     
-    // MARK: - Camera Zoom
+    // MARK: - Camera Zoom (Pinch & Buttons)
+    
+    private var initialPinchZoom: CGFloat = 1.0
+    
+    @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+        if gesture.state == .began {
+            initialPinchZoom = StreamManager.shared.currentCamera?.videoZoomFactor ?? 1.0
+        } else if gesture.state == .changed || gesture.state == .ended {
+            StreamManager.shared.setZoom(factor: initialPinchZoom * gesture.scale)
+        }
+    }
     
     @objc func zoomIn() {
-        // Applica zoom digitale se supportato
-        guard let device = AVCaptureDevice.default(for: .video) else { return }
-        do {
-            try device.lockForConfiguration()
-            let newZoom = min(device.videoZoomFactor + 0.5, device.activeFormat.videoMaxZoomFactor)
-            device.videoZoomFactor = newZoom
-            device.unlockForConfiguration()
-        } catch { }
+        StreamManager.shared.zoomIn()
     }
     
     @objc func zoomOut() {
-        guard let device = AVCaptureDevice.default(for: .video) else { return }
-        do {
-            try device.lockForConfiguration()
-            let newZoom = max(device.videoZoomFactor - 0.5, 1.0)
-            device.videoZoomFactor = newZoom
-            device.unlockForConfiguration()
-        } catch { }
+        StreamManager.shared.zoomOut()
     }
     
-    // MARK: - Match State & Scoring
+    // MARK: - Match State & Scoring (Volleyball & Multi-Sport)
     
     func updateLocalState() {
         localState.lastUpdate = Int64(Date().timeIntervalSince1970 * 1000)
@@ -670,33 +731,15 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreA() {
-        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
-            if localState.tennisPointsA == 3 && localState.tennisPointsB < 3 {
-                localState.tennisGamesA += 1
-                localState.tennisPointsA = 0
-                localState.tennisPointsB = 0
-            } else if localState.tennisPointsA == 3 && localState.tennisPointsB == 3 {
-                if self.localState.sportType == "padel" && localState.isPuntoDeOro {
-                    localState.tennisGamesA += 1
-                    localState.tennisPointsA = 0
-                    localState.tennisPointsB = 0
-                } else {
-                    localState.tennisPointsA = 4
-                }
-            } else if localState.tennisPointsA == 3 && localState.tennisPointsB == 4 {
-                localState.tennisPointsB = 3
-            } else if localState.tennisPointsA == 4 {
-                localState.tennisGamesA += 1
-                localState.tennisPointsA = 0
-                localState.tennisPointsB = 0
-            } else {
-                localState.tennisPointsA += 1
-            }
+        let sport = localState.sportType.lowercased()
+        if sport == "tennis" || sport == "padel" {
+            advanceTennisGame(isHome: true)
+        } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
+            localState.scoreA += 1
+            localState.servingTeam = "A"
+            checkVolleySetWin()
         } else {
             localState.scoreA += 1
-            if self.localState.sportType == "volley" || self.localState.sportType == "beach volley" {
-                localState.servingTeam = "A"
-            }
         }
         updateLocalState()
     }
@@ -705,53 +748,46 @@ class MainViewController: UIViewController {
     @objc func incScoreA3() { localState.scoreA += 3; updateLocalState() }
     
     @objc func decScoreA() {
-        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
+        let sport = localState.sportType.lowercased()
+        if sport == "tennis" || sport == "padel" {
             if localState.tennisPointsA > 0 { localState.tennisPointsA -= 1 }
         } else {
-            if localState.scoreA > 0 { localState.scoreA -= 1 }
+            if localState.scoreA > 0 {
+                localState.scoreA -= 1
+                localState.isMatchFinished = false
+                localState.isSetFinished = false
+            }
         }
         updateLocalState()
     }
     
     @objc func toA() {
-        if self.localState.sportType == "soccer" {
-            localState.redCardsA += 1
-        } else if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
+        let sport = localState.sportType.lowercased()
+        if sport == "soccer" {
+            localState.redCardsA = (localState.redCardsA + 1) % 4
+        } else if sport == "tennis" || sport == "padel" {
             localState.tennisGamesA += 1
+            checkTennisSetWin()
+        } else if sport == "beach_volley" || sport == "beach volley" {
+            localState.timeoutA = (localState.timeoutA + 1) % 2
+        } else if sport == "basket" {
+            localState.timeoutA = (localState.timeoutA + 1) % 4
         } else {
-            localState.timeoutA += 1
+            localState.timeoutA = (localState.timeoutA + 1) % 3
         }
         updateLocalState()
     }
     
     @objc func incScoreB() {
-        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
-            if localState.tennisPointsB == 3 && localState.tennisPointsA < 3 {
-                localState.tennisGamesB += 1
-                localState.tennisPointsA = 0
-                localState.tennisPointsB = 0
-            } else if localState.tennisPointsB == 3 && localState.tennisPointsA == 3 {
-                if self.localState.sportType == "padel" && localState.isPuntoDeOro {
-                    localState.tennisGamesB += 1
-                    localState.tennisPointsA = 0
-                    localState.tennisPointsB = 0
-                } else {
-                    localState.tennisPointsB = 4
-                }
-            } else if localState.tennisPointsB == 3 && localState.tennisPointsA == 4 {
-                localState.tennisPointsA = 3
-            } else if localState.tennisPointsB == 4 {
-                localState.tennisGamesB += 1
-                localState.tennisPointsA = 0
-                localState.tennisPointsB = 0
-            } else {
-                localState.tennisPointsB += 1
-            }
+        let sport = localState.sportType.lowercased()
+        if sport == "tennis" || sport == "padel" {
+            advanceTennisGame(isHome: false)
+        } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
+            localState.scoreB += 1
+            localState.servingTeam = "B"
+            checkVolleySetWin()
         } else {
             localState.scoreB += 1
-            if self.localState.sportType == "volley" || self.localState.sportType == "beach volley" {
-                localState.servingTeam = "B"
-            }
         }
         updateLocalState()
     }
@@ -760,28 +796,202 @@ class MainViewController: UIViewController {
     @objc func incScoreB3() { localState.scoreB += 3; updateLocalState() }
     
     @objc func decScoreB() {
-        if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
+        let sport = localState.sportType.lowercased()
+        if sport == "tennis" || sport == "padel" {
             if localState.tennisPointsB > 0 { localState.tennisPointsB -= 1 }
         } else {
-            if localState.scoreB > 0 { localState.scoreB -= 1 }
+            if localState.scoreB > 0 {
+                localState.scoreB -= 1
+                localState.isMatchFinished = false
+                localState.isSetFinished = false
+            }
         }
         updateLocalState()
     }
     
     @objc func toB() {
-        if self.localState.sportType == "soccer" {
-            localState.redCardsB += 1
-        } else if self.localState.sportType == "tennis" || self.localState.sportType == "padel" {
+        let sport = localState.sportType.lowercased()
+        if sport == "soccer" {
+            localState.redCardsB = (localState.redCardsB + 1) % 4
+        } else if sport == "tennis" || sport == "padel" {
             localState.tennisGamesB += 1
+            checkTennisSetWin()
+        } else if sport == "beach_volley" || sport == "beach volley" {
+            localState.timeoutB = (localState.timeoutB + 1) % 2
+        } else if sport == "basket" {
+            localState.timeoutB = (localState.timeoutB + 1) % 4
         } else {
-            localState.timeoutB += 1
+            localState.timeoutB = (localState.timeoutB + 1) % 3
         }
         updateLocalState()
     }
     
-    @objc func endQuarter() {
-        if localState.currentSet < localState.totalPeriods {
+    private func checkVolleySetWin() {
+        let sport = localState.sportType.lowercased()
+        let isBeach = (sport == "beach_volley" || sport == "beach volley")
+        let setsToWin = isBeach ? 2 : 3
+        let targetScore = isBeach ? (localState.currentSet == 3 ? 15 : 21) : (localState.isFifthSet ? 15 : 25)
+        
+        var winner: String? = nil
+        if localState.scoreA >= targetScore && (localState.scoreA - localState.scoreB) >= 2 {
+            winner = "A"
+        } else if localState.scoreB >= targetScore && (localState.scoreB - localState.scoreA) >= 2 {
+            winner = "B"
+        }
+        
+        if let winTeam = winner {
+            localState.setScores.append([localState.scoreA, localState.scoreB])
+            if winTeam == "A" {
+                localState.setsA += 1
+            } else {
+                localState.setsB += 1
+            }
+            
+            if localState.setsA >= setsToWin || localState.setsB >= setsToWin {
+                localState.isMatchFinished = true
+                localState.isSetFinished = true
+            } else {
+                localState.currentSet += 1
+                localState.scoreA = 0
+                localState.scoreB = 0
+                localState.timeoutA = 0
+                localState.timeoutB = 0
+                localState.isFifthSet = (!isBeach && localState.currentSet == 5)
+                localState.isSetFinished = false
+            }
+        }
+    }
+    
+    private func advanceTennisGame(isHome: Bool) {
+        if isHome {
+            if localState.isTiebreak {
+                localState.tennisPointsA += 1
+                if localState.tennisPointsA >= 7 && (localState.tennisPointsA - localState.tennisPointsB) >= 2 {
+                    localState.tennisGamesA += 1
+                    localState.tennisPointsA = 0
+                    localState.tennisPointsB = 0
+                    localState.isTiebreak = false
+                    checkTennisSetWin()
+                }
+            } else {
+                if localState.tennisPointsA == 3 && localState.tennisPointsB < 3 {
+                    localState.tennisGamesA += 1
+                    localState.tennisPointsA = 0
+                    localState.tennisPointsB = 0
+                    checkTennisSetWin()
+                } else if localState.tennisPointsA == 3 && localState.tennisPointsB == 3 {
+                    if localState.sportType.lowercased() == "padel" && localState.isPuntoDeOro {
+                        localState.tennisGamesA += 1
+                        localState.tennisPointsA = 0
+                        localState.tennisPointsB = 0
+                        checkTennisSetWin()
+                    } else {
+                        localState.tennisPointsA = 4
+                    }
+                } else if localState.tennisPointsA == 3 && localState.tennisPointsB == 4 {
+                    localState.tennisPointsB = 3
+                } else if localState.tennisPointsA == 4 {
+                    localState.tennisGamesA += 1
+                    localState.tennisPointsA = 0
+                    localState.tennisPointsB = 0
+                    checkTennisSetWin()
+                } else {
+                    localState.tennisPointsA += 1
+                }
+            }
+        } else {
+            if localState.isTiebreak {
+                localState.tennisPointsB += 1
+                if localState.tennisPointsB >= 7 && (localState.tennisPointsB - localState.tennisPointsA) >= 2 {
+                    localState.tennisGamesB += 1
+                    localState.tennisPointsA = 0
+                    localState.tennisPointsB = 0
+                    localState.isTiebreak = false
+                    checkTennisSetWin()
+                }
+            } else {
+                if localState.tennisPointsB == 3 && localState.tennisPointsA < 3 {
+                    localState.tennisGamesB += 1
+                    localState.tennisPointsA = 0
+                    localState.tennisPointsB = 0
+                    checkTennisSetWin()
+                } else if localState.tennisPointsB == 3 && localState.tennisPointsA == 3 {
+                    if localState.sportType.lowercased() == "padel" && localState.isPuntoDeOro {
+                        localState.tennisGamesB += 1
+                        localState.tennisPointsA = 0
+                        localState.tennisPointsB = 0
+                        checkTennisSetWin()
+                    } else {
+                        localState.tennisPointsB = 4
+                    }
+                } else if localState.tennisPointsB == 3 && localState.tennisPointsA == 4 {
+                    localState.tennisPointsA = 3
+                } else if localState.tennisPointsB == 4 {
+                    localState.tennisGamesB += 1
+                    localState.tennisPointsA = 0
+                    localState.tennisPointsB = 0
+                    checkTennisSetWin()
+                } else {
+                    localState.tennisPointsB += 1
+                }
+            }
+        }
+    }
+    
+    private func checkTennisSetWin() {
+        let setsToWin = localState.tennisSetsToWin
+        if (localState.tennisGamesA >= 6 && (localState.tennisGamesA - localState.tennisGamesB) >= 2) || (localState.tennisGamesA == 7 && localState.tennisGamesB == 6) {
+            localState.setScores.append([localState.tennisGamesA, localState.tennisGamesB])
+            localState.setsA += 1
+            localState.tennisGamesA = 0
+            localState.tennisGamesB = 0
             localState.currentSet += 1
+            if localState.setsA >= setsToWin {
+                localState.isMatchFinished = true
+            }
+        } else if (localState.tennisGamesB >= 6 && (localState.tennisGamesB - localState.tennisGamesA) >= 2) || (localState.tennisGamesB == 7 && localState.tennisGamesA == 6) {
+            localState.setScores.append([localState.tennisGamesA, localState.tennisGamesB])
+            localState.setsB += 1
+            localState.tennisGamesA = 0
+            localState.tennisGamesB = 0
+            localState.currentSet += 1
+            if localState.setsB >= setsToWin {
+                localState.isMatchFinished = true
+            }
+        } else if localState.tennisGamesA == 6 && localState.tennisGamesB == 6 {
+            localState.isTiebreak = true
+        }
+    }
+    
+    @objc func endQuarter() {
+        let sport = localState.sportType.lowercased()
+        if sport == "basket" {
+            if localState.currentSet < localState.totalPeriods {
+                localState.currentSet += 1
+                localState.foulsA = 0
+                localState.foulsB = 0
+            }
+        } else if sport == "soccer" || sport == "handball" || sport == "pallamano" {
+            if localState.currentSet < 2 {
+                localState.currentSet += 1
+            }
+        } else if sport == "billiards" || sport == "biliardo" {
+            localState.currentSet += 1
+            localState.scoreA = 0
+            localState.scoreB = 0
+        } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
+            localState.setScores.append([localState.scoreA, localState.scoreB])
+            if localState.scoreA > localState.scoreB {
+                localState.setsA += 1
+            } else if localState.scoreB > localState.scoreA {
+                localState.setsB += 1
+            }
+            localState.currentSet += 1
+            localState.scoreA = 0
+            localState.scoreB = 0
+            localState.timeoutA = 0
+            localState.timeoutB = 0
+            localState.isFifthSet = (localState.currentSet == 5)
         }
         updateLocalState()
     }

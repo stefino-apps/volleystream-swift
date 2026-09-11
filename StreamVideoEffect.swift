@@ -42,8 +42,12 @@ class StreamVideoEffect: VideoEffect {
             }
         }
         
-        // Non blocchiamo il rendering se non c'è overlay
-        guard let overlay = overlayImage, let filter = filter else {
+        // Non applichiamo l'overlay sulla preview locale se non stiamo trasmettendo o registrando
+        // In questo modo la vista locale usa solo il componente nativo ScoreboardOverlayView evitando doppi tabelloni
+        let isPublishing = StreamManager.shared.isPublishing
+        let isRecording = LocalVideoRecorder.shared.isRecordingState
+        
+        guard (isPublishing || isRecording), let overlay = overlayImage, let filter = filter else {
             return outputImage
         }
         
@@ -52,7 +56,7 @@ class StreamVideoEffect: VideoEffect {
         
         let finalImage = filter.outputImage ?? outputImage
         
-        if LocalVideoRecorder.shared.isRecordingState {
+        if isRecording {
             if let sampleBuffer = info {
                 let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
                 LocalVideoRecorder.shared.appendVideo(image: finalImage, time: time)

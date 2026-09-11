@@ -62,94 +62,102 @@ class ScoreboardOverlayView: UIView {
         let dividerColor: UIColor
         let timeoutActiveColor: UIColor
         let timeoutInactiveColor: UIColor
-        let scoreColor: UIColor
+        let scoreColorA: UIColor
+        let scoreColorB: UIColor
         
         init(theme: String) {
-            switch theme {
+            switch theme.lowercased() {
             case "minimal":
                 boxBgColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.95)
                 boxBorderColor = UIColor(red: 71/255, green: 85/255, blue: 105/255, alpha: 1.0)
-                boxBorderWidth = 2.0
-                boxCornerRadius = 12.0
+                boxBorderWidth = 1.2
+                boxCornerRadius = 8.0
                 hasHeaderBg = false
                 headerBgColor = .clear
                 headerTextColor = UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1.0)
                 dividerColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 1.0)
                 timeoutActiveColor = UIColor(red: 56/255, green: 189/255, blue: 248/255, alpha: 1.0)
                 timeoutInactiveColor = UIColor(red: 30/255, green: 41/255, blue: 59/255, alpha: 1.0)
-                scoreColor = .white
+                scoreColorA = .white
+                scoreColorB = .white
             case "glass":
-                boxBgColor = UIColor(red: 17/255, green: 24/255, blue: 39/255, alpha: 0.40)
-                boxBorderColor = UIColor.white.withAlphaComponent(0.50)
-                boxBorderWidth = 2.5
-                boxCornerRadius = 24.0
+                boxBgColor = UIColor(red: 30/255, green: 41/255, blue: 59/255, alpha: 0.45)
+                boxBorderColor = UIColor.white.withAlphaComponent(0.60)
+                boxBorderWidth = 1.8
+                boxCornerRadius = 14.0
                 hasHeaderBg = true
-                headerBgColor = UIColor.white.withAlphaComponent(0.15)
+                headerBgColor = UIColor.white.withAlphaComponent(0.18)
                 headerTextColor = .white
-                dividerColor = UIColor.white.withAlphaComponent(0.25)
+                dividerColor = UIColor.white.withAlphaComponent(0.30)
                 timeoutActiveColor = .white
-                timeoutInactiveColor = UIColor.white.withAlphaComponent(0.20)
-                scoreColor = .white
+                timeoutInactiveColor = UIColor.white.withAlphaComponent(0.25)
+                scoreColorA = .white
+                scoreColorB = .white
             case "classic":
-                boxBgColor = UIColor(red: 17/255, green: 17/255, blue: 17/255, alpha: 1.0)
-                boxBorderColor = .clear
-                boxBorderWidth = 0.0
+                boxBgColor = UIColor(red: 17/255, green: 17/255, blue: 17/255, alpha: 0.98)
+                boxBorderColor = UIColor(red: 55/255, green: 65/255, blue: 81/255, alpha: 1.0)
+                boxBorderWidth = 1.0
                 boxCornerRadius = 4.0
                 hasHeaderBg = true
                 headerBgColor = UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1.0)
-                headerTextColor = .white
-                dividerColor = UIColor(red: 51/255, green: 51/255, blue: 51/255, alpha: 1.0)
-                timeoutActiveColor = UIColor(red: 226/255, green: 232/255, blue: 240/255, alpha: 1.0)
-                timeoutInactiveColor = UIColor(red: 71/255, green: 85/255, blue: 105/255, alpha: 1.0)
-                scoreColor = .white
+                headerTextColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+                dividerColor = UIColor(red: 55/255, green: 65/255, blue: 81/255, alpha: 1.0)
+                timeoutActiveColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+                timeoutInactiveColor = UIColor(red: 75/255, green: 85/255, blue: 99/255, alpha: 1.0)
+                scoreColorA = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+                scoreColorB = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             case "odometer_blue":
-                boxBgColor = UIColor(red: 0/255, green: 29/255, blue: 61/255, alpha: 0.90)
+                boxBgColor = UIColor(red: 0/255, green: 29/255, blue: 61/255, alpha: 0.92)
                 boxBorderColor = UIColor(red: 0/255, green: 168/255, blue: 232/255, alpha: 1.0)
                 boxBorderWidth = 2.0
-                boxCornerRadius = 24.0
-                hasHeaderBg = false
-                headerBgColor = .clear
-                headerTextColor = .white
-                dividerColor = UIColor(red: 0/255, green: 168/255, blue: 232/255, alpha: 1.0)
+                boxCornerRadius = 12.0
+                hasHeaderBg = true
+                headerBgColor = UIColor(red: 0/255, green: 53/255, blue: 102/255, alpha: 1.0)
+                headerTextColor = UIColor(red: 144/255, green: 224/255, blue: 239/255, alpha: 1.0)
+                dividerColor = UIColor(red: 0/255, green: 119/255, blue: 182/255, alpha: 1.0)
                 timeoutActiveColor = UIColor(red: 144/255, green: 224/255, blue: 239/255, alpha: 1.0)
                 timeoutInactiveColor = UIColor(red: 0/255, green: 53/255, blue: 102/255, alpha: 1.0)
-                scoreColor = UIColor(red: 144/255, green: 224/255, blue: 239/255, alpha: 1.0)
+                scoreColorA = UIColor(red: 144/255, green: 224/255, blue: 239/255, alpha: 1.0)
+                scoreColorB = UIColor(red: 144/255, green: 224/255, blue: 239/255, alpha: 1.0)
             case "odometer_red":
-                boxBgColor = UIColor(red: 74/255, green: 4/255, blue: 4/255, alpha: 0.90)
+                boxBgColor = UIColor(red: 60/255, green: 4/255, blue: 4/255, alpha: 0.92)
                 boxBorderColor = UIColor(red: 255/255, green: 107/255, blue: 107/255, alpha: 1.0)
                 boxBorderWidth = 2.0
-                boxCornerRadius = 24.0
-                hasHeaderBg = false
-                headerBgColor = .clear
-                headerTextColor = .white
-                dividerColor = UIColor(red: 255/255, green: 107/255, blue: 107/255, alpha: 1.0)
+                boxCornerRadius = 12.0
+                hasHeaderBg = true
+                headerBgColor = UIColor(red: 120/255, green: 10/255, blue: 10/255, alpha: 1.0)
+                headerTextColor = UIColor(red: 255/255, green: 217/255, blue: 61/255, alpha: 1.0)
+                dividerColor = UIColor(red: 180/255, green: 30/255, blue: 30/255, alpha: 1.0)
                 timeoutActiveColor = UIColor(red: 255/255, green: 217/255, blue: 61/255, alpha: 1.0)
-                timeoutInactiveColor = UIColor(red: 74/255, green: 4/255, blue: 4/255, alpha: 1.0)
-                scoreColor = UIColor(red: 255/255, green: 217/255, blue: 61/255, alpha: 1.0)
+                timeoutInactiveColor = UIColor(red: 100/255, green: 15/255, blue: 15/255, alpha: 1.0)
+                scoreColorA = UIColor(red: 255/255, green: 217/255, blue: 61/255, alpha: 1.0)
+                scoreColorB = UIColor(red: 255/255, green: 217/255, blue: 61/255, alpha: 1.0)
             case "odometer_dark":
-                boxBgColor = UIColor(red: 13/255, green: 13/255, blue: 13/255, alpha: 0.94)
-                boxBorderColor = UIColor(red: 233/255, green: 69/255, blue: 96/255, alpha: 1.0)
-                boxBorderWidth = 2.5
-                boxCornerRadius = 24.0
-                hasHeaderBg = false
-                headerBgColor = .clear
-                headerTextColor = .white
-                dividerColor = UIColor(red: 233/255, green: 69/255, blue: 96/255, alpha: 1.0)
-                timeoutActiveColor = UIColor(red: 233/255, green: 69/255, blue: 96/255, alpha: 1.0)
-                timeoutInactiveColor = UIColor(red: 26/255, green: 26/255, blue: 46/255, alpha: 1.0)
-                scoreColor = UIColor(red: 233/255, green: 69/255, blue: 96/255, alpha: 1.0)
+                boxBgColor = UIColor(red: 13/255, green: 13/255, blue: 13/255, alpha: 0.96)
+                boxBorderColor = UIColor(red: 229/255, green: 9/255, blue: 20/255, alpha: 1.0)
+                boxBorderWidth = 2.0
+                boxCornerRadius = 12.0
+                hasHeaderBg = true
+                headerBgColor = UIColor(red: 30/255, green: 30/255, blue: 30/255, alpha: 1.0)
+                headerTextColor = UIColor(red: 229/255, green: 9/255, blue: 20/255, alpha: 1.0)
+                dividerColor = UIColor(red: 45/255, green: 45/255, blue: 45/255, alpha: 1.0)
+                timeoutActiveColor = UIColor(red: 229/255, green: 9/255, blue: 20/255, alpha: 1.0)
+                timeoutInactiveColor = UIColor(red: 50/255, green: 50/255, blue: 50/255, alpha: 1.0)
+                scoreColorA = UIColor(red: 229/255, green: 9/255, blue: 20/255, alpha: 1.0)
+                scoreColorB = UIColor(red: 229/255, green: 9/255, blue: 20/255, alpha: 1.0)
             default: // "neon"
                 boxBgColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.90)
                 boxBorderColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
                 boxBorderWidth = 2.0
-                boxCornerRadius = 20.0
+                boxCornerRadius = 12.0
                 hasHeaderBg = true
                 headerBgColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
                 headerTextColor = .black
                 dividerColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 1.0)
                 timeoutActiveColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
                 timeoutInactiveColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 1.0)
-                scoreColor = .white
+                scoreColorA = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
+                scoreColorB = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
             }
         }
     }
@@ -209,39 +217,39 @@ class ScoreboardOverlayView: UIView {
         
         let x: CGFloat = 2
         let y: CGFloat = 2
-        let w: CGFloat = bounds.width - 4
+        let boxW: CGFloat = min(196, bounds.width - 4)
         let h: CGFloat = bounds.height - 4
         
         // Render base box
-        drawScoreboardBase(ctx: ctx, x: x, y: y, w: w, h: h, headerH: 18, infoText: getHeaderTitle(state: state), style: style)
+        drawScoreboardBase(ctx: ctx, x: x, y: y, w: boxW, h: h, headerH: 14, infoText: getHeaderTitle(state: state), style: style)
         
         // Render Sport Content
         let sport = state.sportType.lowercased()
         switch sport {
         case "basket":
-            drawBasketScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawBasketScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         case "soccer":
-            drawSoccerScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawSoccerScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         case "handball", "pallamano":
-            drawHandballScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawHandballScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         case "tennis", "padel":
-            drawTennisScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawTennisScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         case "darts":
-            drawDartsScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawDartsScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         case "billiards", "biliardo":
-            drawBilliardsScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawBilliardsScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         case "cricket":
-            drawCricketScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawCricketScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         default:
-            drawVolleyScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+            drawVolleyScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         }
         
         // Render Attached SET POINT / MATCH POINT Badge on the right
         if let sp = getSetPointInfo(state: state), !state.isSetFinished && !state.isMatchFinished {
-            let badgeW: CGFloat = sp.isMatchPoint ? 92 : 80
-            let badgeH: CGFloat = 20
-            let badgeX = x + w - 1
-            let badgeY = (sp.team == "A") ? y + 20 : y + 38
+            let badgeW: CGFloat = sp.isMatchPoint ? 78 : 70
+            let badgeH: CGFloat = 17
+            let badgeX = x + boxW - 2
+            let badgeY = (sp.team == "A") ? y + 15 : y + 29
             drawAttachedSetPointBadge(ctx: ctx, x: badgeX, y: badgeY, w: badgeW, h: badgeH, isMatchPoint: sp.isMatchPoint)
         }
     }
@@ -260,23 +268,21 @@ class ScoreboardOverlayView: UIView {
             let half = state.currentSet == 1 ? "1° TEMPO" : "2° TEMPO"
             return "PALLAMANO | \(half)".uppercased()
         case "tennis":
-            return "TENNIS | SET \(state.currentSet)".uppercased()
+            let setStr = state.isTiebreak ? "TIE-BREAK" : "SET \(state.currentSet)"
+            return "TENNIS | \(setStr)".uppercased()
         case "padel":
-            let isDeuce = state.tennisPointsA == 3 && state.tennisPointsB == 3 && !state.isTiebreak
-            if state.isPuntoDeOro && isDeuce {
-                return "PADEL | SET \(state.currentSet) | ★ PUNTO DE ORO".uppercased()
-            }
-            return "PADEL | SET \(state.currentSet)".uppercased()
+            let setStr = state.isTiebreak ? "TIE-BREAK" : "SET \(state.currentSet)"
+            let pdo = state.isPuntoDeOro ? " • PUNTO DE ORO" : ""
+            return "PADEL | \(setStr)\(pdo)".uppercased()
         case "darts":
-            return "FRECCETTE - \(state.dartsMode)".uppercased()
+            let player = state.dartsActivePlayer == "A" ? state.teamA : state.teamB
+            return "FRECCETTE \(state.dartsMode.uppercased()) | TURNO: \(player)".uppercased()
         case "billiards", "biliardo":
             return "BILIARDO | FRAME \(state.currentSet)".uppercased()
         case "cricket":
             return "CRICKET | INNINGS \(state.currentSet)".uppercased()
         case "beach_volley", "beach volley":
-            let total = state.scoreA + state.scoreB
-            let interval = state.currentSet == 3 ? 5 : 7
-            if total > 0 && total % interval == 0 {
+            if state.scoreA > 0 && (state.scoreA + state.scoreB) % 7 == 0 {
                 return "🏖️ CAMBIO CAMPO (SIDE SWITCH)".uppercased()
             }
             return "BEACH VOLLEY | SET \(state.currentSet)".uppercased()
@@ -339,8 +345,8 @@ class ScoreboardOverlayView: UIView {
     private func drawVolleyScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
         let headerH: CGFloat = 14
         let rowH = (h - headerH) / 2
-        let row1Y = y + headerH + (rowH - 13) / 2
-        let row2Y = y + headerH + rowH + (rowH - 13) / 2
+        let row1Y = y + headerH
+        let row2Y = y + headerH + rowH
         
         let isBeach = (state.sportType.lowercased() == "beach_volley" || state.sportType.lowercased() == "beach volley")
         let maxTos = isBeach ? 1 : 2
@@ -350,35 +356,35 @@ class ScoreboardOverlayView: UIView {
         let srvB = hasStarted && state.servingTeam == "B"
         
         // Row Home (Team A)
-        drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0), logo: homeLogo, style: style, w: w - 8)
+        drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
         
         // Row Away (Team B)
-        drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0), logo: awayLogo, style: style, w: w - 8)
+        drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRow(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, tos: Int, maxTos: Int, isSrv: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
         var curX = x
         if let logo = logo {
-            logo.draw(in: CGRect(x: curX, y: y + 1, width: 12, height: 12))
-            curX += 15
+            logo.draw(in: CGRect(x: curX, y: y + 2, width: 11, height: 11))
+            curX += 14
         }
         
         if isSrv {
-            drawVolleyBall(ctx: ctx, cx: curX + 4, cy: y + 6, r: 4.5)
-            curX += 11
+            drawVolleyBall(ctx: ctx, cx: curX + 4, cy: y + 6.5, r: 4.0)
+            curX += 10
         }
         
-        let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
+        let nameFont = UIFont.systemFont(ofSize: 10, weight: .bold)
         let nameAttrs: [NSAttributedString.Key: Any] = [.font: nameFont, .foregroundColor: UIColor.white]
         let trimName = name.count > 10 ? String(name.prefix(10)) : name
-        trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: nameAttrs)
+        trimName.uppercased().draw(at: CGPoint(x: curX, y: y + 0.5), withAttributes: nameAttrs)
         
-        let toX = x + (w * 0.48)
+        // Timeouts dashes positioned directly UNDER team name
         for i in 0..<maxTos {
-            let toRect = CGRect(x: toX + CGFloat(i * 8), y: y + 4.5, width: 5.5, height: 3)
+            let toRect = CGRect(x: curX + CGFloat(i * 7.5), y: y + 11.5, width: 5.5, height: 2.2)
             let toColor = (i < tos) ? style.timeoutActiveColor : style.timeoutInactiveColor
             toColor.setFill()
-            UIBezierPath(roundedRect: toRect, cornerRadius: 1.0).fill()
+            UIBezierPath(roundedRect: toRect, cornerRadius: 0.6).fill()
         }
         
         let scoreFont = UIFont.systemFont(ofSize: 15.5, weight: .heavy)
@@ -386,7 +392,7 @@ class ScoreboardOverlayView: UIView {
         let scoreStr = "\(pts)"
         let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)
         let scoreX = x + w - scoreSize.width - 4
-        scoreStr.draw(at: CGPoint(x: scoreX, y: y - 2), withAttributes: scoreAttrs)
+        scoreStr.draw(at: CGPoint(x: scoreX, y: y), withAttributes: scoreAttrs)
     }
     
     // MARK: - 3D Volleyball Serve Icon
