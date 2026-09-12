@@ -12,6 +12,12 @@ class ScoreboardOverlayView: UIView {
     var alertStartTime: TimeInterval = 0
     var isBlinkingAlert = false
     private var lastAlertScoreKey = ""
+    
+    // Timeout Alert State (4.0s duration, 450ms ON / 250ms OFF matching Android)
+    var isBlinkingTimeout = false
+    var timeoutTeamName = ""
+    var timeoutStartTime: TimeInterval = 0
+    
     var onOverlayNeedsUpdate: (() -> Void)?
     
     override init(frame: CGRect) {
@@ -38,19 +44,43 @@ class ScoreboardOverlayView: UIView {
         displayLink?.add(to: .main, forMode: .common)
     }
     
+    func triggerTimeoutAlert(teamName: String) {
+        self.timeoutTeamName = teamName
+        self.timeoutStartTime = Date().timeIntervalSince1970
+        self.isBlinkingTimeout = true
+        setNeedsDisplay()
+        onOverlayNeedsUpdate?()
+    }
+    
     @objc private func handleDisplayTick() {
+        var needsRedraw = false
         if isBlinkingAlert {
             let elapsed = Date().timeIntervalSince1970 - alertStartTime
             if elapsed >= 4.0 {
                 isBlinkingAlert = false
-                setNeedsDisplay()
-                onOverlayNeedsUpdate?()
-                return
+                needsRedraw = true
+            } else {
+                needsRedraw = true
             }
+        }
+        
+        if isBlinkingTimeout {
+            let elapsed = Date().timeIntervalSince1970 - timeoutStartTime
+            if elapsed >= 4.0 {
+                isBlinkingTimeout = false
+                needsRedraw = true
+            } else {
+                needsRedraw = true
+            }
+        }
+        
+        if currentState.isSetFinished || currentState.isMatchFinished {
+            needsRedraw = true
+        }
+        
+        if needsRedraw {
             setNeedsDisplay()
             onOverlayNeedsUpdate?()
-        } else if currentState.isSetFinished || currentState.isMatchFinished {
-            setNeedsDisplay()
         }
     }
     
@@ -254,13 +284,14 @@ class ScoreboardOverlayView: UIView {
             return
         }
         
-        // 2. Disegna il Tabellone Live in alto a sinistra
+        // 2. Disegna il Tabellone Live in alto a sinistra (Ampio e ben leggibile)
         let x: CGFloat = (rect.width > 600) ? 20 : 2
         let y: CGFloat = (rect.height > 400) ? 15 : 2
-        let boxW: CGFloat = 196
-        let h: CGFloat = 50
+        let boxW: CGFloat = 240.0
+        let h: CGFloat = 58.0
+        let headerH: CGFloat = 16.0
         
-        drawScoreboardBase(ctx: ctx, x: x, y: y, w: boxW, h: h, headerH: 14, infoText: getHeaderTitle(state: state), style: style)
+        drawScoreboardBase(ctx: ctx, x: x, y: y, w: boxW, h: h, headerH: headerH, infoText: getHeaderTitle(state: state), style: style)
         
         // Render Sport Content
         let sport = state.sportType.lowercased()
@@ -287,17 +318,17 @@ class ScoreboardOverlayView: UIView {
         
         // 3. Render Attached SET POINT / MATCH POINT Badge on the right of the scoreboard
         if let sp = sp {
-            let badgeW: CGFloat = sp.isMatchPoint ? 78 : 70
-            let badgeH: CGFloat = 17
+            let badgeW: CGFloat = sp.isMatchPoint ? 82 : 74
+            let badgeH: CGFloat = 19
             let badgeX = x + boxW - 2
-            let badgeY = (sp.team == "A") ? y + 15 : y + 29
+            let badgeY = (sp.team == "A") ? y + 17 : y + 35
             drawAttachedSetPointBadge(ctx: ctx, x: badgeX, y: badgeY, w: badgeW, h: badgeH, isMatchPoint: sp.isMatchPoint)
         }
         
-        // 4. Render Animazione Lampeggiante Centrale SET POINT / MATCH POINT (4.2s con cadenza 450ms ON / 250ms OFF)
+        // 4. Render Animazione Lampeggiante Centrale SET POINT / MATCH POINT (4.0s con cadenza 450ms ON / 250ms OFF)
         if let sp = sp, isBlinkingAlert {
             let elapsed = Date().timeIntervalSince1970 - alertStartTime
-            if elapsed < 4.2 {
+            if elapsed < 4.0 {
                 let show = ((Int(elapsed * 1000) % 700) < 450)
                 if show {
                     drawSpecialAlerts(ctx: ctx, rect: rect, sp: sp, state: state)
@@ -306,44 +337,67 @@ class ScoreboardOverlayView: UIView {
                 isBlinkingAlert = false
             }
         }
+        
+        // 5. Render Animazione Lampeggiante Centrale TIMEOUT (4.0s)
+        if isBlinkingTimeout {
+            let elapsed = Date().timeIntervalSince1970 - timeoutStartTime
+            if elapsed < 4.0 {
+                let show = ((Int(elapsed * 1000) % 700) < 450)
+                if show {
+                    drawTimeoutAlert(ctx: ctx, rect: rect, teamName: timeoutTeamName, state: state)
+                }
+            } else {
+                isBlinkingTimeout = false
+            }
+        }
     }
     
     // MARK: - Header Titles
     
     private func getHeaderTitle(state: RemoteMatchState) -> String {
         let sport = state.sportType.lowercased()
+        var baseTitle = ""
         switch sport {
         case "basket":
-            return "BASKET | QUARTO \(state.currentSet) DI \(state.totalPeriods)".uppercased()
+            baseTitle = "BASKET | Q\(state.currentSet)/\(state.totalPeriods)"
         case "soccer":
             let half = state.currentSet == 1 ? "1° TEMPO" : (state.currentSet == 2 ? "2° TEMPO" : "SUPPL.")
-            return "CALCIO | \(half)".uppercased()
+            baseTitle = "CALCIO | \(half)"
         case "handball", "pallamano":
             let half = state.currentSet == 1 ? "1° TEMPO" : "2° TEMPO"
-            return "PALLAMANO | \(half)".uppercased()
+            baseTitle = "PALLAMANO | \(half)"
         case "tennis":
             let setStr = state.isTiebreak ? "TIE-BREAK" : "SET \(state.currentSet)"
-            return "TENNIS | \(setStr)".uppercased()
+            baseTitle = "TENNIS | \(setStr)"
         case "padel":
             let setStr = state.isTiebreak ? "TIE-BREAK" : "SET \(state.currentSet)"
-            let pdo = state.isPuntoDeOro ? " • PUNTO DE ORO" : ""
-            return "PADEL | \(setStr)\(pdo)".uppercased()
+            let pdo = state.isPuntoDeOro ? " • PDO" : ""
+            baseTitle = "PADEL | \(setStr)\(pdo)"
         case "darts":
             let player = state.dartsActivePlayer == "A" ? state.teamA : state.teamB
-            return "FRECCETTE \(state.dartsMode.uppercased()) | TURNO: \(player)".uppercased()
+            baseTitle = "DARTS | TURNO: \(player)"
         case "billiards", "biliardo":
-            return "BILIARDO | FRAME \(state.currentSet)".uppercased()
+            baseTitle = "BILIARDO | FRAME \(state.currentSet)"
         case "cricket":
-            return "CRICKET | INNINGS \(state.currentSet)".uppercased()
+            baseTitle = "CRICKET | INNINGS \(state.currentSet)"
         case "beach_volley", "beach volley":
             if state.scoreA > 0 && (state.scoreA + state.scoreB) % 7 == 0 {
-                return "🏖️ CAMBIO CAMPO (SIDE SWITCH)".uppercased()
+                baseTitle = "🏖️ CAMBIO CAMPO"
+            } else {
+                baseTitle = "BEACH VOLLEY | SET \(state.currentSet)"
             }
-            return "BEACH VOLLEY | SET \(state.currentSet)".uppercased()
         default:
             let tieBreak = state.isFifthSet ? "• TIE-BREAK" : ""
-            return "VOLLEY | SET \(state.currentSet) \(tieBreak)".uppercased()
+            baseTitle = "VOLLEY | SET \(state.currentSet) \(tieBreak)"
         }
+        
+        // Riporta sempre i parziali dei set precedenti se presenti
+        if !state.setScores.isEmpty {
+            let parziali = state.setScores.map { "\($0[0])-\($0[1])" }.joined(separator: " ")
+            baseTitle += "  [\(parziali)]"
+        }
+        
+        return baseTitle.uppercased()
     }
     
     // MARK: - Base Scoreboard Box
@@ -373,7 +427,7 @@ class ScoreboardOverlayView: UIView {
         }
         
         // Header text
-        let font = UIFont.systemFont(ofSize: 8.5, weight: .black)
+        let font = UIFont.systemFont(ofSize: 9.0, weight: .black)
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
         let attrs: [NSAttributedString.Key: Any] = [
@@ -397,7 +451,7 @@ class ScoreboardOverlayView: UIView {
     // MARK: - Volley / Beach Volley Scoreboard
     
     private func drawVolleyScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let headerH: CGFloat = 14
+        let headerH: CGFloat = 16.0
         let rowH = (h - headerH) / 2
         let row1Y = y + headerH
         let row2Y = y + headerH + rowH
@@ -410,40 +464,42 @@ class ScoreboardOverlayView: UIView {
         let srvB = hasStarted && state.servingTeam == "B"
         
         // Row Home (Team A)
-        drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
+        let nameA = state.setsA > 0 ? "\(state.teamA) (\(state.setsA))" : state.teamA
+        drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: nameA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
         
         // Row Away (Team B)
-        drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
+        let nameB = state.setsB > 0 ? "\(state.teamB) (\(state.setsB))" : state.teamB
+        drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: nameB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
     }
     
     private func drawTeamRow(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, tos: Int, maxTos: Int, isSrv: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
         // 1. Dedicated fixed slot on the left for serve ball
         if isSrv {
-            drawVolleyBall(ctx: ctx, cx: x + 5, cy: y + 6.5, r: 3.5)
+            drawVolleyBall(ctx: ctx, cx: x + 6, cy: y + 8.0, r: 4.0)
         }
         
         // 2. Dedicated fixed slot for Team Logo
-        let logoX = x + 12
+        let logoX = x + 14
         if let logo = logo {
-            logo.draw(in: CGRect(x: logoX, y: y + 1.5, width: 11, height: 11))
+            logo.draw(in: CGRect(x: logoX, y: y + 2.0, width: 13, height: 13))
         }
         
         // 3. Team name always starts at the EXACT same fixed position (never shifts)
-        let nameX = (logo != nil) ? (logoX + 14) : (x + 12)
-        let nameFont = UIFont.systemFont(ofSize: 10, weight: .bold)
+        let nameX = (logo != nil) ? (logoX + 16) : (x + 14)
+        let nameFont = UIFont.systemFont(ofSize: 11.5, weight: .bold)
         let nameAttrs: [NSAttributedString.Key: Any] = [.font: nameFont, .foregroundColor: UIColor.white]
-        let trimName = name.count > 10 ? String(name.prefix(10)) : name
+        let trimName = name.count > 12 ? String(name.prefix(12)) : name
         trimName.uppercased().draw(at: CGPoint(x: nameX, y: y + 0.5), withAttributes: nameAttrs)
         
         // Timeouts dashes positioned directly UNDER team name at fixed position
         for i in 0..<maxTos {
-            let toRect = CGRect(x: nameX + CGFloat(i) * 7.5, y: y + 11.5, width: 5.5, height: 2.2)
+            let toRect = CGRect(x: nameX + CGFloat(i) * 9.0, y: y + 13.5, width: 7.0, height: 2.5)
             let toColor = (i < tos) ? style.timeoutActiveColor : style.timeoutInactiveColor
             toColor.setFill()
-            UIBezierPath(roundedRect: toRect, cornerRadius: 0.6).fill()
+            UIBezierPath(roundedRect: toRect, cornerRadius: 0.8).fill()
         }
         
-        let scoreFont = UIFont.systemFont(ofSize: 15.5, weight: .heavy)
+        let scoreFont = UIFont.systemFont(ofSize: 18.0, weight: .heavy)
         let scoreAttrs: [NSAttributedString.Key: Any] = [.font: scoreFont, .foregroundColor: color]
         let scoreStr = "\(pts)"
         let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)
@@ -786,6 +842,56 @@ class ScoreboardOverlayView: UIView {
         pillPath.stroke()
         
         // Riga 1: MATCH POINT / SET POINT
+        let line1Attrs: [NSAttributedString.Key: Any] = [
+            .font: font1,
+            .foregroundColor: accentColor,
+            .paragraphStyle: pStyle
+        ]
+        textLine1.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY - 10.0, width: pillW, height: 55.0), withAttributes: line1Attrs)
+        
+        // Riga 2: NOME SQUADRA
+        let line2Attrs: [NSAttributedString.Key: Any] = [
+            .font: font2,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: pStyle
+        ]
+        textLine2.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY + 46.0, width: pillW, height: 35.0), withAttributes: line2Attrs)
+        ctx.restoreGState()
+    }
+    
+    // MARK: - Special Alerts: Blinking Central TIMEOUT
+    
+    func drawTimeoutAlert(ctx: CGContext, rect: CGRect, teamName: String, state: RemoteMatchState) {
+        let textLine1 = "TIMEOUT"
+        let tName = teamName.isEmpty ? "TEAM" : teamName
+        let textLine2 = tName.uppercased()
+        
+        let centerX = rect.width / 2.0
+        let centerY = rect.height / 2.0 - 15.0
+        
+        let font1 = UIFont.systemFont(ofSize: min(52.0, rect.width * 0.075), weight: .black)
+        let font2 = UIFont.systemFont(ofSize: min(28.0, rect.width * 0.042), weight: .bold)
+        
+        let pStyle = NSMutableParagraphStyle()
+        pStyle.alignment = .center
+        
+        let accentColor = UIColor(red: 234/255, green: 179/255, blue: 8/255, alpha: 1.0) // Giallo acceso broadcast per TIMEOUT
+        
+        // Sfondo pillola broadcast semi-trasparente
+        let pillW = min(460.0, rect.width * 0.78)
+        let pillH: CGFloat = 110.0
+        let pillRect = CGRect(x: centerX - pillW / 2.0, y: centerY - 20.0, width: pillW, height: pillH)
+        let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 18.0)
+        
+        ctx.saveGState()
+        UIColor(red: 2/255, green: 6/255, blue: 23/255, alpha: 0.90).setFill()
+        pillPath.fill()
+        
+        accentColor.setStroke()
+        pillPath.lineWidth = 3.0
+        pillPath.stroke()
+        
+        // Riga 1: TIMEOUT
         let line1Attrs: [NSAttributedString.Key: Any] = [
             .font: font1,
             .foregroundColor: accentColor,

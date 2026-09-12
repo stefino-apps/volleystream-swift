@@ -95,8 +95,8 @@ class StreamVideoEffect: VideoEffect {
                     if state.isSetFinished || state.isMatchFinished {
                         sv.draw(CGRect(x: 0, y: 0, width: 1920, height: 1080))
                     } else {
-                        let scale: CGFloat = 2.2
-                        context.cgContext.translateBy(x: 50, y: 50)
+                        let scale: CGFloat = 2.8
+                        context.cgContext.translateBy(x: 50, y: 45)
                         context.cgContext.scaleBy(x: scale, y: scale)
                         sv.layer.render(in: context.cgContext)
                     }
@@ -109,6 +109,17 @@ class StreamVideoEffect: VideoEffect {
                             let show = ((Int(elapsed * 1000) % 700) < 450)
                             if show {
                                 sv.drawSpecialAlerts(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080), sp: sp, state: state)
+                            }
+                        }
+                    }
+                    
+                    // Disegna l'animazione TIMEOUT al centro dello schermo (1920x1080) per 4 secondi
+                    if sv.isBlinkingTimeout {
+                        let elapsed = Date().timeIntervalSince1970 - sv.timeoutStartTime
+                        if elapsed < 4.0 {
+                            let show = ((Int(elapsed * 1000) % 700) < 450)
+                            if show {
+                                sv.drawTimeoutAlert(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080), teamName: sv.timeoutTeamName, state: state)
                             }
                         }
                     }

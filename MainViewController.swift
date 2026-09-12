@@ -1464,10 +1464,16 @@ class MainViewController: UIViewController {
             checkTennisSetWin()
         } else if sport == "beach_volley" || sport == "beach volley" {
             localState.timeoutA = (localState.timeoutA + 1) % 2
+            let name = localState.teamA.isEmpty ? "CASA" : localState.teamA
+            scoreboardView?.triggerTimeoutAlert(teamName: name)
         } else if sport == "basket" {
             localState.timeoutA = (localState.timeoutA + 1) % 4
+            let name = localState.teamA.isEmpty ? "CASA" : localState.teamA
+            scoreboardView?.triggerTimeoutAlert(teamName: name)
         } else {
             localState.timeoutA = (localState.timeoutA + 1) % 3
+            let name = localState.teamA.isEmpty ? "CASA" : localState.teamA
+            scoreboardView?.triggerTimeoutAlert(teamName: name)
         }
         updateLocalState()
     }
@@ -1542,10 +1548,16 @@ class MainViewController: UIViewController {
             checkTennisSetWin()
         } else if sport == "beach_volley" || sport == "beach volley" {
             localState.timeoutB = (localState.timeoutB + 1) % 2
+            let name = localState.teamB.isEmpty ? "OSPITE" : localState.teamB
+            scoreboardView?.triggerTimeoutAlert(teamName: name)
         } else if sport == "basket" {
             localState.timeoutB = (localState.timeoutB + 1) % 4
+            let name = localState.teamB.isEmpty ? "OSPITE" : localState.teamB
+            scoreboardView?.triggerTimeoutAlert(teamName: name)
         } else {
             localState.timeoutB = (localState.timeoutB + 1) % 3
+            let name = localState.teamB.isEmpty ? "OSPITE" : localState.teamB
+            scoreboardView?.triggerTimeoutAlert(teamName: name)
         }
         updateLocalState()
     }
@@ -1564,23 +1576,33 @@ class MainViewController: UIViewController {
         }
         
         if let winTeam = winner {
-            localState.setScores.append([localState.scoreA, localState.scoreB])
+            let finalScoreA = localState.scoreA
+            let finalScoreB = localState.scoreB
+            localState.setScores.append([finalScoreA, finalScoreB])
             if winTeam == "A" {
                 localState.setsA += 1
             } else {
                 localState.setsB += 1
             }
             
-            localState.isSetFinished = true
+            let isMatchFin = (localState.setsA >= setsToWin || localState.setsB >= setsToWin)
+            let winName = (winTeam == "A") ? (localState.teamA.isEmpty ? "CASA" : localState.teamA) : (localState.teamB.isEmpty ? "OSPITE" : localState.teamB)
             
-            if localState.setsA >= setsToWin || localState.setsB >= setsToWin {
-                localState.isMatchFinished = true
-                showToast(message: "🏆 Match Terminato!")
-            } else {
-                showToast(message: "🎉 Set Concluso! Grafica parziali attiva...")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
+            showToast(message: isMatchFin ? "🏆 \(winName) vince il Match!" : "🎉 \(winName) vince il \(localState.currentSet)° Set!")
+            
+            // 1. La grafica di fine set appare 10 secondi dopo che è stato vinto il set
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+                guard let self = self else { return }
+                self.localState.isSetFinished = true
+                if isMatchFin {
+                    self.localState.isMatchFinished = true
+                }
+                self.updateLocalState()
+                
+                // 2. Dura 10 secondi e poi sparisce / avanza al set successivo
+                DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
                     guard let self = self else { return }
-                    if self.localState.isSetFinished && !self.localState.isMatchFinished {
+                    if !isMatchFin {
                         self.localState.currentSet += 1
                         self.localState.scoreA = 0
                         self.localState.scoreB = 0
@@ -1684,22 +1706,31 @@ class MainViewController: UIViewController {
         }
         
         if setWonA || setWonB {
-            localState.setScores.append([localState.tennisGamesA, localState.tennisGamesB])
+            let finalGamesA = localState.tennisGamesA
+            let finalGamesB = localState.tennisGamesB
+            localState.setScores.append([finalGamesA, finalGamesB])
             if setWonA {
                 localState.setsA += 1
             } else {
                 localState.setsB += 1
             }
-            localState.isSetFinished = true
             
-            if localState.setsA >= setsToWin || localState.setsB >= setsToWin {
-                localState.isMatchFinished = true
-                showToast(message: "🏆 Match Terminato!")
-            } else {
-                showToast(message: "🎉 Set Concluso! Grafica parziali attiva...")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
+            let isMatchFin = (localState.setsA >= setsToWin || localState.setsB >= setsToWin)
+            let winName = setWonA ? (localState.teamA.isEmpty ? "CASA" : localState.teamA) : (localState.teamB.isEmpty ? "OSPITE" : localState.teamB)
+            
+            showToast(message: isMatchFin ? "🏆 \(winName) vince il Match!" : "🎉 \(winName) vince il \(localState.currentSet)° Set!")
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+                guard let self = self else { return }
+                self.localState.isSetFinished = true
+                if isMatchFin {
+                    self.localState.isMatchFinished = true
+                }
+                self.updateLocalState()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
                     guard let self = self else { return }
-                    if self.localState.isSetFinished && !self.localState.isMatchFinished {
+                    if !isMatchFin {
                         self.localState.tennisGamesA = 0
                         self.localState.tennisGamesB = 0
                         self.localState.tennisPointsA = 0
