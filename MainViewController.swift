@@ -246,8 +246,14 @@ class MainViewController: UIViewController {
         scoreboardView = ScoreboardOverlayView(frame: view.bounds)
         scoreboardView.isUserInteractionEnabled = false
         scoreboardView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        scoreboardView.isHidden = true
         view.addSubview(scoreboardView)
         StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
+        
+        scoreboardView.onOverlayNeedsUpdate = { [weak self] in
+            guard let self = self else { return }
+            StreamManager.shared.videoEffect.triggerOverlayUpdate(state: self.localState)
+        }
     }
     
     private func setupGridLayer() {
@@ -428,15 +434,13 @@ class MainViewController: UIViewController {
         
         // MARK: - Grid Mode 4-Quadrant UI Elements
         gridContainerTR = UIView()
-        gridContainerTR.backgroundColor = UIColor(red: 24/255, green: 24/255, blue: 27/255, alpha: 0.95)
-        gridContainerTR.layer.cornerRadius = 14
-        gridContainerTR.layer.borderWidth = 1
-        gridContainerTR.layer.borderColor = UIColor(red: 39/255, green: 39/255, blue: 42/255, alpha: 1.0).cgColor
+        gridContainerTR.backgroundColor = .clear
         gridContainerTR.isHidden = true
         view.addSubview(gridContainerTR)
         
         btnTextGrid = createButton(title: "TEXT", systemImage: nil, bgColor: UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9), tintColor: .white, radius: 14)
-        btnTextGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 12)
+        btnTextGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 11)
+        btnTextGrid.setTitleColor(.white, for: .normal)
         btnTextGrid.addTarget(self, action: #selector(toggleTextAction), for: .touchUpInside)
         btnTextGrid.isHidden = true
         view.addSubview(btnTextGrid)
@@ -449,10 +453,10 @@ class MainViewController: UIViewController {
         view.addSubview(btnCrGrid)
         
         setPillContainer = UIView()
-        setPillContainer.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.9)
+        setPillContainer.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.95)
         setPillContainer.layer.cornerRadius = 16
         setPillContainer.layer.borderWidth = 1
-        setPillContainer.layer.borderColor = UIColor(white: 1.0, alpha: 0.15).cgColor
+        setPillContainer.layer.borderColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.8).cgColor
         setPillContainer.isHidden = true
         view.addSubview(setPillContainer)
         
@@ -478,7 +482,7 @@ class MainViewController: UIViewController {
         view.addSubview(btnSetPlusGrid)
         
         lblStorageGrid = UILabel()
-        lblStorageGrid.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        lblStorageGrid.font = UIFont.systemFont(ofSize: 12, weight: .bold)
         lblStorageGrid.textColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
         lblStorageGrid.textAlignment = .right
         lblStorageGrid.text = "0.00 GB"
@@ -487,10 +491,7 @@ class MainViewController: UIViewController {
         
         // Bottom Left (Team A)
         gridContainerBL = UIView()
-        gridContainerBL.backgroundColor = UIColor(red: 24/255, green: 24/255, blue: 27/255, alpha: 0.95)
-        gridContainerBL.layer.cornerRadius = 14
-        gridContainerBL.layer.borderWidth = 1.5
-        gridContainerBL.layer.borderColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.4).cgColor
+        gridContainerBL.backgroundColor = .clear
         gridContainerBL.isHidden = true
         view.addSubview(gridContainerBL)
         
@@ -503,14 +504,14 @@ class MainViewController: UIViewController {
         view.addSubview(imgTeamAGrid)
         
         lblTeamAGrid = UILabel()
-        lblTeamAGrid.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        lblTeamAGrid.font = UIFont.systemFont(ofSize: 15, weight: .bold)
         lblTeamAGrid.textColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
         lblTeamAGrid.text = "CASA"
         lblTeamAGrid.isHidden = true
         view.addSubview(lblTeamAGrid)
         
         lblScoreAGrid = UILabel()
-        lblScoreAGrid.font = UIFont.systemFont(ofSize: 32, weight: .heavy)
+        lblScoreAGrid.font = UIFont.systemFont(ofSize: 28, weight: .heavy)
         lblScoreAGrid.textColor = .white
         lblScoreAGrid.textAlignment = .right
         lblScoreAGrid.text = "0"
@@ -519,10 +520,7 @@ class MainViewController: UIViewController {
         
         // Bottom Right (Team B)
         gridContainerBR = UIView()
-        gridContainerBR.backgroundColor = UIColor(red: 24/255, green: 24/255, blue: 27/255, alpha: 0.95)
-        gridContainerBR.layer.cornerRadius = 14
-        gridContainerBR.layer.borderWidth = 1.5
-        gridContainerBR.layer.borderColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.4).cgColor
+        gridContainerBR.backgroundColor = .clear
         gridContainerBR.isHidden = true
         view.addSubview(gridContainerBR)
         
@@ -535,14 +533,14 @@ class MainViewController: UIViewController {
         view.addSubview(imgTeamBGrid)
         
         lblTeamBGrid = UILabel()
-        lblTeamBGrid.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        lblTeamBGrid.font = UIFont.systemFont(ofSize: 15, weight: .bold)
         lblTeamBGrid.textColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
         lblTeamBGrid.text = "OSPITE"
         lblTeamBGrid.isHidden = true
         view.addSubview(lblTeamBGrid)
         
         lblScoreBGrid = UILabel()
-        lblScoreBGrid.font = UIFont.systemFont(ofSize: 32, weight: .heavy)
+        lblScoreBGrid.font = UIFont.systemFont(ofSize: 28, weight: .heavy)
         lblScoreBGrid.textColor = .white
         lblScoreBGrid.textAlignment = .right
         lblScoreBGrid.text = "0"
@@ -600,9 +598,7 @@ class MainViewController: UIViewController {
         if isClean {
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.transform = .identity
-            scoreboardView.frame = CGRect(x: safeLeft, y: safeTop, width: 280, height: 54)
-            scoreboardView.isHidden = false
+            scoreboardView.isHidden = true
             gridLayer?.isHidden = true
             allControls.forEach { $0.isHidden = true }
             return
@@ -685,22 +681,20 @@ class MainViewController: UIViewController {
             let contentH = h - safeTop - safeBottom
             let gap: CGFloat = 8.0
             let topHalfW = (contentW - gap) / 2.0
-            let topHalfH = (contentH - gap) * 0.52
+            let topHalfH = (contentH - gap) * 0.48
             let bottomHalfH = contentH - topHalfH - gap
-            let centerW: CGFloat = 86.0
+            let centerW: CGFloat = 90.0
             let bottomSideW = (contentW - centerW - (gap * 2.0)) / 2.0
             
             // ----------------------------------------------------
-            // QUADRANT 1: TOP-LEFT (Camera Preview + Scaled Scoreboard)
+            // QUADRANT 1: TOP-LEFT (Camera Preview with Stream Overlay)
             // ----------------------------------------------------
             let q1Frame = CGRect(x: safeLeft, y: safeTop, width: topHalfW, height: topHalfH)
             lfView.frame = q1Frame
-            lfView.layer.cornerRadius = 12
+            lfView.layer.cornerRadius = 10
             lfView.clipsToBounds = true
             
-            scoreboardView.transform = CGAffineTransform(scaleX: 0.50, y: 0.50)
-            scoreboardView.frame.origin = CGPoint(x: safeLeft + 4, y: safeTop + 4)
-            scoreboardView.isHidden = false
+            scoreboardView.isHidden = true
             
             // ----------------------------------------------------
             // QUADRANT 2: TOP-RIGHT (Director Bar & Set Controls Pill)
@@ -715,19 +709,20 @@ class MainViewController: UIViewController {
             
             // Top Circular Button Row (TEXT, S, CR, Share, Mute, Mode)
             let topBtnCount: CGFloat = 6.0
-            let topBtnSize = min(36.0, (trW - 20.0 - ((topBtnCount - 1.0) * 6.0)) / topBtnCount)
-            let topSpacing = (trW - 20.0 - (topBtnCount * topBtnSize)) / (topBtnCount - 1.0)
-            let topRowY = trY + 8.0
+            let topBtnSize = min(34.0, (trW - 10.0 - ((topBtnCount - 1.0) * 8.0)) / topBtnCount)
+            let topSpacing = (trW - 10.0 - (topBtnCount * topBtnSize)) / (topBtnCount - 1.0)
+            let topRowY = trY + 4.0
             
             // 1. TEXT button
-            btnTextGrid.frame = CGRect(x: trX + 10.0 + 0 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            btnTextGrid.frame = CGRect(x: trX + 5.0 + 0 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
             btnTextGrid.layer.cornerRadius = topBtnSize / 2
             btnTextGrid.backgroundColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9)
             btnTextGrid.setTitleColor(.white, for: .normal)
+            btnTextGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 11)
             btnTextGrid.isHidden = false
             
             // 2. Sponsor S button (Yellow circle, black text)
-            sponsorButton.frame = CGRect(x: trX + 10.0 + 1 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            sponsorButton.frame = CGRect(x: trX + 5.0 + 1 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
             sponsorButton.layer.cornerRadius = topBtnSize / 2
             sponsorButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             sponsorButton.setTitle("S", for: .normal)
@@ -736,21 +731,22 @@ class MainViewController: UIViewController {
             sponsorButton.isHidden = false
             
             // 3. CR (Clear / Reset) button (Yellow circle, black text)
-            btnCrGrid.frame = CGRect(x: trX + 10.0 + 2 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            btnCrGrid.frame = CGRect(x: trX + 5.0 + 2 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
             btnCrGrid.layer.cornerRadius = topBtnSize / 2
             btnCrGrid.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             btnCrGrid.setTitleColor(.black, for: .normal)
+            btnCrGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
             btnCrGrid.isHidden = false
             
             // 4. Share Live button (Yellow circle, black icon)
-            shareLiveButton.frame = CGRect(x: trX + 10.0 + 3 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            shareLiveButton.frame = CGRect(x: trX + 5.0 + 3 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
             shareLiveButton.layer.cornerRadius = topBtnSize / 2
             shareLiveButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             shareLiveButton.tintColor = .black
             shareLiveButton.isHidden = false
             
             // 5. Mute Audio button (Yellow circle, black icon)
-            muteButton.frame = CGRect(x: trX + 10.0 + 4 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            muteButton.frame = CGRect(x: trX + 5.0 + 4 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
             muteButton.layer.cornerRadius = topBtnSize / 2
             muteButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             muteButton.tintColor = .black
@@ -758,7 +754,7 @@ class MainViewController: UIViewController {
             muteButton.isHidden = false
             
             // 6. Mode Switch button (Yellow circle, black "L")
-            modeButton.frame = CGRect(x: trX + 10.0 + 5 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            modeButton.frame = CGRect(x: trX + 5.0 + 5 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
             modeButton.layer.cornerRadius = topBtnSize / 2
             modeButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             modeButton.setTitleColor(.black, for: .normal)
@@ -767,28 +763,29 @@ class MainViewController: UIViewController {
             modeButton.isHidden = false
             
             // Row 2: Set Controls Pill Container
-            let pillY = topRowY + topBtnSize + 10.0
-            let pillH = max(34.0, trH - (pillY - trY) - 10.0)
-            let pillW = trW - 20.0
-            setPillContainer.frame = CGRect(x: trX + 10.0, y: pillY, width: pillW, height: pillH)
+            let pillY = topRowY + topBtnSize + 14.0
+            let pillH = max(36.0, trH - (pillY - trY) - 6.0)
+            let pillW = min(trW - 10.0, 270.0)
+            let pillX = trX + 5.0
+            setPillContainer.frame = CGRect(x: pillX, y: pillY, width: pillW, height: pillH)
             setPillContainer.layer.cornerRadius = pillH / 2
             setPillContainer.isHidden = false
             
-            let btnSetSize = max(26.0, pillH - 6.0)
-            btnSetMinusGrid.frame = CGRect(x: trX + 13.0, y: pillY + (pillH - btnSetSize) / 2, width: btnSetSize, height: btnSetSize)
+            let btnSetSize = max(26.0, pillH - 8.0)
+            btnSetMinusGrid.frame = CGRect(x: pillX + 6.0, y: pillY + (pillH - btnSetSize) / 2, width: btnSetSize, height: btnSetSize)
             btnSetMinusGrid.layer.cornerRadius = btnSetSize / 2
             btnSetMinusGrid.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
             btnSetMinusGrid.isHidden = false
             
-            lblSetGrid.frame = CGRect(x: trX + 13.0 + btnSetSize + 6.0, y: pillY, width: 44.0, height: pillH)
+            lblSetGrid.frame = CGRect(x: pillX + 6.0 + btnSetSize + 4.0, y: pillY, width: 42.0, height: pillH)
             lblSetGrid.isHidden = false
             
-            btnSetPlusGrid.frame = CGRect(x: trX + 13.0 + btnSetSize + 6.0 + 44.0 + 6.0, y: pillY + (pillH - btnSetSize) / 2, width: btnSetSize, height: btnSetSize)
+            btnSetPlusGrid.frame = CGRect(x: pillX + 6.0 + btnSetSize + 4.0 + 42.0 + 4.0, y: pillY + (pillH - btnSetSize) / 2, width: btnSetSize, height: btnSetSize)
             btnSetPlusGrid.layer.cornerRadius = btnSetSize / 2
             btnSetPlusGrid.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             btnSetPlusGrid.isHidden = false
             
-            lblStorageGrid.frame = CGRect(x: trX + 10.0 + pillW - 90.0, y: pillY, width: 82.0, height: pillH)
+            lblStorageGrid.frame = CGRect(x: pillX + pillW - 90.0, y: pillY, width: 82.0, height: pillH)
             lblStorageGrid.text = getFreeDiskSpaceString()
             lblStorageGrid.isHidden = false
             
@@ -799,7 +796,7 @@ class MainViewController: UIViewController {
             btnEndQuarter.isHidden = true
             
             // ----------------------------------------------------
-            // QUADRANT 3: BOTTOM-LEFT (Team A Home Card)
+            // QUADRANT 3: BOTTOM-LEFT (Team A Home Row)
             // ----------------------------------------------------
             let blX = safeLeft
             let blY = safeTop + topHalfH + gap
@@ -809,39 +806,39 @@ class MainViewController: UIViewController {
             gridContainerBL.frame = CGRect(x: blX, y: blY, width: blW, height: blH)
             gridContainerBL.isHidden = false
             
-            let logoSize: CGFloat = 28.0
-            imgTeamAGrid.frame = CGRect(x: blX + 12.0, y: blY + 8.0, width: logoSize, height: logoSize)
+            let logoSize: CGFloat = 24.0
+            imgTeamAGrid.frame = CGRect(x: blX + 4.0, y: blY + 6.0, width: logoSize, height: logoSize)
             imgTeamAGrid.isHidden = false
             
-            lblTeamAGrid.frame = CGRect(x: blX + 12.0 + logoSize + 8.0, y: blY + 6.0, width: max(40.0, blW - 20.0 - logoSize - 8.0 - 55.0), height: 32.0)
+            lblTeamAGrid.frame = CGRect(x: blX + 4.0 + logoSize + 6.0, y: blY + 4.0, width: max(30.0, blW - logoSize - 65.0), height: 28.0)
             lblTeamAGrid.isHidden = false
             
-            lblScoreAGrid.frame = CGRect(x: blX + blW - 60.0, y: blY + 4.0, width: 50.0, height: 34.0)
+            lblScoreAGrid.frame = CGRect(x: blX + blW - 55.0, y: blY + 2.0, width: 50.0, height: 32.0)
             lblScoreAGrid.isHidden = false
             
-            let btnSize = min(46.0, blH - 50.0)
-            let btnRowY = blY + blH - btnSize - 10.0
-            let btnSpacing = (blW - 24.0 - (3.0 * btnSize)) / 2.0
+            let btnSize = min(46.0, blH - 42.0)
+            let btnRowY = blY + blH - btnSize - 4.0
+            let btnSpacing = (blW - (3.0 * btnSize)) / 2.0
             
-            btnScoreHome.frame = CGRect(x: blX + 12.0, y: btnRowY, width: btnSize, height: btnSize)
+            btnScoreHome.frame = CGRect(x: blX, y: btnRowY, width: btnSize, height: btnSize)
             btnScoreHome.layer.cornerRadius = btnSize / 2
             btnScoreHome.setTitle("+", for: .normal)
             btnScoreHome.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
-            btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 24)
+            btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
             btnScoreHome.isHidden = false
             
-            btnMinusHome.frame = CGRect(x: blX + 12.0 + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
+            btnMinusHome.frame = CGRect(x: blX + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
             btnMinusHome.layer.cornerRadius = btnSize / 2
             btnMinusHome.setTitle("−", for: .normal)
             btnMinusHome.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-            btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
+            btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
             btnMinusHome.isHidden = false
             
-            btnTimeoutHome.frame = CGRect(x: blX + 12.0 + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
+            btnTimeoutHome.frame = CGRect(x: blX + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
             btnTimeoutHome.layer.cornerRadius = btnSize / 2
             btnTimeoutHome.setTitle("T", for: .normal)
             btnTimeoutHome.backgroundColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9)
-            btnTimeoutHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
+            btnTimeoutHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
             btnTimeoutHome.isHidden = false
             
             btnScoreHome2.isHidden = true
@@ -855,14 +852,16 @@ class MainViewController: UIViewController {
             let bcW = centerW
             let bcH = blH
             
-            let liveH = min(42.0, bcH * 0.44)
-            startStreamButton.frame = CGRect(x: bcX, y: bcY + 4.0, width: bcW, height: liveH)
-            startStreamButton.layer.cornerRadius = 12
+            let liveW: CGFloat = 84.0
+            let liveH: CGFloat = 34.0
+            startStreamButton.frame = CGRect(x: bcX + (bcW - liveW) / 2.0, y: bcY + 4.0, width: liveW, height: liveH)
+            startStreamButton.layer.cornerRadius = 8
             startStreamButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
-            startStreamButton.setTitle(StreamManager.shared.isPublishing ? "STOP\nLIVE" : "GO\nLIVE", for: .normal)
+            startStreamButton.backgroundColor = StreamManager.shared.isPublishing ? UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 1.0) : UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+            startStreamButton.setTitle(StreamManager.shared.isPublishing ? "STOP LIVE" : "GO LIVE", for: .normal)
             startStreamButton.isHidden = false
             
-            let subBtnSize = min(36.0, bcH - liveH - 16.0)
+            let subBtnSize = min(42.0, bcH - liveH - 16.0)
             let subY = bcY + liveH + 8.0
             let subSpacing = (bcW - (2.0 * subBtnSize)) / 3.0
             
@@ -871,7 +870,7 @@ class MainViewController: UIViewController {
             replayButton.backgroundColor = UIColor(red: 37/255, green: 99/255, blue: 235/255, alpha: 1.0)
             replayButton.setTitle("REP", for: .normal)
             replayButton.setTitleColor(.white, for: .normal)
-            replayButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 12)
+            replayButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
             replayButton.isHidden = false
             
             highlightButton.frame = CGRect(x: bcX + subSpacing + subBtnSize + subSpacing, y: subY, width: subBtnSize, height: subBtnSize)
@@ -879,11 +878,13 @@ class MainViewController: UIViewController {
             highlightButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             highlightButton.setTitle("HL", for: .normal)
             highlightButton.setTitleColor(.black, for: .normal)
-            highlightButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+            highlightButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+            highlightButton.layer.borderWidth = 1.5
+            highlightButton.layer.borderColor = UIColor.white.cgColor
             highlightButton.isHidden = false
             
             // ----------------------------------------------------
-            // QUADRANT 4: BOTTOM-RIGHT (Team B Away Card)
+            // QUADRANT 4: BOTTOM-RIGHT (Team B Away Row)
             // ----------------------------------------------------
             let brX = bcX + bcW + gap
             let brY = blY
@@ -893,34 +894,34 @@ class MainViewController: UIViewController {
             gridContainerBR.frame = CGRect(x: brX, y: brY, width: brW, height: brH)
             gridContainerBR.isHidden = false
             
-            imgTeamBGrid.frame = CGRect(x: brX + 12.0, y: brY + 8.0, width: logoSize, height: logoSize)
+            imgTeamBGrid.frame = CGRect(x: brX + 4.0, y: brY + 6.0, width: logoSize, height: logoSize)
             imgTeamBGrid.isHidden = false
             
-            lblTeamBGrid.frame = CGRect(x: brX + 12.0 + logoSize + 8.0, y: brY + 6.0, width: max(40.0, brW - 20.0 - logoSize - 8.0 - 55.0), height: 32.0)
+            lblTeamBGrid.frame = CGRect(x: brX + 4.0 + logoSize + 6.0, y: brY + 4.0, width: max(30.0, brW - logoSize - 65.0), height: 28.0)
             lblTeamBGrid.isHidden = false
             
-            lblScoreBGrid.frame = CGRect(x: brX + brW - 60.0, y: brY + 4.0, width: 50.0, height: 34.0)
+            lblScoreBGrid.frame = CGRect(x: brX + brW - 55.0, y: brY + 2.0, width: 50.0, height: 32.0)
             lblScoreBGrid.isHidden = false
             
-            btnScoreAway.frame = CGRect(x: brX + 12.0, y: btnRowY, width: btnSize, height: btnSize)
+            btnScoreAway.frame = CGRect(x: brX, y: btnRowY, width: btnSize, height: btnSize)
             btnScoreAway.layer.cornerRadius = btnSize / 2
             btnScoreAway.setTitle("+", for: .normal)
             btnScoreAway.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
-            btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 24)
+            btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
             btnScoreAway.isHidden = false
             
-            btnMinusAway.frame = CGRect(x: brX + 12.0 + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
+            btnMinusAway.frame = CGRect(x: brX + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
             btnMinusAway.layer.cornerRadius = btnSize / 2
             btnMinusAway.setTitle("−", for: .normal)
             btnMinusAway.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-            btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
+            btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
             btnMinusAway.isHidden = false
             
-            btnTimeoutAway.frame = CGRect(x: brX + 12.0 + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
+            btnTimeoutAway.frame = CGRect(x: brX + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
             btnTimeoutAway.layer.cornerRadius = btnSize / 2
             btnTimeoutAway.setTitle("T", for: .normal)
             btnTimeoutAway.backgroundColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9)
-            btnTimeoutAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
+            btnTimeoutAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
             btnTimeoutAway.isHidden = false
             
             btnScoreAway2.isHidden = true
@@ -960,17 +961,13 @@ class MainViewController: UIViewController {
             view.bringSubviewToFront(btnMinusAway)
             view.bringSubviewToFront(btnTimeoutAway)
             
-            view.bringSubviewToFront(scoreboardView)
-            
         } else {
             // ==========================================
             // === MODE 0: NORMAL FULLSCREEN REGIA ===
             // ==========================================
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.transform = .identity
-            scoreboardView.frame = view.bounds
-            scoreboardView.isHidden = false
+            scoreboardView.isHidden = true
             gridLayer?.isHidden = true
             
             gridContainerTR.isHidden = true

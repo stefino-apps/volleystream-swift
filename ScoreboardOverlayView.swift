@@ -7,11 +7,12 @@ class ScoreboardOverlayView: UIView {
     var homeLogo: UIImage?
     var awayLogo: UIImage?
     
-    // Blinking Animation State (4.2s duration, 450ms ON / 250ms OFF matching Android)
+    // Blinking Animation State (4.0s duration, 450ms ON / 250ms OFF matching Android)
     private var displayLink: CADisplayLink?
-    private var alertStartTime: TimeInterval = 0
-    private var isBlinkingAlert = false
+    var alertStartTime: TimeInterval = 0
+    var isBlinkingAlert = false
     private var lastAlertScoreKey = ""
+    var onOverlayNeedsUpdate: (() -> Void)?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -38,11 +39,17 @@ class ScoreboardOverlayView: UIView {
     }
     
     @objc private func handleDisplayTick() {
-        if isBlinkingAlert || currentState.isSetFinished || currentState.isMatchFinished {
+        if isBlinkingAlert {
             let elapsed = Date().timeIntervalSince1970 - alertStartTime
-            if elapsed > 4.2 && isBlinkingAlert {
+            if elapsed >= 4.0 {
                 isBlinkingAlert = false
+                setNeedsDisplay()
+                onOverlayNeedsUpdate?()
+                return
             }
+            setNeedsDisplay()
+            onOverlayNeedsUpdate?()
+        } else if currentState.isSetFinished || currentState.isMatchFinished {
             setNeedsDisplay()
         }
     }
@@ -195,7 +202,7 @@ class ScoreboardOverlayView: UIView {
         let isMatchPoint: Bool
     }
     
-    private func getSetPointInfo(state: RemoteMatchState) -> SetPointInfo? {
+    func getSetPointInfo(state: RemoteMatchState) -> SetPointInfo? {
         let sport = state.sportType.lowercased()
         if sport == "darts" || sport == "basket" || sport == "soccer" || sport == "handball" || sport == "cricket" || sport == "billiards" || sport == "biliardo" {
             return nil
@@ -748,7 +755,7 @@ class ScoreboardOverlayView: UIView {
     
     // MARK: - Special Alerts: Blinking Central SET POINT / MATCH POINT
     
-    private func drawSpecialAlerts(ctx: CGContext, rect: CGRect, sp: SetPointInfo, state: RemoteMatchState) {
+    func drawSpecialAlerts(ctx: CGContext, rect: CGRect, sp: SetPointInfo, state: RemoteMatchState) {
         let textLine1 = sp.isMatchPoint ? "MATCH POINT" : "SET POINT"
         let teamName = (sp.team == "A") ? (state.teamA.isEmpty ? "CASA" : state.teamA) : (state.teamB.isEmpty ? "OSPITE" : state.teamB)
         let textLine2 = teamName.uppercased()

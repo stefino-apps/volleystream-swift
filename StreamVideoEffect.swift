@@ -47,37 +47,31 @@ class StreamVideoEffect: VideoEffect {
             }
         }
         
-        // Non applichiamo l'overlay sulla preview locale se non stiamo trasmettendo o registrando
-        // In questo modo la vista locale usa solo il componente nativo ScoreboardOverlayView evitando doppi tabelloni
-        let isPublishing = StreamManager.shared.isPublishing
         let isRecording = LocalVideoRecorder.shared.isRecordingState
         
-        guard (isPublishing || isRecording), let overlay = overlayImage, let filter = filter else {
-            return outputImage
+        if let overlay = overlayImage, let filter = filter {
+            filter.setValue(overlay, forKey: kCIInputImageKey)
+            filter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
+            outputImage = filter.outputImage ?? outputImage
         }
-        
-        filter.setValue(overlay, forKey: kCIInputImageKey)
-        filter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
-        
-        let finalImage = filter.outputImage ?? outputImage
         
         if isRecording {
             if let sampleBuffer = info {
                 let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                LocalVideoRecorder.shared.appendVideo(image: finalImage, time: time)
+                LocalVideoRecorder.shared.appendVideo(image: outputImage, time: time)
             }
         }
         
         if isTransitioningToReplay {
             stingerFrameCount -= 1
             if stingerFrameCount <= 0 { isTransitioningToReplay = false }
-            let flash = CIImage(color: CIColor.white).cropped(to: finalImage.extent)
+            let flash = CIImage(color: CIColor.white).cropped(to: outputImage.extent)
             let mixFilter = CIFilter(name: "CISourceOverCompositing")!
             mixFilter.setValue(flash, forKey: kCIInputImageKey)
-            mixFilter.setValue(finalImage, forKey: kCIInputBackgroundImageKey)
-            return mixFilter.outputImage ?? finalImage
+            mixFilter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
+            return mixFilter.outputImage ?? outputImage
         }
-        return finalImage
+        return outputImage
     }
     
     func triggerOverlayUpdate(state: RemoteMatchState) {
@@ -107,18 +101,32 @@ class StreamVideoEffect: VideoEffect {
                         sv.layer.render(in: context.cgContext)
                     }
                     context.cgContext.restoreGState()
+                    
+                    // Disegna l'animazione Set Point / Match Point al centro dello schermo (1920x1080) per 4 secondi
+                    if sv.isBlinkingAlert, let sp = sv.getSetPointInfo(state: state) {
+                        let elapsed = Date().timeIntervalSince1970 - sv.alertStartTime
+                        if elapsed < 4.0 {
+                            let show = ((Int(elapsed * 1000) % 700) < 450)
+                            if show {
+                                sv.drawSpecialAlerts(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080), sp: sp, state: state)
+                            }
+                        }
+                    }
                 }
                 
                 // Watermark promozionale durante prova gratuita / versione free:
-                // Appare ogni 5 minuti (minuto % 5 == 0) e dura 1 minuto in alto accanto al tabellone
+                // Appare ogni 5 minuti (minuto % 5 == 0) e dura 1 minuto posizionato al CENTRO IN ALTO
                 if !StoreKitManager.shared.isPremium {
                     let minute = Calendar.current.component(.minute, from: Date())
                     if minute % 5 == 0 {
                         let watermarkText = "VOLLEYSTREAM PRO"
                         let font = UIFont.systemFont(ofSize: 22, weight: .black)
                         
-                        // Sfondo pillola semi-trasparente elegante
-                        let pillRect = CGRect(x: 510, y: 56, width: 280, height: 42)
+                        let pillW: CGFloat = 280.0
+                        let pillH: CGFloat = 42.0
+                        let pillX: CGFloat = (1920.0 - pillW) / 2.0
+                        let pillY: CGFloat = 28.0
+                        let pillRect = CGRect(x: pillX, y: pillY, width: pillW, height: pillH)
                         let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 8)
                         UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.85).setFill()
                         pillPath.fill()
@@ -133,7 +141,7 @@ class StreamVideoEffect: VideoEffect {
                             .foregroundColor: UIColor.white,
                             .paragraphStyle: paragraph
                         ]
-                        let textRect = CGRect(x: 512, y: 64, width: 276, height: 28)
+                        let textRect = CGRect(x: pillX + 2, y: pillY + 7, width: pillW - 4, height: 28)
                         watermarkText.draw(in: textRect, withAttributes: attrs)
                     }
                 }
