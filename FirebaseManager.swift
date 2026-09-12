@@ -105,35 +105,23 @@ class FirebaseManager {
         self.ref.child("sessions/\(id)/state").setValue(state.dictionary)
     }
     
+    private var lastDispatchedCommand: String = ""
+    private var lastDispatchedTime: TimeInterval = 0
+    
     // (CLIENT) Invia un comando all'Host
     func sendCommand(_ command: String) {
         guard let id = sessionId else { return }
         let cmdId = UUID().uuidString
         print("Firebase CLIENT: Sending command '\(command)' to session '\(id)' (cmdId: \(cmdId))")
         self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(command)
-        self.ref.child("sessions/\(id)/command").setValue(command)
     }
     
     private func listenForCommands() {
         guard let id = sessionId else { return }
         print("Firebase HOST: Listening for commands on session \(id)...")
         
-        // 1. Multiple command list: sessions/{id}/commands
+        // Ascolta in modo univoco sulla lista commands
         ref.child("sessions/\(id)/commands").observe(.childAdded) { [weak self] snapshot in
-            self?.extractAndDispatchCommand(from: snapshot)
-            snapshot.ref.removeValue()
-        }
-        
-        // 2. Single command node: sessions/{id}/command
-        ref.child("sessions/\(id)/command").observe(.value) { [weak self] snapshot in
-            guard snapshot.exists() else { return }
-            self?.extractAndDispatchCommand(from: snapshot)
-            snapshot.ref.removeValue()
-        }
-        
-        // 3. Action node: sessions/{id}/action
-        ref.child("sessions/\(id)/action").observe(.value) { [weak self] snapshot in
-            guard snapshot.exists() else { return }
             self?.extractAndDispatchCommand(from: snapshot)
             snapshot.ref.removeValue()
         }
@@ -141,20 +129,33 @@ class FirebaseManager {
     
     private func extractAndDispatchCommand(from snapshot: DataSnapshot) {
         if let command = snapshot.value as? String, !command.isEmpty {
-            print("Firebase HOST: Command received (String): \(command)")
-            onCommandReceived?(command)
+            dispatchCommandIfNew(command)
             return
         }
         if let dict = snapshot.value as? [String: Any] {
             let possibleKeys = ["action", "command", "cmd", "type", "event", "name", "val", "value"]
             for key in possibleKeys {
                 if let val = dict[key] as? String, !val.isEmpty {
-                    print("Firebase HOST: Command received from key '\(key)': \(val)")
-                    onCommandReceived?(val)
+                    dispatchCommandIfNew(val)
                     return
                 }
             }
         }
+    }
+    
+    private func dispatchCommandIfNew(_ command: String) {
+        let now = Date().timeIntervalSince1970
+        let clean = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return }
+        
+        if clean == lastDispatchedCommand && (now - lastDispatchedTime) < 0.35 {
+            print("Firebase HOST: Ignoring duplicate command '\(clean)'")
+            return
+        }
+        lastDispatchedCommand = clean
+        lastDispatchedTime = now
+        print("Firebase HOST: Dispatching command: \(clean)")
+        onCommandReceived?(clean)
     }
 }
 

@@ -39,9 +39,12 @@ class ScoreboardOverlayView: UIView {
         displayLink?.invalidate()
     }
     
+    private var lastTickTime: TimeInterval = 0
+    
     private func setupDisplayLink() {
         displayLink = CADisplayLink(target: self, selector: #selector(handleDisplayTick))
-        displayLink?.preferredFramesPerSecond = 30
+        displayLink?.preferredFramesPerSecond = 15
+        displayLink?.isPaused = true
         displayLink?.add(to: .main, forMode: .common)
     }
     
@@ -49,40 +52,43 @@ class ScoreboardOverlayView: UIView {
         self.timeoutTeamName = teamName
         self.timeoutStartTime = Date().timeIntervalSince1970
         self.isBlinkingTimeout = true
+        displayLink?.isPaused = false
         setNeedsDisplay()
         onOverlayNeedsUpdate?()
     }
     
     @objc private func handleDisplayTick() {
-        var needsRedraw = false
+        let now = Date().timeIntervalSince1970
+        // Limita il tick di ridisegno a max 12 FPS durante il lampeggio per preservare il 99% della CPU
+        guard (now - lastTickTime) >= 0.08 else { return }
+        lastTickTime = now
+        
+        var alertActive = false
+        
         if isBlinkingAlert {
-            let elapsed = Date().timeIntervalSince1970 - alertStartTime
+            let elapsed = now - alertStartTime
             if elapsed >= 4.0 {
                 isBlinkingAlert = false
-                needsRedraw = true
             } else {
-                needsRedraw = true
+                alertActive = true
             }
         }
         
         if isBlinkingTimeout {
-            let elapsed = Date().timeIntervalSince1970 - timeoutStartTime
+            let elapsed = now - timeoutStartTime
             if elapsed >= 4.0 {
                 isBlinkingTimeout = false
-                needsRedraw = true
             } else {
-                needsRedraw = true
+                alertActive = true
             }
         }
         
-        if currentState.isSetFinished || currentState.isMatchFinished {
-            needsRedraw = true
+        if !alertActive {
+            displayLink?.isPaused = true
         }
         
-        if needsRedraw {
-            setNeedsDisplay()
-            onOverlayNeedsUpdate?()
-        }
+        setNeedsDisplay()
+        onOverlayNeedsUpdate?()
     }
     
     func updateFromState(_ state: RemoteMatchState) {
@@ -110,6 +116,7 @@ class ScoreboardOverlayView: UIView {
                 lastSetPointSetIndex = state.currentSet
                 alertStartTime = Date().timeIntervalSince1970
                 isBlinkingAlert = true
+                displayLink?.isPaused = false
             }
         } else {
             // Se nessuna squadra è a Set Point (es. parità ai vantaggi 24-24), resetta per il prossimo punto di vantaggio

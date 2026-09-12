@@ -14,9 +14,7 @@ struct DirectorView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: MainViewController, context: Context) {
-        if uiViewController.isViewLoaded {
-            uiViewController.refreshMatchState()
-        }
+        // Non invocare refreshMatchState qui per evitare loop di render con SwiftUI
     }
 }
 

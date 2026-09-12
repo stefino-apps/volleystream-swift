@@ -84,7 +84,6 @@ class StreamVideoEffect: VideoEffect {
             guard let self = self else { return }
             defer { self.isRenderingOverlay = false }
             
-            self.scoreboardView?.updateFromState(state)
             self.marqueeView?.updateMessage(state.scrollMessage, show: state.showScrollText)
             
             let format = UIGraphicsImageRendererFormat()
