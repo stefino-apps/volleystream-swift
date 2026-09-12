@@ -4,13 +4,13 @@ options:
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
-    majorVersion: 10.0.0
+    from: 10.0.0
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
-    majorVersion: 7.0.0
+    from: 7.0.0
   HaishinKit:
     url: https://github.com/shogo4405/HaishinKit.swift
-    exactVersion: 1.8.0
+    from: 1.8.0
 targets:
   MiaApp:
     type: application
@@ -27,6 +27,12 @@ targets:
           - "Podfile.lock"
           - "*.ps1"
           - "*.md"
+          - "DerivedData"
+          - "Payload"
+          - ".spm"
+          - "*.ipa"
+          - "*.zip"
+          - "screenshot_playstore_3d"
     dependencies:
       - package: Firebase
         product: FirebaseCore
