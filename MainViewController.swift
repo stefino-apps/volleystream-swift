@@ -5,7 +5,7 @@ import AVFoundation
 class MainViewController: UIViewController {
 
     var lfView: MTHKView!
-    var scoreboardView: ScoreboardOverlayView!
+    var scoreboardView: ScoreboardOverlayView?
     
     // Top Bar UI Controls
     var closeButton: UIButton!
@@ -97,6 +97,10 @@ class MainViewController: UIViewController {
         return true
     }
     
+    deinit {
+        FirebaseManager.shared.stopListening()
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         AppDelegate.setOrientationLock(.landscape, rotateTo: .landscapeRight)
@@ -149,7 +153,9 @@ class MainViewController: UIViewController {
                 self.localState.dartsActivePlayer = "A"
             }
         }
-        updateLocalState()
+        if isViewLoaded {
+            updateLocalState()
+        }
     }
     
     private func forceLandscapeOrientation() {
@@ -195,17 +201,6 @@ class MainViewController: UIViewController {
             print("Firebase Host Session Created: \(success)")
         }
         
-        FirebaseManager.shared.onStateUpdated = { [weak self] state in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.localState = state
-                self.updateLocalState(saveHistory: false)
-                if state.isReplaying {
-                    ReplayManager.shared.startPlayback()
-                }
-            }
-        }
-        
         FirebaseManager.shared.onCommandReceived = { [weak self] command in
             DispatchQueue.main.async {
                 self?.handleRemoteCommand(command)
@@ -240,14 +235,15 @@ class MainViewController: UIViewController {
     }
     
     private func setupScoreboardOverlay() {
-        scoreboardView = ScoreboardOverlayView(frame: view.bounds)
-        scoreboardView.isUserInteractionEnabled = false
-        scoreboardView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        scoreboardView.isHidden = true
-        view.addSubview(scoreboardView)
-        StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
+        let sv = ScoreboardOverlayView(frame: view.bounds)
+        sv.isUserInteractionEnabled = false
+        sv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        sv.isHidden = true
+        view.addSubview(sv)
+        self.scoreboardView = sv
+        StreamManager.shared.videoEffect.scoreboardView = sv
         
-        scoreboardView.onOverlayNeedsUpdate = { [weak self] in
+        sv.onOverlayNeedsUpdate = { [weak self] in
             guard let self = self else { return }
             StreamManager.shared.videoEffect.triggerOverlayUpdate(state: self.localState)
         }
@@ -1227,6 +1223,7 @@ class MainViewController: UIViewController {
     }
     
     private func exitDirector() {
+        FirebaseManager.shared.stopListening()
         StreamManager.shared.stopStreaming()
         if LocalVideoRecorder.shared.isRecordingState {
             LocalVideoRecorder.shared.stopRecording { _ in }
@@ -1262,6 +1259,8 @@ class MainViewController: UIViewController {
     // MARK: - Match State & Scoring (Volleyball & Multi-Sport)
     
     func updateLocalState(saveHistory: Bool = true) {
+        guard isViewLoaded, let sv = scoreboardView else { return }
+        
         if saveHistory {
             stateHistory.append(localState)
             if stateHistory.count > 20 {
@@ -1269,7 +1268,7 @@ class MainViewController: UIViewController {
             }
         }
         localState.lastUpdate = Int64(Date().timeIntervalSince1970 * 1000)
-        scoreboardView.updateFromState(localState)
+        sv.updateFromState(localState)
         StreamManager.shared.videoEffect.currentState = localState
         FirebaseManager.shared.updateMatchState(localState)
         

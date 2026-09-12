@@ -14,7 +14,9 @@ struct DirectorView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: MainViewController, context: Context) {
-        uiViewController.refreshMatchState()
+        if uiViewController.isViewLoaded {
+            uiViewController.refreshMatchState()
+        }
     }
 }
 

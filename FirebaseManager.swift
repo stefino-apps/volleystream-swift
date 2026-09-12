@@ -40,37 +40,55 @@ class FirebaseManager {
     
     // (HOST) Crea o si collega come Director
     func createSession(id: String, initialState: RemoteMatchState = RemoteMatchState(), completion: @escaping (Bool) -> Void) {
-        ensureAuth { uid in
+        ensureAuth { [weak self] uid in
+            guard let self = self else { return }
             let hostUid = uid ?? UUID().uuidString
             self.isHost = true
             self.sessionId = id
             
             print("Firebase HOST: Creating session \(id) with owner \(hostUid)")
+            self.stopListening()
             self.ref.child("sessions/\(id)/owner").setValue(hostUid)
             self.ref.child("sessions/\(id)/state").setValue(initialState.dictionary)
+            
+            // Pulisci comandi pendenti/vecchi nel database prima di ascoltare nuovi comandi
+            self.ref.child("sessions/\(id)/commands").removeValue()
+            self.ref.child("sessions/\(id)/command").removeValue()
+            self.ref.child("sessions/\(id)/action").removeValue()
+            
+            // L'Host ascolta SOLO i comandi in arrivo dai client (telecomandi)
             self.listenForCommands()
-            self.startListeningToState()
             completion(true)
         }
     }
     
     // (CLIENT) Si unisce come Telecomando
     func joinSession(id: String, completion: @escaping (Bool) -> Void) {
-        ensureAuth { uid in
+        ensureAuth { [weak self] uid in
+            guard let self = self else { return }
             let clientUid = uid ?? UUID().uuidString
             self.isHost = false
             self.sessionId = id
             
             print("Firebase CLIENT: Joining session \(id) with controller UID \(clientUid)")
+            self.stopListening()
             self.ref.child("sessions/\(id)/controllers/\(clientUid)").setValue(true)
             self.startListeningToState()
             completion(true)
         }
     }
     
+    func stopListening() {
+        guard let id = sessionId else { return }
+        ref.child("sessions/\(id)/commands").removeAllObservers()
+        ref.child("sessions/\(id)/command").removeAllObservers()
+        ref.child("sessions/\(id)/action").removeAllObservers()
+        ref.child("sessions/\(id)/state").removeAllObservers()
+    }
+    
     private func startListeningToState() {
         guard let id = sessionId else { return }
-        print("Firebase: Listening to state for session \(id)...")
+        print("Firebase CLIENT: Listening to state for session \(id)...")
         ref.child("sessions/\(id)/state").observe(.value) { [weak self] snapshot in
             guard let self = self else { return }
             if !snapshot.exists() { return }

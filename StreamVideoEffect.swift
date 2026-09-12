@@ -6,7 +6,6 @@ import UIKit
 
 class StreamVideoEffect: VideoEffect {
     
-    private let filter = CIFilter(name: "CISourceOverCompositing")
     private var overlayImage: CIImage?
     private var lastStateUpdate: Int64 = 0
     private let renderQueue = DispatchQueue(label: "com.volleypro.overlayRenderer")
@@ -49,10 +48,12 @@ class StreamVideoEffect: VideoEffect {
         
         let isRecording = LocalVideoRecorder.shared.isRecordingState
         
-        if let overlay = overlayImage, let filter = filter {
-            filter.setValue(overlay, forKey: kCIInputImageKey)
-            filter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
-            outputImage = filter.outputImage ?? outputImage
+        if let overlay = overlayImage {
+            if let compositingFilter = CIFilter(name: "CISourceOverCompositing") {
+                compositingFilter.setValue(overlay, forKey: kCIInputImageKey)
+                compositingFilter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
+                outputImage = compositingFilter.outputImage ?? outputImage
+            }
         }
         
         if isRecording {
@@ -66,10 +67,11 @@ class StreamVideoEffect: VideoEffect {
             stingerFrameCount -= 1
             if stingerFrameCount <= 0 { isTransitioningToReplay = false }
             let flash = CIImage(color: CIColor.white).cropped(to: outputImage.extent)
-            let mixFilter = CIFilter(name: "CISourceOverCompositing")!
-            mixFilter.setValue(flash, forKey: kCIInputImageKey)
-            mixFilter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
-            return mixFilter.outputImage ?? outputImage
+            if let mixFilter = CIFilter(name: "CISourceOverCompositing") {
+                mixFilter.setValue(flash, forKey: kCIInputImageKey)
+                mixFilter.setValue(outputImage, forKey: kCIInputBackgroundImageKey)
+                return mixFilter.outputImage ?? outputImage
+            }
         }
         return outputImage
     }
@@ -80,6 +82,7 @@ class StreamVideoEffect: VideoEffect {
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            defer { self.isRenderingOverlay = false }
             
             self.scoreboardView?.updateFromState(state)
             self.marqueeView?.updateMessage(state.scrollMessage, show: state.showScrollText)
@@ -165,7 +168,6 @@ class StreamVideoEffect: VideoEffect {
             if let cgImage = uiImage.cgImage {
                 self.overlayImage = CIImage(cgImage: cgImage)
             }
-            self.isRenderingOverlay = false
         }
     }
 }
