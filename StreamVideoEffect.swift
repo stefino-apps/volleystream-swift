@@ -409,6 +409,7 @@ class StreamVideoEffect: VideoEffect {
                     ]
                     let textRect = CGRect(x: pillX + 2, y: pillY + 7, width: pillW - 4, height: 28)
                     watermarkText.draw(in: textRect, withAttributes: attrs)
+                }
             }
         }
         

@@ -268,7 +268,7 @@ class MainViewController: UIViewController {
             if self.localState.timerRunning {
                 self.localState.timerSeconds += 1
                 self.updateSoccerTimerButton()
-                self.overlayEffect.triggerOverlayUpdate(state: self.localState)
+                StreamManager.shared.videoEffect.triggerOverlayUpdate(state: self.localState)
             }
         }
     }
