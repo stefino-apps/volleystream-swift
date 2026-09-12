@@ -857,7 +857,7 @@ class MainViewController: UIViewController {
             startStreamButton.frame = CGRect(x: bcX, y: bcY + 4.0, width: bcW, height: liveH)
             startStreamButton.layer.cornerRadius = 12
             startStreamButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
-            startStreamButton.setTitle(StreamManager.shared.isStreaming ? "STOP\nLIVE" : "GO\nLIVE", for: .normal)
+            startStreamButton.setTitle(StreamManager.shared.isPublishing ? "STOP\nLIVE" : "GO\nLIVE", for: .normal)
             startStreamButton.isHidden = false
             
             let subBtnSize = min(36.0, bcH - liveH - 16.0)
@@ -1059,7 +1059,7 @@ class MainViewController: UIViewController {
             
             startStreamButton.frame = CGRect(x: centerX - streamBtnW / 2, y: bottomCenterY, width: streamBtnW, height: streamBtnH)
             startStreamButton.layer.cornerRadius = 14
-            startStreamButton.setTitle(StreamManager.shared.isStreaming ? "STOP\nLIVE" : "GO\nLIVE", for: .normal)
+            startStreamButton.setTitle(StreamManager.shared.isPublishing ? "STOP\nLIVE" : "GO\nLIVE", for: .normal)
             startStreamButton.isHidden = false
             
             muteButton.frame = CGRect(x: centerX - streamBtnW / 2 - sideBtnSize - 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
@@ -1178,8 +1178,8 @@ class MainViewController: UIViewController {
             self.localState.setsA = 0
             self.localState.setsB = 0
             self.localState.currentSet = 1
-            self.localState.timeoutsA = 0
-            self.localState.timeoutsB = 0
+            self.localState.timeoutA = 0
+            self.localState.timeoutB = 0
             self.localState.servingTeam = ""
             self.updateLocalState()
             self.showToast(message: "🔄 Partita azzerata")

@@ -11,6 +11,9 @@ public class StreamManager: NSObject {
     private var streamKeyToPublish: String = ""
     public var currentCamera: AVCaptureDevice?
     public var isPublishing: Bool = false
+    public var isStreaming: Bool {
+        return isPublishing
+    }
     
     // Effetto Video per Replay e Grafica
     let videoEffect = StreamVideoEffect()
