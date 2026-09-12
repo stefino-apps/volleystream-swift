@@ -120,9 +120,16 @@ class FirebaseManager {
         guard let id = sessionId else { return }
         print("Firebase HOST: Listening for commands on session \(id)...")
         
-        // Ascolta in modo univoco sulla lista commands
+        // 1. Ascolta sulla lista commands (standard Android & iOS Remote)
         ref.child("sessions/\(id)/commands").observe(.childAdded) { [weak self] snapshot in
             self?.extractAndDispatchCommand(from: snapshot)
+            snapshot.ref.removeValue()
+        }
+        
+        // 2. Ascolta su command singolo (per telecomando Web)
+        ref.child("sessions/\(id)/command").observe(.value) { [weak self] snapshot in
+            guard let val = snapshot.value as? String, !val.isEmpty else { return }
+            self?.dispatchCommandIfNew(val)
             snapshot.ref.removeValue()
         }
     }
@@ -148,8 +155,8 @@ class FirebaseManager {
         let clean = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return }
         
-        if clean == lastDispatchedCommand && (now - lastDispatchedTime) < 0.35 {
-            print("Firebase HOST: Ignoring duplicate command '\(clean)'")
+        if clean == lastDispatchedCommand && (now - lastDispatchedTime) < 0.25 {
+            print("Firebase HOST: Ignoring duplicate bounce command '\(clean)'")
             return
         }
         lastDispatchedCommand = clean

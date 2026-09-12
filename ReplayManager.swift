@@ -41,10 +41,11 @@ class ReplayManager {
         queue.async { [weak self] in
             guard let self = self, self.isRecording else { return }
             
-            // Creando un CGImage scolleghiamo i pixel dal CVPixelBuffer nativo della fotocamera,
-            // evitando la saturazione del buffer pool di AVFoundation e il conseguente freeze della telecamera.
-            if let cgImg = self.ciContext.createCGImage(image, from: extent) {
-                let detachedImage = CIImage(cgImage: cgImg)
+            // Scala a 960x540 per il buffer circolare di replay (4x più veloce, -75% memoria GPU)
+            let scaledImage = image.transformed(by: CGAffineTransform(scaleX: 0.5, y: 0.5))
+            let scaledExtent = scaledImage.extent
+            if let cgImg = self.ciContext.createCGImage(scaledImage, from: scaledExtent) {
+                let detachedImage = CIImage(cgImage: cgImg).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
                 self.frameBuffer.append(detachedImage)
                 
                 if self.frameBuffer.count > self.maxFrames {

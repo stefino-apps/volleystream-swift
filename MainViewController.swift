@@ -2044,28 +2044,28 @@ class MainViewController: UIViewController {
             updateLocalState()
         case "SOCCER_TIMER_TOGGLE":
             localState.timerRunning.toggle()
-            refreshMatchState()
+            updateLocalState()
         case "TOGGLE_SPONSOR":
             toggleSponsor()
         case "SPONSOR_1":
             localState.currentSponsorIdx = 0
             localState.showSponsor = true
-            refreshMatchState()
+            updateLocalState()
         case "SPONSOR_2":
             localState.currentSponsorIdx = 1
             localState.showSponsor = true
-            refreshMatchState()
+            updateLocalState()
         case "SPONSOR_3":
             localState.currentSponsorIdx = 2
             localState.showSponsor = true
-            refreshMatchState()
+            updateLocalState()
         case "SPONSOR_4":
             localState.currentSponsorIdx = 3
             localState.showSponsor = true
-            refreshMatchState()
+            updateLocalState()
         case "TOGGLE_TEXT":
             localState.showScrollText.toggle()
-            refreshMatchState()
+            updateLocalState()
         case "TOGGLE_MUTE", "MUTE", "UNMUTE":
             toggleMute()
         case "TOGGLE_STREAMING", "START_STREAM", "STOP_STREAM":
