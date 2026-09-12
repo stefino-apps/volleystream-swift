@@ -1530,6 +1530,8 @@ class MainViewController: UIViewController {
                 self?.showToast(message: msg)
             }
         }
+    }
+    
     @objc func shareLive() {
         var link = UserDefaults.standard.string(forKey: "live_share_url") ?? ""
         if link.isEmpty {
