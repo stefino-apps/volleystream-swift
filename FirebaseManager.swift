@@ -52,7 +52,7 @@ class FirebaseManager {
             
             let sessionRef = self.ref.child("sessions/\(id)")
             sessionRef.child("owner").setValue(hostUid)
-            sessionRef.child("state").setValue(initialState.dictionary)
+            sessionRef.child("state").setValue(initialState.toDictionary())
             
             // Pulisci completamente i nodi di comando prima di attivare i listener per evitare replay di match precedenti
             let dispatchGroup = DispatchGroup()
@@ -113,7 +113,8 @@ class FirebaseManager {
     // Aggiorna lo stato sul server (Solo Host)
     func updateMatchState(_ state: RemoteMatchState) {
         guard let id = sessionId else { return }
-        self.ref.child("sessions/\(id)/state").setValue(state.dictionary)
+        let dict = state.toDictionary()
+        self.ref.child("sessions/\(id)/state").setValue(dict)
     }
     
     private var lastDispatchedCommand: String = ""

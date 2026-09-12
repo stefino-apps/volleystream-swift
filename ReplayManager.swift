@@ -7,10 +7,8 @@ import UIKit
 class ReplayManager {
     static let shared = ReplayManager()
     
-    // Verifica supporto hardware: richiede almeno 3.5 GB di RAM (es. iPhone 11 e successivi)
     static var isDeviceSupported: Bool {
-        let ramGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024.0 * 1024.0 * 1024.0)
-        return ramGB >= 3.5
+        return true
     }
     
     private var frameBuffer: [CIImage] = []
@@ -28,7 +26,7 @@ class ReplayManager {
     private init() {}
     
     func recordFrame(_ image: CIImage) {
-        guard isRecording, AppPreferences.shared.isReplayEnabled, ReplayManager.isDeviceSupported else { return }
+        guard isRecording else { return }
         
         let now = CACurrentMediaTime()
         // Limita il campionamento a max 30 fps per non sovraccaricare la GPU/CPU

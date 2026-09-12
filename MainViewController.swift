@@ -1278,6 +1278,13 @@ class MainViewController: UIViewController {
     func updateLocalState(saveHistory: Bool = true) {
         guard isViewLoaded, let sv = scoreboardView else { return }
         
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        let bat = Int(UIDevice.current.batteryLevel * 100)
+        localState.batteryLevel = (bat > 0) ? bat : 100
+        localState.isStreaming = StreamManager.shared.isPublishing
+        localState.streamingStatus = StreamManager.shared.isPublishing ? "LIVE" : "OFFLINE"
+        localState.isMuted = isAudioMuted
+        
         if saveHistory {
             stateHistory.append(localState)
             if stateHistory.count > 20 {
@@ -1857,10 +1864,6 @@ class MainViewController: UIViewController {
             showToast(message: "⭐ Highlights disponibile con Premium")
             return
         }
-        guard AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported else {
-            showToast(message: "⚠️ Replay non abilitato o non supportato")
-            return
-        }
         let origBg = highlightButton.backgroundColor
         highlightButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
         highlightButton.setTitleColor(.black, for: .normal)
@@ -1868,14 +1871,14 @@ class MainViewController: UIViewController {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         
-        showToast(message: "⏳ Elaborazione clip highlight...")
+        showToast(message: "⏳ Salvataggio highlight in Galleria...")
         
         ReplayManager.shared.saveHighlightClip { [weak self] success, errorMsg in
             DispatchQueue.main.async {
                 self?.highlightButton.backgroundColor = origBg
                 self?.highlightButton.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
                 
-                let msg = success ? "⭐ Highlight salvato in Galleria!" : (errorMsg ?? "Errore salvataggio highlight")
+                let msg = success ? "⭐ Highlight salvato in Galleria!" : (errorMsg ?? "Nessun frame registrato per l'highlight")
                 self?.showToast(message: msg)
             }
         }
@@ -1934,6 +1937,10 @@ class MainViewController: UIViewController {
             startStreamButton.setTitle("STOP", for: .normal)
             startStreamButton.backgroundColor = .systemGray
             showToast(message: "🔴 LIVE & Registrazione avviata")
+            
+            localState.isStreaming = true
+            localState.streamingStatus = "LIVE"
+            updateLocalState(saveHistory: false)
         } else {
             StreamManager.shared.stopStreaming()
             
@@ -1950,6 +1957,10 @@ class MainViewController: UIViewController {
             startStreamButton.setTitle("GO\nLIVE", for: .normal)
             startStreamButton.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
             showToast(message: "⏹️ LIVE terminata")
+            
+            localState.isStreaming = false
+            localState.streamingStatus = "OFFLINE"
+            updateLocalState(saveHistory: false)
         }
     }
     

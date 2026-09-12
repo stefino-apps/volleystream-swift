@@ -26,10 +26,8 @@ class StreamVideoEffect: VideoEffect {
     var lastReplayState = false
     
     override func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
-        // Registra frame per Replay solo se abilitato nelle impostazioni e supportato dal dispositivo
-        if AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported {
-            ReplayManager.shared.recordFrame(image)
-        }
+        // Registra frame nel buffer circolare per Replay e Highlights
+        ReplayManager.shared.recordFrame(image)
         
         var outputImage = image
         
