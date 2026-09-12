@@ -125,6 +125,17 @@ class StreamVideoEffect: VideoEffect {
                         }
                     }
                 }
+                
+                // Disegna l'animazione TRIPLA (3 PUNTI) al centro dello schermo (1920x1080) per 3.5 secondi
+                if sv.isBlinkingTriple {
+                    let elapsed = Date().timeIntervalSince1970 - sv.tripleStartTime
+                    if elapsed < 3.5 {
+                        let show = ((Int(elapsed * 1000) % 600) < 400)
+                        if show {
+                            sv.drawTripleAlert(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+                        }
+                    }
+                }
             }
             
             // Watermark promozionale durante prova gratuita / versione free:

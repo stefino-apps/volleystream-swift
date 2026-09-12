@@ -13,11 +13,11 @@ class ReplayManager {
     
     private var frameBuffer: [CIImage] = []
     var replayDuration: Int = 5
-    var replaySpeed: Double = 0.5
+    var replaySpeed: Double = 0.4 // Rallentatore Broadcast Fluido (40% velocità)
     private var maxFrames: Int { return replayDuration * 30 }
     private var isRecording = true
     private var isPlaying = false
-    private var playbackIndex = 0
+    private var playbackFraction: Double = 0.0
     private var lastRecordedTime: TimeInterval = 0
     
     private let queue = DispatchQueue(label: "com.volleyscout.replayQueue", qos: .userInteractive)
@@ -57,7 +57,7 @@ class ReplayManager {
         queue.async {
             self.isRecording = false
             self.isPlaying = true
-            self.playbackIndex = 0
+            self.playbackFraction = 0.0
         }
     }
     
@@ -65,6 +65,7 @@ class ReplayManager {
         queue.async {
             self.isPlaying = false
             self.isRecording = true
+            self.playbackFraction = 0.0
         }
     }
     
@@ -73,13 +74,17 @@ class ReplayManager {
         queue.sync {
             guard self.isPlaying, !self.frameBuffer.isEmpty else { return }
             
-            frame = self.frameBuffer[self.playbackIndex]
+            let idx = min(Int(self.playbackFraction), self.frameBuffer.count - 1)
+            frame = self.frameBuffer[idx]
             
-            self.playbackIndex += 1
-            if self.playbackIndex >= self.frameBuffer.count {
+            // Avanzamento a velocità rallentata (Slow Motion)
+            self.playbackFraction += self.replaySpeed
+            
+            if Int(self.playbackFraction) >= self.frameBuffer.count {
                 // Fine del replay
                 self.isPlaying = false
                 self.isRecording = true
+                self.playbackFraction = 0.0
             }
         }
         return frame

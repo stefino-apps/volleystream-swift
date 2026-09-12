@@ -2,7 +2,6 @@ import Foundation
 import AVFoundation
 import CoreImage
 import UIKit
-
 import Photos
 
 class LocalVideoRecorder {
@@ -10,27 +9,39 @@ class LocalVideoRecorder {
     
     private var assetWriter: AVAssetWriter?
     private var videoInput: AVAssetWriterInput?
-    private var audioInput: AVAssetWriterInput?
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
+    private var audioRecorder: AVAudioRecorder?
     
     private var isRecording = false
     private var startTime: CMTime = .zero
-    private var currentFileUrl: URL?
+    private var currentVideoUrl: URL?
+    private var currentAudioUrl: URL?
+    private var finalOutputUrl: URL?
+    
+    private let ciContext = CIContext()
+    var isRecordingState: Bool { return isRecording }
     
     func startRecording() {
         if isRecording { return }
         
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let timestamp = Int(Date().timeIntervalSince1970)
-        let url = dir.appendingPathComponent("VolleyStream_Match_\(timestamp).mp4")
-        self.currentFileUrl = url
+        let videoUrl = dir.appendingPathComponent("VolleyStream_TempVideo_\(timestamp).mp4")
+        let audioUrl = dir.appendingPathComponent("VolleyStream_TempAudio_\(timestamp).m4a")
+        let finalUrl = dir.appendingPathComponent("VolleyStream_Match_\(timestamp).mp4")
         
-        if FileManager.default.fileExists(atPath: url.path) {
-            try? FileManager.default.removeItem(at: url)
-        }
+        self.currentVideoUrl = videoUrl
+        self.currentAudioUrl = audioUrl
+        self.finalOutputUrl = finalUrl
+        
+        // Pulizia eventuali file precedenti
+        try? FileManager.default.removeItem(at: videoUrl)
+        try? FileManager.default.removeItem(at: audioUrl)
+        try? FileManager.default.removeItem(at: finalUrl)
         
         do {
-            assetWriter = try AVAssetWriter(outputURL: url, fileType: .mp4)
+            // 1. Setup Video Writer
+            assetWriter = try AVAssetWriter(outputURL: videoUrl, fileType: .mp4)
             
             let videoSettings: [String: Any] = [
                 AVVideoCodecKey: AVVideoCodecType.h264,
@@ -53,61 +64,28 @@ class LocalVideoRecorder {
                 }
             }
             
+            assetWriter?.startWriting()
+            
+            // 2. Setup Audio Recorder parallelo ad alta qualità
             let audioSettings: [String: Any] = [
-                AVFormatIDKey: kAudioFormatMPEG4AAC,
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: 44100.0,
                 AVNumberOfChannelsKey: 2,
-                AVSampleRateKey: 44100,
+                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
                 AVEncoderBitRateKey: 128000
             ]
-            audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
-            audioInput?.expectsMediaDataInRealTime = true
             
-            if let audioInput = audioInput, assetWriter!.canAdd(audioInput) {
-                assetWriter!.add(audioInput)
-            }
+            audioRecorder = try AVAudioRecorder(url: audioUrl, settings: audioSettings)
+            audioRecorder?.record()
             
-            assetWriter?.startWriting()
             isRecording = true
             startTime = .zero
-            print("LocalVideoRecorder: Registrazione avviata su \(url.path)")
+            print("LocalVideoRecorder: Registrazione Video & Audio avviata su \(videoUrl.path)")
             
         } catch {
             print("Errore avvio registrazione: \(error)")
         }
     }
-    
-    func stopRecording(completion: @escaping (URL?) -> Void) {
-        guard isRecording, let url = currentFileUrl else {
-            completion(nil)
-            return
-        }
-        isRecording = false
-        
-        videoInput?.markAsFinished()
-        audioInput?.markAsFinished()
-        
-        assetWriter?.finishWriting {
-            DispatchQueue.main.async {
-                PHPhotoLibrary.requestAuthorization { status in
-                    if status == .authorized || status == .limited {
-                        PHPhotoLibrary.shared().performChanges({
-                            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
-                        }) { success, error in
-                            print("Match salvato in galleria: \(success), error: \(String(describing: error))")
-                        }
-                    } else {
-                        if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(url.path) {
-                            UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil)
-                        }
-                    }
-                }
-                completion(url)
-            }
-        }
-    }
-    
-    private let ciContext = CIContext()
-    var isRecordingState: Bool { return isRecording }
     
     func appendVideo(image: CIImage, time: CMTime) {
         guard isRecording, let videoInput = videoInput, videoInput.isReadyForMoreMediaData else { return }
@@ -128,11 +106,82 @@ class LocalVideoRecorder {
         }
     }
     
-    func appendAudio(sampleBuffer: CMSampleBuffer) {
-        guard isRecording, let audioInput = audioInput, audioInput.isReadyForMoreMediaData else { return }
+    func stopRecording(completion: @escaping (URL?) -> Void) {
+        guard isRecording, let videoUrl = currentVideoUrl, let audioUrl = currentAudioUrl, let finalUrl = finalOutputUrl else {
+            completion(nil)
+            return
+        }
+        isRecording = false
         
-        if startTime != .zero {
-            audioInput.append(sampleBuffer)
+        audioRecorder?.stop()
+        videoInput?.markAsFinished()
+        
+        assetWriter?.finishWriting { [weak self] in
+            guard let self = self else { return }
+            
+            self.mergeAudioAndVideo(videoUrl: videoUrl, audioUrl: audioUrl, outputUrl: finalUrl) { success in
+                let targetUrl = success ? finalUrl : videoUrl
+                
+                DispatchQueue.main.async {
+                    PHPhotoLibrary.requestAuthorization { status in
+                        if status == .authorized || status == .limited {
+                            PHPhotoLibrary.shared().performChanges({
+                                PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: targetUrl)
+                            }) { saved, error in
+                                print("Match salvato in galleria con audio: \(saved), error: \(String(describing: error))")
+                                // Pulisce i file temporanei
+                                try? FileManager.default.removeItem(at: videoUrl)
+                                try? FileManager.default.removeItem(at: audioUrl)
+                            }
+                        } else {
+                            if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(targetUrl.path) {
+                                UISaveVideoAtPathToSavedPhotosAlbum(targetUrl.path, nil, nil, nil)
+                            }
+                        }
+                    }
+                    completion(targetUrl)
+                }
+            }
+        }
+    }
+    
+    private func mergeAudioAndVideo(videoUrl: URL, audioUrl: URL, outputUrl: URL, completion: @escaping (Bool) -> Void) {
+        let composition = AVMutableComposition()
+        let videoAsset = AVURLAsset(url: videoUrl)
+        let audioAsset = AVURLAsset(url: audioUrl)
+        
+        guard let compVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            completion(false)
+            return
+        }
+        
+        let videoDuration = videoAsset.duration
+        let videoTimeRange = CMTimeRange(start: .zero, duration: videoDuration)
+        
+        if let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first {
+            try? compVideoTrack.insertTimeRange(videoTimeRange, of: sourceVideoTrack, at: .zero)
+            compVideoTrack.preferredTransform = sourceVideoTrack.preferredTransform
+        }
+        
+        if let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first {
+            if let compAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
+                let audioDuration = min(audioAsset.duration, videoDuration)
+                let audioTimeRange = CMTimeRange(start: .zero, duration: audioDuration)
+                try? compAudioTrack.insertTimeRange(audioTimeRange, of: sourceAudioTrack, at: .zero)
+            }
+        }
+        
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            completion(false)
+            return
+        }
+        
+        exportSession.outputURL = outputUrl
+        exportSession.outputFileType = .mp4
+        exportSession.shouldOptimizeForNetworkUse = true
+        
+        exportSession.exportAsynchronously {
+            completion(exportSession.status == .completed)
         }
     }
 }
