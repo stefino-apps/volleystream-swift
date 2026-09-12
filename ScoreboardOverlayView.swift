@@ -1147,33 +1147,36 @@ class ScoreboardOverlayView: UIView {
     
     func drawReplayBadge(ctx: CGContext, rect: CGRect) {
         ctx.saveGState()
-        let text = "REPLAY"
+        let text = "● REPLAY"
         let pStyle = NSMutableParagraphStyle()
         pStyle.alignment = .center
         
-        let font = UIFont.systemFont(ofSize: min(60.0, rect.height * 0.075), weight: .black)
-        let x: CGFloat = 0
-        let y: CGFloat = max(24.0, rect.height * 0.04)
-        let textRect = CGRect(x: x, y: y, width: rect.width, height: 70)
+        let font = UIFont.systemFont(ofSize: min(52.0, rect.height * 0.065), weight: .black)
+        let pillW: CGFloat = 360.0
+        let pillH: CGFloat = 72.0
+        let pillX = (rect.width - pillW) / 2.0
+        let pillY: CGFloat = 36.0
+        let pillRect = CGRect(x: pillX, y: pillY, width: pillW, height: pillH)
+        let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 18.0)
         
-        // 1. Dark Shadow Stroke
-        let shadowAttrs: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: UIColor.clear,
-            .strokeColor: UIColor(white: 0.0, alpha: 0.8),
-            .strokeWidth: -10.0,
-            .paragraphStyle: pStyle
-        ]
-        text.draw(in: CGRect(x: textRect.origin.x, y: textRect.origin.y + 4, width: textRect.width, height: textRect.height), withAttributes: shadowAttrs)
+        // Sfondo semi-trasparente scuro broadcast
+        UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.92).setFill()
+        pillPath.fill()
         
-        // 2. Red Outline & White Fill
+        // Bordo neon rosso
+        UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0).setStroke()
+        pillPath.lineWidth = 3.5
+        pillPath.stroke()
+        
+        // Testo REPLAY
         let redAttrs: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: UIColor.white,
             .strokeColor: UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0),
-            .strokeWidth: -6.0,
+            .strokeWidth: -4.0,
             .paragraphStyle: pStyle
         ]
+        let textRect = CGRect(x: pillX, y: pillY + 6.0, width: pillW, height: pillH - 12.0)
         text.draw(in: textRect, withAttributes: redAttrs)
         
         ctx.restoreGState()

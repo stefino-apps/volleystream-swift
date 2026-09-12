@@ -3,6 +3,7 @@ import CoreImage
 import CoreMedia
 import AVFoundation
 import UIKit
+import Photos
 
 class ReplayManager {
     static let shared = ReplayManager()
@@ -11,15 +12,23 @@ class ReplayManager {
         return true
     }
     
-    private var frameBuffer: [CIImage] = []
+    // Configurazione Replay
     var replayDuration: Int = UserDefaults.standard.integer(forKey: "replay_duration_seconds") == 0 ? 5 : UserDefaults.standard.integer(forKey: "replay_duration_seconds")
     var replaySpeed: Double = UserDefaults.standard.double(forKey: "replay_speed_factor") == 0 ? 0.5 : UserDefaults.standard.double(forKey: "replay_speed_factor")
     
-    // Stinger Transition (TV Broadcast animation before replay starts and after it ends)
+    // Callback stato Replay per sincronizzazione UI / Firebase
+    var onReplayStateChanged: ((Bool) -> Void)?
+    
+    // Transizione Stinger (Animazione TV broadcast prima e dopo il replay)
     var stingerStartTime: TimeInterval = 0
-    let stingerDuration: TimeInterval = 1.0 // 1.0s matching Android
+    let stingerDuration: TimeInterval = 0.80 // 800ms perfetto per broadcast TV
     var isStingerPlaying: Bool = false
     var isOutroStinger: Bool = false
+    
+    // Buffer circolare video accelerato via GPU Metal (CVPixelBuffer)
+    private var frameBuffer: [CVPixelBuffer] = []
+    private var playbackBuffer: [CVPixelBuffer] = []
+    private var pixelBufferPool: CVPixelBufferPool?
     
     private var maxFrames: Int { return replayDuration * 30 }
     private var isRecording = true
@@ -27,10 +36,62 @@ class ReplayManager {
     private var playbackFraction: Double = 0.0
     private var lastRecordedTime: TimeInterval = 0
     
-    private let queue = DispatchQueue(label: "com.volleyscout.replayQueue", qos: .userInteractive)
-    private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+    // Registrazione continua audio per Highlights
+    private var audioRecorder: AVAudioRecorder?
+    private var rollingAudioUrl: URL?
     
-    private init() {}
+    private let queue = DispatchQueue(label: "com.volleypro.replayQueue", qos: .userInteractive)
+    private let ciContext = CIContext(options: [
+        .useSoftwareRenderer: false,
+        .priorityRequestLow: false
+    ])
+    
+    private init() {
+        setupPixelBufferPool(width: 960, height: 540)
+        startRollingAudioRecording()
+    }
+    
+    private func setupPixelBufferPool(width: Int, height: Int) {
+        let poolAttributes: [String: Any] = [
+            kCVPixelBufferPoolMinimumBufferCountKey as String: 300
+        ]
+        let pixelBufferAttributes: [String: Any] = [
+            kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
+            kCVPixelBufferWidthKey as String: width,
+            kCVPixelBufferHeightKey as String: height,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+        ]
+        var pool: CVPixelBufferPool?
+        let status = CVPixelBufferPoolCreate(kCFAllocatorDefault, poolAttributes as CFDictionary, pixelBufferAttributes as CFDictionary, &pool)
+        if status == kCVReturnSuccess {
+            self.pixelBufferPool = pool
+        }
+    }
+    
+    // MARK: - Registratore Audio Continuo per Highlights
+    
+    func startRollingAudioRecording() {
+        let tempDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let audioUrl = tempDir.appendingPathComponent("replay_rolling_audio.m4a")
+        self.rollingAudioUrl = audioUrl
+        
+        try? FileManager.default.removeItem(at: audioUrl)
+        
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 44100.0,
+            AVNumberOfChannelsKey: 2,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+            AVEncoderBitRateKey: 128000
+        ]
+        
+        do {
+            audioRecorder = try AVAudioRecorder(url: audioUrl, settings: settings)
+            audioRecorder?.record()
+        } catch {
+            print("ReplayManager: Avvio audio recorder per highlight: \(error)")
+        }
+    }
     
     func configure(durationSeconds: Int, speedFactor: Double) {
         queue.async {
@@ -39,26 +100,33 @@ class ReplayManager {
         }
     }
     
+    // MARK: - Registrazione Frame Live (Zero CPU lag via Metal CVPixelBuffer)
+    
     func recordFrame(_ image: CIImage) {
         guard isRecording else { return }
         
         let now = CACurrentMediaTime()
-        // Limita il campionamento a max 30 fps per non sovraccaricare la GPU/CPU
-        guard (now - lastRecordedTime) >= 0.032 else { return }
+        // Campiona a ~30 fps
+        guard (now - lastRecordedTime) >= 0.030 else { return }
         lastRecordedTime = now
         
         let extent = image.extent
         guard extent.width > 0 && extent.height > 0 else { return }
         
         queue.async { [weak self] in
-            guard let self = self, self.isRecording else { return }
+            guard let self = self, self.isRecording, let pool = self.pixelBufferPool else { return }
             
-            // Scala a 960x540 per il buffer circolare di replay (4x più veloce, -75% memoria GPU)
-            let scaledImage = image.transformed(by: CGAffineTransform(scaleX: 0.5, y: 0.5))
-            let scaledExtent = scaledImage.extent
-            if let cgImg = self.ciContext.createCGImage(scaledImage, from: scaledExtent) {
-                let detachedImage = CIImage(cgImage: cgImg).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
-                self.frameBuffer.append(detachedImage)
+            // Scala a 960x540 direttamente in GPU Metal
+            let scaleX = 960.0 / extent.width
+            let scaleY = 540.0 / extent.height
+            let scaledImage = image.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+            
+            var pixelBuffer: CVPixelBuffer?
+            let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
+            
+            if status == kCVReturnSuccess, let buffer = pixelBuffer {
+                self.ciContext.render(scaledImage, to: buffer)
+                self.frameBuffer.append(buffer)
                 
                 if self.frameBuffer.count > self.maxFrames {
                     self.frameBuffer.removeFirst()
@@ -67,6 +135,8 @@ class ReplayManager {
         }
     }
     
+    // MARK: - Gestione Playback & Slow Motion
+    
     func startPlayback() {
         startReplay()
     }
@@ -74,14 +144,17 @@ class ReplayManager {
     func startReplay() {
         queue.async {
             guard !self.frameBuffer.isEmpty else { return }
+            self.playbackBuffer = self.frameBuffer
             self.isRecording = false
             self.isPlaying = true
             self.isStingerPlaying = true
             self.isOutroStinger = false
             self.stingerStartTime = CACurrentMediaTime()
             self.playbackFraction = 0.0
+            
             DispatchQueue.main.async {
                 ReplayAudioPlayer.shared.playSwoosh()
+                self.onReplayStateChanged?(true)
             }
         }
     }
@@ -119,6 +192,10 @@ class ReplayManager {
             self.isOutroStinger = false
             self.isRecording = true
             self.playbackFraction = 0.0
+            self.playbackBuffer.removeAll()
+            DispatchQueue.main.async {
+                self.onReplayStateChanged?(false)
+            }
         }
     }
     
@@ -135,36 +212,44 @@ class ReplayManager {
     func getPlaybackFrame() -> CIImage? {
         var frame: CIImage?
         queue.sync {
-            guard self.isPlaying, !self.frameBuffer.isEmpty else { return }
+            guard self.isPlaying, !self.playbackBuffer.isEmpty else { return }
             
             if self.isStingerPlaying {
                 let elapsed = CACurrentMediaTime() - self.stingerStartTime
                 if elapsed >= self.stingerDuration {
                     self.isStingerPlaying = false
                     if self.isOutroStinger {
+                        // Replay terminato: torna alla trasmissione live
                         self.isPlaying = false
                         self.isOutroStinger = false
                         self.isRecording = true
                         self.playbackFraction = 0.0
+                        self.playbackBuffer.removeAll()
+                        DispatchQueue.main.async {
+                            self.onReplayStateChanged?(false)
+                        }
                         return
                     }
                 } else {
                     if !self.isOutroStinger {
-                        // Durante l'intro stinger teniamo il primo fotogramma del replay
-                        frame = self.frameBuffer.first
+                        // Durante l'intro stinger mostra il primo frame dell'azione
+                        if let firstBuf = self.playbackBuffer.first {
+                            frame = CIImage(cvPixelBuffer: firstBuf).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
+                        }
                         return
                     }
                 }
             }
             
-            let idx = min(Int(self.playbackFraction), self.frameBuffer.count - 1)
-            frame = self.frameBuffer[idx]
+            let idx = min(Int(self.playbackFraction), self.playbackBuffer.count - 1)
+            let buffer = self.playbackBuffer[idx]
+            frame = CIImage(cvPixelBuffer: buffer).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
             
-            // Avanzamento a velocità rallentata (Slow Motion)
+            // Avanzamento a velocità rallentata (Slow Motion: es. 0.5x aggiunge 0.5 per frame)
             self.playbackFraction += self.replaySpeed
             
-            if Int(self.playbackFraction) >= self.frameBuffer.count {
-                // Raggiunta la fine del replay: attiva la transizione stinger in uscita (Outro)
+            if Int(self.playbackFraction) >= self.playbackBuffer.count {
+                // Raggiunta la fine dell'azione: attiva lo stinger in uscita (Outro verso LIVE)
                 if !self.isOutroStinger {
                     self.isStingerPlaying = true
                     self.isOutroStinger = true
@@ -196,9 +281,11 @@ class ReplayManager {
         return outro
     }
     
+    // MARK: - Salvataggio Highlight in Galleria con AUDIO Completo
+    
     func saveHighlightClip(completion: @escaping (Bool, String?) -> Void) {
         queue.async {
-            let framesToExport = self.frameBuffer
+            let framesToExport = self.frameBuffer.isEmpty ? self.playbackBuffer : self.frameBuffer
             guard !framesToExport.isEmpty else {
                 DispatchQueue.main.async { completion(false, "Nessun frame registrato per l'highlight") }
                 return
@@ -206,14 +293,14 @@ class ReplayManager {
             
             let tempDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             let timestamp = Int(Date().timeIntervalSince1970)
-            let outputUrl = tempDir.appendingPathComponent("Highlight_\(timestamp).mp4")
+            let tempVideoUrl = tempDir.appendingPathComponent("TempHighlightVideo_\(timestamp).mp4")
+            let finalOutputUrl = tempDir.appendingPathComponent("Highlight_\(timestamp).mp4")
             
-            if FileManager.default.fileExists(atPath: outputUrl.path) {
-                try? FileManager.default.removeItem(at: outputUrl)
-            }
+            try? FileManager.default.removeItem(at: tempVideoUrl)
+            try? FileManager.default.removeItem(at: finalOutputUrl)
             
             do {
-                let assetWriter = try AVAssetWriter(outputURL: outputUrl, fileType: .mp4)
+                let assetWriter = try AVAssetWriter(outputURL: tempVideoUrl, fileType: .mp4)
                 let videoSettings: [String: Any] = [
                     AVVideoCodecKey: AVVideoCodecType.h264,
                     AVVideoWidthKey: 1920,
@@ -236,34 +323,56 @@ class ReplayManager {
                 assetWriter.startWriting()
                 assetWriter.startSession(atSourceTime: .zero)
                 
-                let ciContext = CIContext()
                 let fps: Int64 = 30
                 var frameIndex: Int64 = 0
                 
-                for frame in framesToExport {
+                for buffer in framesToExport {
                     while !videoInput.isReadyForMoreMediaData {
                         Thread.sleep(forTimeInterval: 0.005)
                     }
                     
                     if let pool = adaptor.pixelBufferPool {
-                        var pixelBuffer: CVPixelBuffer?
-                        CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
-                        if let buffer = pixelBuffer {
-                            ciContext.render(frame, to: buffer)
+                        var targetBuffer: CVPixelBuffer?
+                        CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &targetBuffer)
+                        if let tb = targetBuffer {
+                            let srcImg = CIImage(cvPixelBuffer: buffer).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
+                            self.ciContext.render(srcImg, to: tb)
                             let presentTime = CMTimeMake(value: frameIndex, timescale: Int32(fps))
-                            adaptor.append(buffer, withPresentationTime: presentTime)
+                            adaptor.append(tb, withPresentationTime: presentTime)
                             frameIndex += 1
                         }
                     }
                 }
                 
                 videoInput.markAsFinished()
-                assetWriter.finishWriting {
-                    if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(outputUrl.path) {
-                        UISaveVideoAtPathToSavedPhotosAlbum(outputUrl.path, nil, nil, nil)
-                        DispatchQueue.main.async { completion(true, nil) }
-                    } else {
-                        DispatchQueue.main.async { completion(false, "Formato video non compatibile") }
+                assetWriter.finishWriting { [weak self] in
+                    guard let self = self else { return }
+                    
+                    // Unisci l'audio registrato dal rolling recorder con la clip video
+                    self.mergeHighlightAudioAndVideo(videoUrl: tempVideoUrl, videoDurationSeconds: Double(framesToExport.count) / 30.0, outputUrl: finalOutputUrl) { success in
+                        let targetUrl = success ? finalOutputUrl : tempVideoUrl
+                        
+                        PHPhotoLibrary.requestAuthorization { status in
+                            if status == .authorized || status == .limited {
+                                PHPhotoLibrary.shared().performChanges({
+                                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: targetUrl)
+                                }) { saved, error in
+                                    try? FileManager.default.removeItem(at: tempVideoUrl)
+                                    if success { try? FileManager.default.removeItem(at: finalOutputUrl) }
+                                    
+                                    DispatchQueue.main.async {
+                                        completion(saved, error?.localizedDescription)
+                                    }
+                                }
+                            } else {
+                                if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(targetUrl.path) {
+                                    UISaveVideoAtPathToSavedPhotosAlbum(targetUrl.path, nil, nil, nil)
+                                    DispatchQueue.main.async { completion(true, nil) }
+                                } else {
+                                    DispatchQueue.main.async { completion(false, "Permesso galleria non concesso") }
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -272,5 +381,58 @@ class ReplayManager {
             }
         }
     }
+    
+    private func mergeHighlightAudioAndVideo(videoUrl: URL, videoDurationSeconds: Double, outputUrl: URL, completion: @escaping (Bool) -> Void) {
+        guard let audioUrl = self.rollingAudioUrl, FileManager.default.fileExists(atPath: audioUrl.path) else {
+            completion(false)
+            return
+        }
+        
+        let composition = AVMutableComposition()
+        let videoAsset = AVURLAsset(url: videoUrl)
+        let audioAsset = AVURLAsset(url: audioUrl)
+        
+        guard let compVideoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            completion(false)
+            return
+        }
+        
+        let videoDuration = videoAsset.duration
+        let videoTimeRange = CMTimeRange(start: .zero, duration: videoDuration)
+        
+        if let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first {
+            try? compVideoTrack.insertTimeRange(videoTimeRange, of: sourceVideoTrack, at: .zero)
+            compVideoTrack.preferredTransform = sourceVideoTrack.preferredTransform
+        }
+        
+        // Estrai gli ultimi N secondi di audio corrispondenti alla durata del video
+        if let sourceAudioTrack = audioAsset.tracks(withMediaType: .audio).first {
+            if let compAudioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
+                let audioTotalSec = CMTimeGetSeconds(audioAsset.duration)
+                let clipDuration = CMTimeGetSeconds(videoDuration)
+                let audioStartSec = max(0.0, audioTotalSec - clipDuration)
+                
+                let startCM = CMTime(seconds: audioStartSec, preferredTimescale: 44100)
+                let durCM = CMTime(seconds: min(clipDuration, audioTotalSec), preferredTimescale: 44100)
+                let audioRange = CMTimeRange(start: startCM, duration: durCM)
+                
+                try? compAudioTrack.insertTimeRange(audioRange, of: sourceAudioTrack, at: .zero)
+            }
+        }
+        
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            completion(false)
+            return
+        }
+        
+        exportSession.outputURL = outputUrl
+        exportSession.outputFileType = .mp4
+        exportSession.shouldOptimizeForNetworkUse = true
+        
+        exportSession.exportAsynchronously {
+            completion(exportSession.status == .completed)
+        }
+    }
 }
+
 

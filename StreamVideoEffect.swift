@@ -21,9 +21,40 @@ class StreamVideoEffect: VideoEffect {
         }
     }
     
-    var stingerFrameCount = 0
-    var isTransitioningToReplay = false
-    var lastReplayState = false
+    private var cachedReplayBadgeCIImage: CIImage?
+    
+    private func getReplayBadgeCIImage() -> CIImage? {
+        if let cached = cachedReplayBadgeCIImage {
+            return cached
+        }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: 1080), format: format)
+        let uiImage = renderer.image { context in
+            self.scoreboardView?.drawReplayBadge(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+        }
+        if let cgImg = uiImage.cgImage {
+            let ci = CIImage(cgImage: cgImg)
+            self.cachedReplayBadgeCIImage = ci
+            return ci
+        }
+        return nil
+    }
+    
+    private func renderStingerCIImage(progress: Double, isOutro: Bool) -> CIImage? {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: 1080), format: format)
+        let uiImage = renderer.image { context in
+            self.scoreboardView?.drawReplayStingerTransition(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080), progress: progress, isOutro: isOutro)
+        }
+        if let cgImg = uiImage.cgImage {
+            return CIImage(cgImage: cgImg)
+        }
+        return nil
+    }
     
     override func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
         // Registra frame nel buffer circolare per Replay e Highlights
@@ -52,6 +83,18 @@ class StreamVideoEffect: VideoEffect {
         
         if let overlay = currentOverlay {
             outputImage = overlay.composited(over: outputImage)
+        }
+        
+        // Disegna dinamici in tempo reale: Transizione Stinger TV e Scritta REPLAY Lampeggiante
+        if isStinger {
+            if let stingerImg = renderStingerCIImage(progress: stingerProgress, isOutro: isOutro) {
+                outputImage = stingerImg.composited(over: outputImage)
+            }
+        } else if currentlyReplaying {
+            let isBlinkingOn = ((Int(Date().timeIntervalSince1970 * 1000) % 700) < 480)
+            if isBlinkingOn, let badgeImg = getReplayBadgeCIImage() {
+                outputImage = badgeImg.composited(over: outputImage)
+            }
         }
         
         if isRecording {
@@ -96,21 +139,6 @@ class StreamVideoEffect: VideoEffect {
                     sv.draw(CGRect(x: 0, y: 0, width: 240, height: 58))
                 }
                 context.cgContext.restoreGState()
-                
-                // Disegna la scritta REPLAY lampeggiante in alto al centro per tutta la durata del Replay
-                if ReplayManager.shared.isReplaying && !ReplayManager.shared.isStingerActive {
-                    let show = ((Int(Date().timeIntervalSince1970 * 1000) % 600) < 400)
-                    if show {
-                        sv.drawReplayBadge(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080))
-                    }
-                }
-                
-                // Disegna l'animazione di transizione Stinger (Intro e Outro) TV broadcast a tutto schermo
-                if ReplayManager.shared.isStingerActive {
-                    let progress = ReplayManager.shared.getStingerProgress()
-                    let isOutro = ReplayManager.shared.isOutroActive
-                    sv.drawReplayStingerTransition(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080), progress: progress, isOutro: isOutro)
-                }
                 
                 // Disegna l'animazione Set Point / Match Point al centro dello schermo (1920x1080) per 4 secondi
                 if sv.isBlinkingAlert, let sp = sv.getSetPointInfo(state: state) {

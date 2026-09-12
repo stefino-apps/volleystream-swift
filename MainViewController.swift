@@ -241,6 +241,17 @@ class MainViewController: UIViewController {
                 self.updateLocalState(saveHistory: false)
             }
         }
+        
+        ReplayManager.shared.onReplayStateChanged = { [weak self] isReplaying in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.localState.isReplaying = isReplaying
+                FirebaseManager.shared.updateMatchState(self.localState)
+                if !isReplaying {
+                    self.showToast(message: "🔴 LIVE")
+                }
+            }
+        }
     }
     
     override func viewDidLayoutSubviews() {
