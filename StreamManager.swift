@@ -47,15 +47,19 @@ public class StreamManager: NSObject {
     public func attachDevices() {
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playAndRecord, mode: .videoChat, options: [.defaultToSpeaker, .allowBluetooth])
-            try session.setActive(true)
+            try session.setCategory(.playAndRecord, mode: .videoRecording, options: [.defaultToSpeaker, .allowBluetooth, .allowBluetoothA2DP])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("Audio session error: \(error)")
         }
         
         if let audio = AVCaptureDevice.default(for: .audio) {
             rtmpStream.attachAudio(audio) { _, error in
-                if let error = error { print("Audio error: \(error.localizedDescription)") }
+                if let error = error {
+                    print("HaishinKit Audio attach error: \(error.localizedDescription)")
+                } else {
+                    print("HaishinKit Audio microphone attached successfully")
+                }
             }
         }
         

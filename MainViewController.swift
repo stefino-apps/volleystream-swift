@@ -230,13 +230,11 @@ class MainViewController: UIViewController {
         let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
         lfView.addGestureRecognizer(pinch)
         
-        AVCaptureDevice.requestAccess(for: .video) { granted in
-            if granted {
-                AVCaptureDevice.requestAccess(for: .audio) { _ in
-                    DispatchQueue.main.async {
-                        StreamManager.shared.attachDevices()
-                        StreamManager.shared.attachCamera(to: self.lfView)
-                    }
+        AVCaptureDevice.requestAccess(for: .video) { _ in
+            AVCaptureDevice.requestAccess(for: .audio) { _ in
+                DispatchQueue.main.async {
+                    StreamManager.shared.attachDevices()
+                    StreamManager.shared.attachCamera(to: self.lfView)
                 }
             }
         }
@@ -246,7 +244,7 @@ class MainViewController: UIViewController {
         scoreboardView = ScoreboardOverlayView(frame: view.bounds)
         scoreboardView.isUserInteractionEnabled = false
         scoreboardView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        scoreboardView.isHidden = false
+        scoreboardView.isHidden = true
         view.addSubview(scoreboardView)
         StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
         
@@ -598,9 +596,7 @@ class MainViewController: UIViewController {
         if isClean {
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.frame = view.bounds
-            scoreboardView.isHidden = false
-            view.bringSubviewToFront(scoreboardView)
+            scoreboardView.isHidden = true
             gridLayer?.isHidden = true
             allControls.forEach { $0.isHidden = true }
             return
@@ -695,10 +691,7 @@ class MainViewController: UIViewController {
             lfView.frame = q1Frame
             lfView.layer.cornerRadius = 10
             lfView.clipsToBounds = true
-            
-            scoreboardView.frame = q1Frame
-            scoreboardView.isHidden = false
-            view.bringSubviewToFront(scoreboardView)
+            scoreboardView.isHidden = true
             
             // ----------------------------------------------------
             // QUADRANT 2: TOP-RIGHT (Director Bar & Set Controls Pill)
@@ -971,9 +964,7 @@ class MainViewController: UIViewController {
             // ==========================================
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.frame = view.bounds
-            scoreboardView.isHidden = false
-            view.bringSubviewToFront(scoreboardView)
+            scoreboardView.isHidden = true
             gridLayer?.isHidden = true
             
             gridContainerTR.isHidden = true

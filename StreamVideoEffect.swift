@@ -98,7 +98,7 @@ class StreamVideoEffect: VideoEffect {
                         let scale: CGFloat = 2.8
                         context.cgContext.translateBy(x: 50, y: 45)
                         context.cgContext.scaleBy(x: scale, y: scale)
-                        sv.layer.render(in: context.cgContext)
+                        sv.draw(CGRect(x: 0, y: 0, width: 240, height: 58))
                     }
                     context.cgContext.restoreGState()
                     

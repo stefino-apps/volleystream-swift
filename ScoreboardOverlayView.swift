@@ -325,29 +325,30 @@ class ScoreboardOverlayView: UIView {
             drawAttachedSetPointBadge(ctx: ctx, x: badgeX, y: badgeY, w: badgeW, h: badgeH, isMatchPoint: sp.isMatchPoint)
         }
         
-        // 4. Render Animazione Lampeggiante Centrale SET POINT / MATCH POINT (4.0s con cadenza 450ms ON / 250ms OFF)
-        if let sp = sp, isBlinkingAlert {
-            let elapsed = Date().timeIntervalSince1970 - alertStartTime
-            if elapsed < 4.0 {
-                let show = ((Int(elapsed * 1000) % 700) < 450)
-                if show {
-                    drawSpecialAlerts(ctx: ctx, rect: rect, sp: sp, state: state)
+        // 4. Render Animazioni Lampeggianti Centrali (Solo se rect è a tutto schermo, non nel box scalato)
+        if rect.width >= 600 {
+            if let sp = sp, isBlinkingAlert {
+                let elapsed = Date().timeIntervalSince1970 - alertStartTime
+                if elapsed < 4.0 {
+                    let show = ((Int(elapsed * 1000) % 700) < 450)
+                    if show {
+                        drawSpecialAlerts(ctx: ctx, rect: rect, sp: sp, state: state)
+                    }
+                } else {
+                    isBlinkingAlert = false
                 }
-            } else {
-                isBlinkingAlert = false
             }
-        }
-        
-        // 5. Render Animazione Lampeggiante Centrale TIMEOUT (4.0s)
-        if isBlinkingTimeout {
-            let elapsed = Date().timeIntervalSince1970 - timeoutStartTime
-            if elapsed < 4.0 {
-                let show = ((Int(elapsed * 1000) % 700) < 450)
-                if show {
-                    drawTimeoutAlert(ctx: ctx, rect: rect, teamName: timeoutTeamName, state: state)
+            
+            if isBlinkingTimeout {
+                let elapsed = Date().timeIntervalSince1970 - timeoutStartTime
+                if elapsed < 4.0 {
+                    let show = ((Int(elapsed * 1000) % 700) < 450)
+                    if show {
+                        drawTimeoutAlert(ctx: ctx, rect: rect, teamName: timeoutTeamName, state: state)
+                    }
+                } else {
+                    isBlinkingTimeout = false
                 }
-            } else {
-                isBlinkingTimeout = false
             }
         }
     }
