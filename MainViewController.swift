@@ -1506,6 +1506,8 @@ class MainViewController: UIViewController {
     
     @objc func triggerReplay() {
         ReplayManager.shared.startPlayback()
+        localState.isReplaying = true
+        FirebaseManager.shared.updateMatchState(localState)
         showToast(message: "⏪ Replay Istantaneo")
     }
     
@@ -1528,16 +1530,6 @@ class MainViewController: UIViewController {
                 self?.showToast(message: msg)
             }
         }
-    }
-    
-    private func handleRemoteCommand(_ command: String) {
-        if command == "TRIGGER_REPLAY" {
-            ReplayManager.shared.startPlayback()
-            localState.isReplaying = true
-            FirebaseManager.shared.updateMatchState(localState)
-        }
-    }
-    
     @objc func shareLive() {
         var link = UserDefaults.standard.string(forKey: "live_share_url") ?? ""
         if link.isEmpty {
@@ -1734,7 +1726,7 @@ class MainViewController: UIViewController {
             startLive()
         case "HIGHLIGHT":
             triggerHighlight()
-        case "INSTANT_REPLAY":
+        case "INSTANT_REPLAY", "TRIGGER_REPLAY":
             triggerReplay()
         case "UNDO":
             undoLastAction()

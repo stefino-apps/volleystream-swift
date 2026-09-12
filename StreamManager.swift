@@ -51,14 +51,14 @@ public class StreamManager: NSObject {
         }
         
         if let audio = AVCaptureDevice.default(for: .audio) {
-            rtmpStream.attachAudio(audio) { error in
+            rtmpStream.attachAudio(audio) { _, error in
                 if let error = error { print("Audio error: \(error.localizedDescription)") }
             }
         }
         
         if let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
             self.currentCamera = camera
-            rtmpStream.attachCamera(camera) { error in
+            rtmpStream.attachCamera(camera) { _, error in
                 if let error = error { print("Camera error: \(error.localizedDescription)") }
             }
             rtmpStream.videoOrientation = .landscapeRight
