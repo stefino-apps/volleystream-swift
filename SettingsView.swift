@@ -1208,8 +1208,8 @@ struct ScoreboardThemePreviewCard: View {
                     }
                     
                     HStack(spacing: 8) {
-                        // Team A Name
-                        Text(teamA.uppercased())
+                        // Team A Name (Fixed TEAM A per user request)
+                        Text("TEAM A")
                             .font(.system(size: 12, weight: .black))
                             .foregroundColor(teamNameColorA)
                             .lineLimit(1)
@@ -1230,8 +1230,8 @@ struct ScoreboardThemePreviewCard: View {
                             .foregroundColor(scoreColorB)
                             .frame(minWidth: 26)
                         
-                        // Team B Name
-                        Text(teamB.uppercased())
+                        // Team B Name (Fixed TEAM B per user request)
+                        Text("TEAM B")
                             .font(.system(size: 12, weight: .black))
                             .foregroundColor(teamNameColorB)
                             .lineLimit(1)

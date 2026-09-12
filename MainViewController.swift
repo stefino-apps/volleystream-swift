@@ -887,64 +887,64 @@ class MainViewController: UIViewController {
             lblScoreAGrid.isHidden = false
             
             if has2RowGrid {
-                let btnW = min(48.0, (blW - 12.0) / 3.0)
-                let btnH = min(42.0, (blH - 38.0) / 2.0)
+                let btnW = min(56.0, (blW - 8.0) / 3.0)
+                let btnH = min(46.0, (blH - 36.0) / 2.0)
                 let row1Y = blY + 34.0
                 let row2Y = row1Y + btnH + 4.0
                 let spacing = (blW - (3.0 * btnW)) / 2.0
                 
                 // Row 1
                 btnScoreHome.frame = CGRect(x: blX, y: row1Y, width: btnW, height: btnH)
-                btnScoreHome.layer.cornerRadius = 10
+                btnScoreHome.layer.cornerRadius = 12
                 btnScoreHome.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
-                btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+                btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
                 btnScoreHome.isHidden = false
                 
                 btnScoreHome2.frame = CGRect(x: blX + btnW + spacing, y: row1Y, width: btnW, height: btnH)
-                btnScoreHome2.layer.cornerRadius = 10
+                btnScoreHome2.layer.cornerRadius = 12
                 btnScoreHome2.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.85)
-                btnScoreHome2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
+                btnScoreHome2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 19)
                 btnScoreHome2.isHidden = false
                 
                 btnScoreHome3.frame = CGRect(x: blX + 2.0 * (btnW + spacing), y: row1Y, width: btnW, height: btnH)
-                btnScoreHome3.layer.cornerRadius = 10
+                btnScoreHome3.layer.cornerRadius = 12
                 btnScoreHome3.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.85)
-                btnScoreHome3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
+                btnScoreHome3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 19)
                 btnScoreHome3.isHidden = false
                 
                 // Row 2
                 btnMinusHome.frame = CGRect(x: blX, y: row2Y, width: btnW, height: btnH)
-                btnMinusHome.layer.cornerRadius = 10
+                btnMinusHome.layer.cornerRadius = 12
                 btnMinusHome.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-                btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
+                btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 26)
                 btnMinusHome.isHidden = false
                 
                 btnTimeoutHome.frame = CGRect(x: blX + btnW + spacing, y: row2Y, width: btnW, height: btnH)
-                btnTimeoutHome.layer.cornerRadius = 10
-                btnTimeoutHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
+                btnTimeoutHome.layer.cornerRadius = 12
+                btnTimeoutHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
                 btnTimeoutHome.isHidden = false
                 
                 btnFoulHome.frame = CGRect(x: blX + 2.0 * (btnW + spacing), y: row2Y, width: btnW, height: btnH)
-                btnFoulHome.layer.cornerRadius = 10
+                btnFoulHome.layer.cornerRadius = 12
                 btnFoulHome.backgroundColor = darkBg
                 btnFoulHome.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
-                btnFoulHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+                btnFoulHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
                 btnFoulHome.isHidden = false
             } else {
-                let btnSize = min(62.0, max(52.0, (blW - 16.0) / 3.0))
+                let btnSize = min(72.0, max(58.0, (blW - 12.0) / 3.0))
                 let btnRowY = blY + blH - btnSize - 6.0
                 let btnSpacing = (blW - (3.0 * btnSize)) / 2.0
                 
                 btnScoreHome.frame = CGRect(x: blX, y: btnRowY, width: btnSize, height: btnSize)
                 btnScoreHome.layer.cornerRadius = btnSize / 2
                 btnScoreHome.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
-                btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 28)
+                btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 32)
                 btnScoreHome.isHidden = false
                 
                 btnMinusHome.frame = CGRect(x: blX + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
                 btnMinusHome.layer.cornerRadius = btnSize / 2
                 btnMinusHome.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-                btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 26)
+                btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 30)
                 btnMinusHome.isHidden = false
                 
                 btnTimeoutHome.frame = CGRect(x: blX + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
@@ -1021,64 +1021,64 @@ class MainViewController: UIViewController {
             lblScoreBGrid.isHidden = false
             
             if has2RowGrid {
-                let btnW = min(48.0, (brW - 12.0) / 3.0)
-                let btnH = min(42.0, (brH - 38.0) / 2.0)
+                let btnW = min(56.0, (brW - 8.0) / 3.0)
+                let btnH = min(46.0, (brH - 36.0) / 2.0)
                 let row1Y = brY + 34.0
                 let row2Y = row1Y + btnH + 4.0
                 let spacing = (brW - (3.0 * btnW)) / 2.0
                 
                 // Row 1
                 btnScoreAway.frame = CGRect(x: brX, y: row1Y, width: btnW, height: btnH)
-                btnScoreAway.layer.cornerRadius = 10
+                btnScoreAway.layer.cornerRadius = 12
                 btnScoreAway.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
-                btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+                btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
                 btnScoreAway.isHidden = false
                 
                 btnScoreAway2.frame = CGRect(x: brX + btnW + spacing, y: row1Y, width: btnW, height: btnH)
-                btnScoreAway2.layer.cornerRadius = 10
+                btnScoreAway2.layer.cornerRadius = 12
                 btnScoreAway2.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.85)
-                btnScoreAway2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
+                btnScoreAway2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 19)
                 btnScoreAway2.isHidden = false
                 
                 btnScoreAway3.frame = CGRect(x: brX + 2.0 * (btnW + spacing), y: row1Y, width: btnW, height: btnH)
-                btnScoreAway3.layer.cornerRadius = 10
+                btnScoreAway3.layer.cornerRadius = 12
                 btnScoreAway3.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.85)
-                btnScoreAway3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
+                btnScoreAway3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 19)
                 btnScoreAway3.isHidden = false
                 
                 // Row 2
                 btnMinusAway.frame = CGRect(x: brX, y: row2Y, width: btnW, height: btnH)
-                btnMinusAway.layer.cornerRadius = 10
+                btnMinusAway.layer.cornerRadius = 12
                 btnMinusAway.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-                btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
+                btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 26)
                 btnMinusAway.isHidden = false
                 
                 btnTimeoutAway.frame = CGRect(x: brX + btnW + spacing, y: row2Y, width: btnW, height: btnH)
-                btnTimeoutAway.layer.cornerRadius = 10
-                btnTimeoutAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
+                btnTimeoutAway.layer.cornerRadius = 12
+                btnTimeoutAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
                 btnTimeoutAway.isHidden = false
                 
                 btnFoulAway.frame = CGRect(x: brX + 2.0 * (btnW + spacing), y: row2Y, width: btnW, height: btnH)
-                btnFoulAway.layer.cornerRadius = 10
+                btnFoulAway.layer.cornerRadius = 12
                 btnFoulAway.backgroundColor = darkBg
                 btnFoulAway.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
-                btnFoulAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+                btnFoulAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
                 btnFoulAway.isHidden = false
             } else {
-                let btnSize = min(62.0, max(52.0, (brW - 16.0) / 3.0))
+                let btnSize = min(72.0, max(58.0, (brW - 12.0) / 3.0))
                 let btnRowY = brY + brH - btnSize - 6.0
                 let btnSpacing = (brW - (3.0 * btnSize)) / 2.0
                 
                 btnScoreAway.frame = CGRect(x: brX, y: btnRowY, width: btnSize, height: btnSize)
                 btnScoreAway.layer.cornerRadius = btnSize / 2
                 btnScoreAway.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
-                btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 28)
+                btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 32)
                 btnScoreAway.isHidden = false
                 
                 btnMinusAway.frame = CGRect(x: brX + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
                 btnMinusAway.layer.cornerRadius = btnSize / 2
                 btnMinusAway.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-                btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 26)
+                btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 30)
                 btnMinusAway.isHidden = false
                 
                 btnTimeoutAway.frame = CGRect(x: brX + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
@@ -1242,45 +1242,54 @@ class MainViewController: UIViewController {
             sponsorButton.isHidden = false
             
             if isBasket || isSoccer || isBiliardo || isDarts || isCricket || isHandball {
-                btnEndQuarter.frame = CGRect(x: centerX - 60, y: bottomCenterY - 36, width: 120, height: 30)
+                btnEndQuarter.frame = CGRect(x: centerX - 70, y: bottomCenterY - 40, width: 140, height: 34)
+                btnEndQuarter.layer.cornerRadius = 10
+                btnEndQuarter.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
                 btnEndQuarter.isHidden = false
             } else {
                 btnEndQuarter.isHidden = true
             }
             
             // 3. BOTTOM LEFT CONTROLS (Team A)
-            let scoreBtnSize: CGFloat = isPortrait ? min(54, (w - 180) / 2) : 70
-            let subBtnW: CGFloat = isPortrait ? 40 : 50
+            let scoreBtnSize: CGFloat = isPortrait ? min(64, (w - 180) / 2) : 80
+            let subBtnW: CGFloat = isPortrait ? 44 : 56
             let subBtnH: CGFloat = (scoreBtnSize - 4) / 2
             let bottomScoreY = h - safeBottom - scoreBtnSize
             
             btnTimeoutHome.frame = CGRect(x: safeLeft, y: bottomScoreY, width: subBtnW, height: subBtnH)
-            btnTimeoutHome.layer.cornerRadius = 10
+            btnTimeoutHome.layer.cornerRadius = 12
+            btnTimeoutHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
             btnTimeoutHome.isHidden = false
             
             btnMinusHome.frame = CGRect(x: safeLeft, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
-            btnMinusHome.layer.cornerRadius = 10
+            btnMinusHome.layer.cornerRadius = 12
+            btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 26)
             btnMinusHome.backgroundColor = darkBg
             btnMinusHome.isHidden = false
             
             btnScoreHome.frame = CGRect(x: safeLeft + subBtnW + 8, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
-            btnScoreHome.layer.cornerRadius = 20
-            btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 30)
+            btnScoreHome.layer.cornerRadius = 22
+            btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 34)
             btnScoreHome.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.95)
             btnScoreHome.isHidden = false
             
             if hasExtraScoreBtns {
-                let basketW: CGFloat = isPortrait ? 34 : 44
+                let basketW: CGFloat = isPortrait ? 40 : 50
                 btnScoreHome2.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY, width: basketW, height: subBtnH)
+                btnScoreHome2.layer.cornerRadius = 12
+                btnScoreHome2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                
                 btnScoreHome3.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
+                btnScoreHome3.layer.cornerRadius = 12
+                btnScoreHome3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
                 btnScoreHome2.isHidden = false
                 btnScoreHome3.isHidden = false
                 
                 btnFoulHome.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + basketW + 14, y: bottomScoreY, width: basketW, height: scoreBtnSize)
-                btnFoulHome.layer.cornerRadius = 12
+                btnFoulHome.layer.cornerRadius = 14
                 btnFoulHome.backgroundColor = darkBg
                 btnFoulHome.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
-                btnFoulHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+                btnFoulHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
                 btnFoulHome.isHidden = false
             } else {
                 btnScoreHome2.isHidden = true
@@ -1291,33 +1300,40 @@ class MainViewController: UIViewController {
             // 4. BOTTOM RIGHT CONTROLS (Team B)
             let rightSubX = w - safeRight - subBtnW
             btnTimeoutAway.frame = CGRect(x: rightSubX, y: bottomScoreY, width: subBtnW, height: subBtnH)
-            btnTimeoutAway.layer.cornerRadius = 10
+            btnTimeoutAway.layer.cornerRadius = 12
+            btnTimeoutAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
             btnTimeoutAway.isHidden = false
             
             btnMinusAway.frame = CGRect(x: rightSubX, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
-            btnMinusAway.layer.cornerRadius = 10
+            btnMinusAway.layer.cornerRadius = 12
+            btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 26)
             btnMinusAway.backgroundColor = darkBg
             btnMinusAway.isHidden = false
             
             let rightScoreX = rightSubX - scoreBtnSize - 8
             btnScoreAway.frame = CGRect(x: rightScoreX, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
-            btnScoreAway.layer.cornerRadius = 20
-            btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 30)
+            btnScoreAway.layer.cornerRadius = 22
+            btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 34)
             btnScoreAway.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.95)
             btnScoreAway.isHidden = false
             
             if hasExtraScoreBtns {
-                let basketW: CGFloat = isPortrait ? 34 : 44
+                let basketW: CGFloat = isPortrait ? 40 : 50
                 btnScoreAway2.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY, width: basketW, height: subBtnH)
+                btnScoreAway2.layer.cornerRadius = 12
+                btnScoreAway2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                
                 btnScoreAway3.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
+                btnScoreAway3.layer.cornerRadius = 12
+                btnScoreAway3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
                 btnScoreAway2.isHidden = false
                 btnScoreAway3.isHidden = false
                 
                 btnFoulAway.frame = CGRect(x: rightScoreX - basketW - 8 - basketW - 6, y: bottomScoreY, width: basketW, height: scoreBtnSize)
-                btnFoulAway.layer.cornerRadius = 12
+                btnFoulAway.layer.cornerRadius = 14
                 btnFoulAway.backgroundColor = darkBg
                 btnFoulAway.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
-                btnFoulAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+                btnFoulAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
                 btnFoulAway.isHidden = false
             } else {
                 btnScoreAway2.isHidden = true
@@ -1648,7 +1664,7 @@ class MainViewController: UIViewController {
         if sport == "basket" {
             scoreboardView?.triggerTripleAlert()
             StreamManager.shared.videoEffect.scoreboardView?.triggerTripleAlert()
-            showToast(message: "🎯 TRIPLA!")
+            showToast(message: "triple_alert".localized.uppercased())
         }
         updateLocalState()
     }
@@ -1738,7 +1754,7 @@ class MainViewController: UIViewController {
         if sport == "basket" {
             scoreboardView?.triggerTripleAlert()
             StreamManager.shared.videoEffect.scoreboardView?.triggerTripleAlert()
-            showToast(message: "🎯 TRIPLA!")
+            showToast(message: "triple_alert".localized.uppercased())
         }
         updateLocalState()
     }

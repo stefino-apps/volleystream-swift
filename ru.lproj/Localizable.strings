@@ -242,6 +242,7 @@
 "sport_handball" = "🤾 ГАНДБОЛ";
 "billiards_frame_label" = "ФРЕЙМ";
 "triple_notification" = "ТРЕХОЧКОВЫЙ!!!!!";
+"triple_alert" = "ТРЕХОЧКОВЫЙ";
 "overlay_period_finished" = "ЧЕТВЕРТЬ %d ЗАВЕРШЕНА";
 "btn_next_period" = "СЛЕДУЮЩАЯ ЧЕТВЕРТЬ";
 "btn_finish_period" = "ЗАВЕРШИТЬ %d-Ю ЧЕТВЕРТЬ";

@@ -242,6 +242,7 @@
 "sport_handball" = "🤾 PIŁKA RĘCZNA";
 "billiards_frame_label" = "FREJM";
 "triple_notification" = "TRÓJKA!!!!!";
+"triple_alert" = "TRÓJKA";
 "overlay_period_finished" = "KWARTA %d ZAKOŃCZONA";
 "btn_next_period" = "NASTĘPNA KWARTA";
 "btn_finish_period" = "ZAKOŃCZ %d. KWARTĘ";

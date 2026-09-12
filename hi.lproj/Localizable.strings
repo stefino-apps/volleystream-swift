@@ -242,6 +242,7 @@
 "sport_handball" = "🤾 हैंडबॉल";
 "billiards_frame_label" = "फ्रेम";
 "triple_notification" = "थ्री-पॉइंटर!!!!!";
+"triple_alert" = "3-पॉइंटर";
 "overlay_period_finished" = "क्वार्टर %d समाप्त";
 "btn_next_period" = "अगला क्वार्टर";
 "btn_finish_period" = "%dवा क्वार्टर समाप्त करें";

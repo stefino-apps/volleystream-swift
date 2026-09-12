@@ -264,6 +264,7 @@
 "darts_throw_fmt" = "T%1$d: %2$s";
 "tennis_sets_label" = "BEST OF";
 "triple_notification" = "THREE POINTER!!!!!!";
+"triple_alert" = "3-POINTER";
 "period_label" = "QUARTER";
 "overlay_period_finished" = "QUARTER %d FINISHED";
 "btn_next_period" = "NEXT QUARTER";

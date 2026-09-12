@@ -243,6 +243,7 @@
 "sport_handball" = "🤾 ANDEBOL";
 "billiards_frame_label" = "FRAME";
 "triple_notification" = "TRIPLO!!!!!";
+"triple_alert" = "TRIPLO";
 "overlay_period_finished" = "PERÍODO %d TERMINADO";
 "btn_next_period" = "PRÓXIMO PERÍODO";
 "btn_finish_period" = "TERMINAR PERÍODO %d";

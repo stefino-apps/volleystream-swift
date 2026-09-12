@@ -1003,7 +1003,7 @@ class ScoreboardOverlayView: UIView {
     // MARK: - Special Alerts: Blinking Central TRIPLA (3 POINTS) (1:1 con Android OverlayRenderer)
     
     func drawTripleAlert(ctx: CGContext, rect: CGRect) {
-        let text = "🎯 TRIPLA!"
+        let text = "triple_alert".localized.uppercased()
         let centerX = rect.width / 2.0
         let centerY = rect.height / 2.0 - 15.0
         

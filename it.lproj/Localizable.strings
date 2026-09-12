@@ -264,6 +264,7 @@
 "darts_throw_fmt" = "F%1$d: %2$s";
 "tennis_sets_label" = "AL MEGLIO DI";
 "triple_notification" = "TRIPLA!!!!!!";
+"triple_alert" = "TRIPLA";
 "period_label" = "QUARTO";
 "overlay_period_finished" = "QUARTO %d TERMINATO";
 "btn_next_period" = "PROSSIMO QUARTO";
