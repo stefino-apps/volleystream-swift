@@ -244,59 +244,94 @@ struct RemoteControlView: View {
     
     // MARK: - Active Broadcast Remote View
     var activeRemoteView: some View {
-        VStack(spacing: 10) {
-            // 1. Top Status & Quick Action Bar
-            topBarView
-            
-            // 2. Center Score Mirror Card
-            centerScoreCard
-            
-            // 3. Sport Controls / Giant Touchpads
-            sportMainControls
-            
-            // 4. Bottom Broadcast Bar (TEXT, HL, REP, Audio, S1-S4)
-            bottomBroadcastBar
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 10) {
+                // 1. Top Status & Quick Action Bar
+                topBarView
+                
+                // 2. Center Score Mirror Card
+                centerScoreCard
+                
+                // 3. Sport Controls / Giant Touchpads
+                sportMainControls
+                
+                // 4. Bottom Broadcast Bar (TEXT, HL, REP, Audio, S1-S4)
+                bottomBroadcastBar
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 6)
+            .padding(.bottom, 24)
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 6)
-        .padding(.bottom, 12)
     }
     
     // MARK: - Top Status Bar
     var topBarView: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             // Session Badge & Connection Dot
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Circle()
                     .fill(Color(red: 0/255, green: 245/255, blue: 155/255))
                     .frame(width: 8, height: 8)
-                Text("REGIA: #\(sessionCode)")
+                Text("#\(sessionCode)")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.white)
-                Text("• 🔋 85%")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.gray)
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(Color.white.opacity(0.08))
-            .cornerRadius(14)
+            .cornerRadius(12)
             
             Spacer()
+            
+            // REP Instant Replay Button
+            Button(action: {
+                triggerHaptic()
+                FirebaseManager.shared.sendCommand("TRIGGER_REPLAY")
+            }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 11, weight: .bold))
+                    Text("REP")
+                        .font(.system(size: 11, weight: .heavy))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(red: 37/255, green: 99/255, blue: 235/255))
+                .cornerRadius(10)
+            }
+            
+            // HL Highlight Button
+            Button(action: {
+                triggerHaptic()
+                FirebaseManager.shared.sendCommand("HIGHLIGHT")
+            }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 11, weight: .bold))
+                    Text("HL")
+                        .font(.system(size: 11, weight: .heavy))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(red: 147/255, green: 51/255, blue: 234/255))
+                .cornerRadius(10)
+            }
             
             // UNDO Button
             Button(action: {
                 triggerHaptic()
                 FirebaseManager.shared.sendCommand("UNDO")
             }) {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                     Text("UNDO")
-                        .font(.system(size: 11, weight: .heavy))
+                        .font(.system(size: 10, weight: .heavy))
                 }
                 .foregroundColor(Color(red: 0/255, green: 229/255, blue: 255/255))
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.15))
                 .cornerRadius(10)
@@ -308,15 +343,15 @@ struct RemoteControlView: View {
                 triggerHaptic()
                 FirebaseManager.shared.sendCommand("START_STREAM")
             }) {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: 6, height: 6)
-                    Text("GO LIVE")
-                        .font(.system(size: 11, weight: .heavy))
+                        .frame(width: 5, height: 5)
+                    Text("LIVE")
+                        .font(.system(size: 10, weight: .heavy))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .background(Color(red: 239/255, green: 68/255, blue: 68/255))
                 .cornerRadius(10)
@@ -328,9 +363,9 @@ struct RemoteControlView: View {
                 isConnected = false
             }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.gray)
-                    .padding(6)
+                    .padding(5)
                     .background(Color.white.opacity(0.08))
                     .clipShape(Circle())
             }

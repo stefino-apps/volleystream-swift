@@ -55,9 +55,14 @@ class ReplayManager {
     private var rollingAudioUrl: URL?
     
     private let queue = DispatchQueue(label: "com.volleypro.replayQueue", qos: .userInteractive)
+    private let exportQueue = DispatchQueue(label: "com.volleypro.highlight.export", qos: .utility)
     private let ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
         .priorityRequestLow: false
+    ])
+    private let exportCiContext = CIContext(options: [
+        .useSoftwareRenderer: false,
+        .priorityRequestLow: true
     ])
     
     private init() {
@@ -320,8 +325,10 @@ class ReplayManager {
     // MARK: - Salvataggio Highlight in Galleria con AUDIO Completo
     
     func saveHighlightClip(completion: @escaping (Bool, String?) -> Void) {
-        queue.async {
-            // 1. Ferma e finalizza la registrazione audio per scrivere l'header moov
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            
+            // 1. Snapshot audio e frame in < 1 millisecondo senza bloccare il flusso video live
             self.audioRecorder?.stop()
             self.audioRecorder = nil
             
@@ -333,108 +340,117 @@ class ReplayManager {
                 try? FileManager.default.copyItem(at: rollingUrl, to: highlightAudioUrl)
             }
             
-            // 2. Riavvia immediatamente la registrazione audio rolling per i prossimi highlight
+            // Riavvia subito il recorder audio
             self.startRollingAudioRecording()
             
             let availableFrames = self.frameBuffer.isEmpty ? self.playbackBuffer : self.frameBuffer
             let hlFrameCount = min(self.highlightDuration * 30, availableFrames.count)
             let framesToExport = Array(availableFrames.suffix(hlFrameCount))
+            
             guard !framesToExport.isEmpty else {
                 try? FileManager.default.removeItem(at: highlightAudioUrl)
                 DispatchQueue.main.async { completion(false, "Nessun frame registrato per l'highlight") }
                 return
             }
             
-            let tempVideoUrl = tempDir.appendingPathComponent("TempHighlightVideo_\(timestamp).mp4")
-            let finalOutputUrl = tempDir.appendingPathComponent("Highlight_\(timestamp).mp4")
+            // 2. Esegui la codifica video pesante e il salvataggio su coda dedicata background
+            self.exportQueue.async { [weak self] in
+                self?.processHighlightExport(frames: framesToExport, audioUrl: highlightAudioUrl, timestamp: timestamp, completion: completion)
+            }
+        }
+    }
+    
+    private func processHighlightExport(frames: [CVPixelBuffer], audioUrl: URL, timestamp: Int, completion: @escaping (Bool, String?) -> Void) {
+        let tempDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let tempVideoUrl = tempDir.appendingPathComponent("TempHighlightVideo_\(timestamp).mp4")
+        let finalOutputUrl = tempDir.appendingPathComponent("Highlight_\(timestamp).mp4")
+        
+        try? FileManager.default.removeItem(at: tempVideoUrl)
+        try? FileManager.default.removeItem(at: finalOutputUrl)
+        
+        do {
+            let assetWriter = try AVAssetWriter(outputURL: tempVideoUrl, fileType: .mp4)
+            let videoSettings: [String: Any] = [
+                AVVideoCodecKey: AVVideoCodecType.h264,
+                AVVideoWidthKey: 1920,
+                AVVideoHeightKey: 1080
+            ]
+            let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
+            videoInput.expectsMediaDataInRealTime = false
             
-            try? FileManager.default.removeItem(at: tempVideoUrl)
-            try? FileManager.default.removeItem(at: finalOutputUrl)
+            let sourcePixelBufferAttributes: [String: Any] = [
+                kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
+                kCVPixelBufferWidthKey as String: 1920,
+                kCVPixelBufferHeightKey as String: 1080
+            ]
+            let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: videoInput, sourcePixelBufferAttributes: sourcePixelBufferAttributes)
             
-            do {
-                let assetWriter = try AVAssetWriter(outputURL: tempVideoUrl, fileType: .mp4)
-                let videoSettings: [String: Any] = [
-                    AVVideoCodecKey: AVVideoCodecType.h264,
-                    AVVideoWidthKey: 1920,
-                    AVVideoHeightKey: 1080
-                ]
-                let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
-                videoInput.expectsMediaDataInRealTime = false
-                
-                let sourcePixelBufferAttributes: [String: Any] = [
-                    kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
-                    kCVPixelBufferWidthKey as String: 1920,
-                    kCVPixelBufferHeightKey as String: 1080
-                ]
-                let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: videoInput, sourcePixelBufferAttributes: sourcePixelBufferAttributes)
-                
-                if assetWriter.canAdd(videoInput) {
-                    assetWriter.add(videoInput)
+            if assetWriter.canAdd(videoInput) {
+                assetWriter.add(videoInput)
+            }
+            
+            assetWriter.startWriting()
+            assetWriter.startSession(atSourceTime: .zero)
+            
+            let fps: Int64 = 30
+            var frameIndex: Int64 = 0
+            
+            for buffer in frames {
+                while !videoInput.isReadyForMoreMediaData {
+                    Thread.sleep(forTimeInterval: 0.005)
                 }
                 
-                assetWriter.startWriting()
-                assetWriter.startSession(atSourceTime: .zero)
-                
-                let fps: Int64 = 30
-                var frameIndex: Int64 = 0
-                
-                for buffer in framesToExport {
-                    while !videoInput.isReadyForMoreMediaData {
-                        Thread.sleep(forTimeInterval: 0.005)
-                    }
-                    
-                    if let pool = adaptor.pixelBufferPool {
-                        var targetBuffer: CVPixelBuffer?
-                        CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &targetBuffer)
-                        if let tb = targetBuffer {
-                            let srcImg = CIImage(cvPixelBuffer: buffer).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
-                            self.ciContext.render(srcImg, to: tb)
-                            let presentTime = CMTimeMake(value: frameIndex, timescale: Int32(fps))
-                            adaptor.append(tb, withPresentationTime: presentTime)
-                            frameIndex += 1
-                        }
+                if let pool = adaptor.pixelBufferPool {
+                    var targetBuffer: CVPixelBuffer?
+                    CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &targetBuffer)
+                    if let tb = targetBuffer {
+                        let srcImg = CIImage(cvPixelBuffer: buffer).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
+                        self.exportCiContext.render(srcImg, to: tb)
+                        let presentTime = CMTimeMake(value: frameIndex, timescale: Int32(fps))
+                        adaptor.append(tb, withPresentationTime: presentTime)
+                        frameIndex += 1
                     }
                 }
+            }
+            
+            videoInput.markAsFinished()
+            assetWriter.finishWriting { [weak self] in
+                guard let self = self else { return }
                 
-                videoInput.markAsFinished()
-                assetWriter.finishWriting { [weak self] in
-                    guard let self = self else { return }
+                // Unisci l'audio registrato dal rolling recorder con la clip video
+                self.mergeHighlightAudioAndVideo(videoUrl: tempVideoUrl, audioUrl: audioUrl, videoDurationSeconds: Double(frames.count) / 30.0, outputUrl: finalOutputUrl) { success in
+                    let targetUrl = success ? finalOutputUrl : tempVideoUrl
                     
-                    // Unisci l'audio registrato dal rolling recorder con la clip video
-                    self.mergeHighlightAudioAndVideo(videoUrl: tempVideoUrl, audioUrl: highlightAudioUrl, videoDurationSeconds: Double(framesToExport.count) / 30.0, outputUrl: finalOutputUrl) { success in
-                        let targetUrl = success ? finalOutputUrl : tempVideoUrl
-                        
-                        PHPhotoLibrary.requestAuthorization { status in
-                            if status == .authorized || status == .limited {
-                                PHPhotoLibrary.shared().performChanges({
-                                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: targetUrl)
-                                }) { saved, error in
-                                    try? FileManager.default.removeItem(at: tempVideoUrl)
-                                    try? FileManager.default.removeItem(at: highlightAudioUrl)
-                                    if success { try? FileManager.default.removeItem(at: finalOutputUrl) }
-                                    
-                                    DispatchQueue.main.async {
-                                        completion(saved, error?.localizedDescription)
-                                    }
+                    PHPhotoLibrary.requestAuthorization { status in
+                        if status == .authorized || status == .limited {
+                            PHPhotoLibrary.shared().performChanges({
+                                PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: targetUrl)
+                            }) { saved, error in
+                                try? FileManager.default.removeItem(at: tempVideoUrl)
+                                try? FileManager.default.removeItem(at: audioUrl)
+                                if success { try? FileManager.default.removeItem(at: finalOutputUrl) }
+                                
+                                DispatchQueue.main.async {
+                                    completion(saved, error?.localizedDescription)
                                 }
+                            }
+                        } else {
+                            if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(targetUrl.path) {
+                                UISaveVideoAtPathToSavedPhotosAlbum(targetUrl.path, nil, nil, nil)
+                                try? FileManager.default.removeItem(at: audioUrl)
+                                DispatchQueue.main.async { completion(true, nil) }
                             } else {
-                                if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(targetUrl.path) {
-                                    UISaveVideoAtPathToSavedPhotosAlbum(targetUrl.path, nil, nil, nil)
-                                    try? FileManager.default.removeItem(at: highlightAudioUrl)
-                                    DispatchQueue.main.async { completion(true, nil) }
-                                } else {
-                                    try? FileManager.default.removeItem(at: highlightAudioUrl)
-                                    DispatchQueue.main.async { completion(false, "Permesso galleria non concesso") }
-                                }
+                                try? FileManager.default.removeItem(at: audioUrl)
+                                DispatchQueue.main.async { completion(false, "Permesso galleria non concesso") }
                             }
                         }
                     }
                 }
-                
-            } catch {
-                try? FileManager.default.removeItem(at: highlightAudioUrl)
-                DispatchQueue.main.async { completion(false, error.localizedDescription) }
             }
+            
+        } catch {
+            try? FileManager.default.removeItem(at: audioUrl)
+            DispatchQueue.main.async { completion(false, error.localizedDescription) }
         }
     }
     

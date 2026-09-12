@@ -63,8 +63,20 @@ class StreamVideoEffect: VideoEffect {
     
     // MARK: - Testo Scorrevole Dinamico in Tempo Reale
     private func getMarqueeStripCIImage(message: String) -> CIImage? {
-        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
+        var text = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty {
+            text = UserDefaults.standard.string(forKey: "scrolling_text_content") ?? UserDefaults.standard.string(forKey: "saved_scrolling_text_slot_1") ?? ""
+        }
+        if text.isEmpty {
+            if let st = currentState {
+                let nameA = st.teamA.isEmpty ? "CASA" : st.teamA
+                let nameB = st.teamB.isEmpty ? "OSPITE" : st.teamB
+                text = "🏐 \(nameA) vs \(nameB) • VOLLEYSTREAM PRO LIVE"
+            } else {
+                text = "VOLLEYSTREAM PRO • DIRETTA STREAMING"
+            }
+        }
+        let trimmed = text
         
         if trimmed != lastMarqueeMessage {
             lastMarqueeMessage = trimmed

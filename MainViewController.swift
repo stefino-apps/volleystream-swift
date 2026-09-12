@@ -167,6 +167,10 @@ class MainViewController: UIViewController {
                 self.localState.dartsActivePlayer = "A"
             }
         }
+        let savedScroll = UserDefaults.standard.string(forKey: "scrolling_text_content") ?? UserDefaults.standard.string(forKey: "saved_scrolling_text_slot_1") ?? ""
+        if !savedScroll.isEmpty {
+            self.localState.scrollMessage = savedScroll
+        }
         if isViewLoaded {
             updateLocalState()
         }
@@ -204,6 +208,11 @@ class MainViewController: UIViewController {
         self.localState.foulsA = 0
         self.localState.foulsB = 0
         self.isSetTransitionInProgress = false
+        
+        let savedScroll = UserDefaults.standard.string(forKey: "scrolling_text_content") ?? UserDefaults.standard.string(forKey: "saved_scrolling_text_slot_1") ?? ""
+        if !savedScroll.isEmpty {
+            self.localState.scrollMessage = savedScroll
+        }
         
         if self.localState.sportType.lowercased() == "darts" {
             let startScore = UserDefaults.standard.integer(forKey: "darts_initial_score")
@@ -1462,7 +1471,11 @@ class MainViewController: UIViewController {
     
     @objc func toggleTextAction() {
         localState.showScrollText.toggle()
-        refreshMatchState()
+        if localState.showScrollText && localState.scrollMessage.isEmpty {
+            localState.scrollMessage = UserDefaults.standard.string(forKey: "scrolling_text_content") ?? UserDefaults.standard.string(forKey: "saved_scrolling_text_slot_1") ?? "\(localState.teamA) vs \(localState.teamB) • DIRETTA STREAMING"
+        }
+        updateLocalState()
+        StreamManager.shared.videoEffect.triggerOverlayUpdate(state: self.localState)
         showToast(message: localState.showScrollText ? "📝 Testo scorrevole ON" : "📝 Testo scorrevole OFF")
     }
     
@@ -2379,8 +2392,12 @@ class MainViewController: UIViewController {
             showToast(message: "⭐ Funzionalità Sponsor disponibile con Premium")
             return
         }
-        localState.fullScreenSponsor.toggle()
+        let nextVal = !localState.fullScreenSponsor
+        localState.fullScreenSponsor = nextVal
+        localState.showSponsor = nextVal
         updateLocalState()
+        StreamManager.shared.videoEffect.triggerOverlayUpdate(state: self.localState)
+        showToast(message: nextVal ? "🖼️ Sponsor Schermo Intero ATTIVO" : "🖼️ Sponsor Schermo Intero DISATTIVATO")
     }
     
     @objc func toggleMute() {
@@ -2465,19 +2482,27 @@ class MainViewController: UIViewController {
             return
         }
         let sessionId = UserDefaults.standard.string(forKey: "remote_session_id") ?? "REGIA_01"
-        let webLinkStr = "https://volleystreampro.com/remote?code=\(sessionId)"
+        let iosLinkStr = "https://volleystreampro.com/remote?code=\(sessionId)&os=ios"
+        let androidLinkStr = "https://volleystreampro.com/remote?code=\(sessionId)&os=android"
+        
         let msg = """
         🏐 VolleyStream Pro - Telecomando Regia
 
         🔑 Codice Sessione: \(sessionId)
 
-        🔗 Link Telecomando (clicca per aprire):
-        \(webLinkStr)
+        🍏 Link Telecomando iOS (iPhone / iPad):
+        \(iosLinkStr)
+
+        🤖 Link Telecomando ANDROID (Chrome / Web):
+        \(androidLinkStr)
         """
         
         var activityItems: [Any] = [msg]
-        if let url = URL(string: webLinkStr) {
-            activityItems.append(url)
+        if let iosUrl = URL(string: iosLinkStr) {
+            activityItems.append(iosUrl)
+        }
+        if let androidUrl = URL(string: androidLinkStr) {
+            activityItems.append(androidUrl)
         }
         
         let activity = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)

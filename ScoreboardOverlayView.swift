@@ -375,7 +375,18 @@ class ScoreboardOverlayView: UIView {
         
         let sp = getSetPointInfo(state: state)
         
-        // 3. Render Attached SET POINT / MATCH POINT Badge on the right of the scoreboard
+        // 3. Render Attached SOCCER / HANDBALL Timer on the right of the scoreboard
+        if sport == "soccer" || sport == "handball" || sport == "pallamano" {
+            let m = state.timerSeconds / 60
+            let s = state.timerSeconds % 60
+            let timeStr = String(format: "%02d:%02d", m, s)
+            let periodStr = state.currentSet == 1 ? "1° TEMPO" : (state.currentSet == 2 ? "2° TEMPO" : "SUPPL.")
+            let timerX = x + boxW + 4
+            let timerW: CGFloat = 84.0
+            drawAttachedTimerBadge(ctx: ctx, x: timerX, y: y, w: timerW, h: h, headerH: headerH, periodText: periodStr, timeText: timeStr, isRunning: state.timerRunning, style: style)
+        }
+        
+        // 4. Render Attached SET POINT / MATCH POINT Badge on the right of the scoreboard
         if let sp = sp {
             let badgeW: CGFloat = sp.isMatchPoint ? 82 : 74
             let badgeH: CGFloat = 19
@@ -711,6 +722,47 @@ class ScoreboardOverlayView: UIView {
     
     private func drawHandballScoreboard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
         drawSoccerScoreboard(ctx: ctx, x: x, y: y, w: w, h: h, state: state, style: style)
+    }
+    
+    // MARK: - Attached Soccer Timer Badge Beside Scoreboard
+    
+    private func drawAttachedTimerBadge(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, headerH: CGFloat, periodText: String, timeText: String, isRunning: Bool, style: ThemeStyles) {
+        let rect = CGRect(x: x, y: y, width: w, height: h)
+        let path = UIBezierPath(roundedRect: rect, cornerRadius: 8)
+        
+        // Dark glass background
+        UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.94).setFill()
+        path.fill()
+        
+        // Neon border (Green when running, Cyan when paused)
+        let strokeColor = isRunning ? UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95) : UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.8)
+        strokeColor.setStroke()
+        path.lineWidth = 1.4
+        path.stroke()
+        
+        // Header background strip (Period)
+        let headerRect = CGRect(x: x, y: y, width: w, height: headerH)
+        let headerPath = UIBezierPath(roundedRect: headerRect, byRoundingCorners: [.topLeft, .topRight], cornerRadii: CGSize(width: 8, height: 8))
+        (isRunning ? UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.25) : UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.4)).setFill()
+        headerPath.fill()
+        
+        let headerFont = UIFont.systemFont(ofSize: 8.5, weight: .heavy)
+        let headerAttrs: [NSAttributedString.Key: Any] = [
+            .font: headerFont,
+            .foregroundColor: isRunning ? UIColor(red: 52/255, green: 211/255, blue: 153/255, alpha: 1.0) : UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1.0)
+        ]
+        let pSize = (periodText as NSString).size(withAttributes: headerAttrs)
+        (periodText as NSString).draw(at: CGPoint(x: x + (w - pSize.width) / 2.0, y: y + 2.5), withAttributes: headerAttrs)
+        
+        // Timer Text in the middle
+        let timeFont = UIFont.monospacedDigitSystemFont(ofSize: 17.5, weight: .heavy)
+        let timeAttrs: [NSAttributedString.Key: Any] = [
+            .font: timeFont,
+            .foregroundColor: isRunning ? UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0) : UIColor.white
+        ]
+        let tSize = (timeText as NSString).size(withAttributes: timeAttrs)
+        let timeY = y + headerH + (h - headerH - tSize.height) / 2.0
+        (timeText as NSString).draw(at: CGPoint(x: x + (w - tSize.width) / 2.0, y: timeY), withAttributes: timeAttrs)
     }
     
     // MARK: - Tennis / Padel Scoreboard
