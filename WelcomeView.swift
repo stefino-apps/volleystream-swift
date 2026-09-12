@@ -2,13 +2,22 @@ import SwiftUI
 import Combine
 import WebKit
 
+struct BadgePopupData: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+    let icon: String
+    let accentColor: Color
+    let bgGradient: [Color]
+}
+
 struct WelcomeView: View {
     @StateObject private var storeManager = StoreKitManager.shared
     @State private var navigateToSetup = false
     @State private var showLangPicker = false
     @State private var showMenu = false
     @State private var showPremiumPaywall = false
-    @State private var selectedBadgeInfo: String? = nil
+    @State private var selectedBadgeData: BadgePopupData? = nil
     @State private var navigateToRemote = false
     @State private var showDeleteAccountAlert = false
     @State private var activeLegalDoc: LegalDocType? = nil
@@ -173,14 +182,30 @@ struct WelcomeView: View {
                                     text: "badge_remote".localized,
                                     isLocked: false
                                 ) {
-                                    selectedBadgeInfo = "popup_remote_msg".localized
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        selectedBadgeData = BadgePopupData(
+                                            title: "badge_remote".localized,
+                                            message: "popup_remote_msg".localized,
+                                            icon: "iphone.radiowaves.left.and.right",
+                                            accentColor: Color(hex: "#06B6D4"),
+                                            bgGradient: [Color(hex: "#083344"), Color(hex: "#09111e")]
+                                        )
+                                    }
                                 }
                                 
                                 AndroidBadgeView(
                                     text: "badge_premium".localized,
                                     isLocked: false
                                 ) {
-                                    selectedBadgeInfo = "popup_premium_msg".localized
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        selectedBadgeData = BadgePopupData(
+                                            title: "badge_premium".localized,
+                                            message: "popup_premium_msg".localized,
+                                            icon: "crown.fill",
+                                            accentColor: Color(hex: "#FACC15"),
+                                            bgGradient: [Color(hex: "#422006"), Color(hex: "#09111e")]
+                                        )
+                                    }
                                 }
                                 
                                 AndroidBadgeView(
@@ -190,7 +215,15 @@ struct WelcomeView: View {
                                     if !storeManager.isPremiumOrTrial {
                                         showPremiumPaywall = true
                                     } else {
-                                        selectedBadgeInfo = "popup_tv_graphics_msg".localized
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            selectedBadgeData = BadgePopupData(
+                                                title: "badge_tv_graphics".localized,
+                                                message: "popup_tv_graphics_msg".localized,
+                                                icon: "sparkles.tv.fill",
+                                                accentColor: Color(hex: "#38BDF8"),
+                                                bgGradient: [Color(hex: "#0c4a6e"), Color(hex: "#09111e")]
+                                            )
+                                        }
                                     }
                                 }
                                 
@@ -201,7 +234,15 @@ struct WelcomeView: View {
                                     if !storeManager.isPremiumOrTrial {
                                         showPremiumPaywall = true
                                     } else {
-                                        selectedBadgeInfo = "popup_remote_control_msg".localized
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            selectedBadgeData = BadgePopupData(
+                                                title: "badge_remote_control".localized,
+                                                message: "popup_remote_control_msg".localized,
+                                                icon: "gamecontroller.fill",
+                                                accentColor: Color(hex: "#10B981"),
+                                                bgGradient: [Color(hex: "#064e3b"), Color(hex: "#09111e")]
+                                            )
+                                        }
                                     }
                                 }
                                 
@@ -212,7 +253,15 @@ struct WelcomeView: View {
                                     if !storeManager.isPremiumOrTrial {
                                         showPremiumPaywall = true
                                     } else {
-                                        selectedBadgeInfo = "popup_local_record_msg".localized
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            selectedBadgeData = BadgePopupData(
+                                                title: "badge_local_record".localized,
+                                                message: "popup_local_record_msg".localized,
+                                                icon: "record.circle.fill",
+                                                accentColor: Color(hex: "#EF4444"),
+                                                bgGradient: [Color(hex: "#450a0a"), Color(hex: "#09111e")]
+                                            )
+                                        }
                                     }
                                 }
                                 
@@ -223,7 +272,15 @@ struct WelcomeView: View {
                                     if !storeManager.isPremiumOrTrial {
                                         showPremiumPaywall = true
                                     } else {
-                                        selectedBadgeInfo = "popup_instant_replay_msg".localized
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            selectedBadgeData = BadgePopupData(
+                                                title: "badge_instant_replay".localized,
+                                                message: "popup_instant_replay_msg".localized,
+                                                icon: "arrow.counterclockwise.circle.fill",
+                                                accentColor: Color(hex: "#F59E0B"),
+                                                bgGradient: [Color(hex: "#451a03"), Color(hex: "#09111e")]
+                                            )
+                                        }
                                     }
                                 }
                                 
@@ -371,6 +428,15 @@ struct WelcomeView: View {
                     }
                     .transition(.opacity)
                 }
+                
+                // Rich Broadcast Badge Popup Modal
+                if let badgeData = selectedBadgeData {
+                    BadgeDetailModalView(data: badgeData) {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            selectedBadgeData = nil
+                        }
+                    }
+                }
             }
             .navigationBarHidden(true)
             .sheet(isPresented: $showPremiumPaywall) {
@@ -389,12 +455,6 @@ struct WelcomeView: View {
                     },
                     secondaryButton: .cancel(Text("Annulla"))
                 )
-            }
-            .alert(item: Binding<AlertInfo?>(
-                get: { selectedBadgeInfo.map { AlertInfo(message: $0) } },
-                set: { if $0 == nil { selectedBadgeInfo = nil } }
-            )) { info in
-                Alert(title: Text("Info"), message: Text(info.message), dismissButton: .default(Text("OK")))
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
@@ -734,5 +794,131 @@ struct LegalWebView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: WKWebView, context: Context) {}
+}
+
+// MARK: - Rich Broadcast Badge Popup Modal
+struct BadgeDetailModalView: View {
+    let data: BadgePopupData
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        ZStack {
+            // Sfondo oscurato e sfocato
+            Color.black.opacity(0.75)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    onDismiss()
+                }
+            
+            // Carta Fumetto Broadcast Grande e Colorata
+            VStack(spacing: 20) {
+                // Header con Icona grande e Pulsante Chiudi
+                HStack(alignment: .top) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [data.accentColor.opacity(0.4), data.accentColor.opacity(0.1)]),
+                                    center: .center,
+                                    startRadius: 5,
+                                    endRadius: 40
+                                )
+                            )
+                            .frame(width: 72, height: 72)
+                        
+                        Circle()
+                            .stroke(data.accentColor, lineWidth: 2)
+                            .frame(width: 72, height: 72)
+                        
+                        Image(systemName: data.icon)
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(data.accentColor)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        onDismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(Color.white.opacity(0.6))
+                    }
+                }
+                
+                // Titolo Grande
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(data.title.uppercased())
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundColor(data.accentColor)
+                        .tracking(1.1)
+                    
+                    Rectangle()
+                        .fill(data.accentColor.opacity(0.4))
+                        .frame(height: 2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Messaggio descrittivo
+                Text(data.message)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "#e2e8f0"))
+                    .lineSpacing(5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                // Bottone Azione Vivace
+                Button(action: {
+                    let impact = UIImpactFeedbackGenerator(style: .medium)
+                    impact.impactOccurred()
+                    onDismiss()
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 16, weight: .bold))
+                        Text("HO CAPITO")
+                            .font(.system(size: 15, weight: .heavy))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [data.accentColor, data.accentColor.opacity(0.75)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(14)
+                    .shadow(color: data.accentColor.opacity(0.4), radius: 8, x: 0, y: 4)
+                }
+                .padding(.top, 4)
+            }
+            .padding(26)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: data.bgGradient),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(26)
+            .overlay(
+                RoundedRectangle(cornerRadius: 26)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [data.accentColor, data.accentColor.opacity(0.3)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 2.5
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.8), radius: 25, x: 0, y: 15)
+            .padding(.horizontal, 24)
+            .transition(.scale(scale: 0.85).combined(with: .opacity))
+        }
+        .zIndex(100)
+    }
 }
 

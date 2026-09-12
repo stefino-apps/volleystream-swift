@@ -2137,11 +2137,22 @@ class MainViewController: UIViewController {
             return
         }
         let sessionId = UserDefaults.standard.string(forKey: "remote_session_id") ?? "REGIA_01"
-        let customLink = "volleypro://remote?code=\(sessionId)"
-        let httpsLink = "https://volleystreampro.com/remote?code=\(sessionId)"
-        let msg = "🏐 VolleyPro Live - Telecomando\n\nCodice Sessione: \(sessionId)\n\nClicca qui se usi Android:\n\(httpsLink)\n\nClicca qui se usi iOS:\n\(customLink)"
+        let webLinkStr = "https://volleystreampro.com/remote?code=\(sessionId)"
+        let msg = """
+        🏐 VolleyStream Pro - Telecomando Regia
+
+        🔑 Codice Sessione: \(sessionId)
+
+        🔗 Link Telecomando (clicca per aprire):
+        \(webLinkStr)
+        """
         
-        let activity = UIActivityViewController(activityItems: [msg], applicationActivities: nil)
+        var activityItems: [Any] = [msg]
+        if let url = URL(string: webLinkStr) {
+            activityItems.append(url)
+        }
+        
+        let activity = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
         if let popover = activity.popoverPresentationController {
             popover.sourceView = shareRemoteButton
         }
@@ -2150,44 +2161,70 @@ class MainViewController: UIViewController {
     
     @objc func startLive() {
         if startStreamButton.title(for: .normal)?.contains("GO") == true {
-            let rtmpUrl = UserDefaults.standard.string(forKey: "rtmp_url") ?? "rtmp://a.rtmp.youtube.com/live2"
-            let rtmpKey = UserDefaults.standard.string(forKey: "rtmp_key") ?? "test"
-            
-            StreamManager.shared.startStreaming(url: rtmpUrl, streamKey: rtmpKey)
-            
-            let shouldRecord = UserDefaults.standard.object(forKey: "record_locally") == nil ? true : UserDefaults.standard.bool(forKey: "record_locally")
-            if shouldRecord {
-                LocalVideoRecorder.shared.startRecording()
+            showDoNotDisturbAlert { [weak self] in
+                self?.executeStartLive()
             }
-            
-            startStreamButton.setTitle("STOP", for: .normal)
-            startStreamButton.backgroundColor = .systemGray
-            showToast(message: "🔴 LIVE & Registrazione avviata")
-            
-            localState.isStreaming = true
-            localState.streamingStatus = "LIVE"
-            updateLocalState(saveHistory: false)
         } else {
-            StreamManager.shared.stopStreaming()
-            
-            if LocalVideoRecorder.shared.isRecordingState {
-                LocalVideoRecorder.shared.stopRecording { [weak self] savedUrl in
-                    DispatchQueue.main.async {
-                        if let _ = savedUrl {
-                            self?.showToast(message: "🎬 Match salvato in Galleria!")
-                        }
+            executeStopLive()
+        }
+    }
+    
+    private func showDoNotDisturbAlert(onConfirm: @escaping () -> Void) {
+        let alert = UIAlertController(
+            title: "🔕 MODALITÀ NON DISTURBARE",
+            message: "Prima di avviare la diretta, ti consigliamo vivamente di attivare la modalità 'Non Disturbare' o 'Full Immersion' nel Centro di Controllo di iOS.\n\nIn questo modo eviterai che chiamate in arrivo o notifiche interrompano la trasmissione e facciano cadere la connessione.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "AVVIA DIRETTA", style: .default) { _ in
+            onConfirm()
+        })
+        
+        alert.addAction(UIAlertAction(title: "ANNULLA", style: .cancel, handler: nil))
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
+    private func executeStartLive() {
+        let rtmpUrl = UserDefaults.standard.string(forKey: "rtmp_url") ?? "rtmp://a.rtmp.youtube.com/live2"
+        let rtmpKey = UserDefaults.standard.string(forKey: "rtmp_key") ?? "test"
+        
+        StreamManager.shared.startStreaming(url: rtmpUrl, streamKey: rtmpKey)
+        
+        let shouldRecord = UserDefaults.standard.object(forKey: "record_locally") == nil ? true : UserDefaults.standard.bool(forKey: "record_locally")
+        if shouldRecord {
+            LocalVideoRecorder.shared.startRecording()
+        }
+        
+        startStreamButton.setTitle("STOP", for: .normal)
+        startStreamButton.backgroundColor = .systemGray
+        showToast(message: "🔴 LIVE & Registrazione avviata")
+        
+        localState.isStreaming = true
+        localState.streamingStatus = "LIVE"
+        updateLocalState(saveHistory: false)
+    }
+    
+    private func executeStopLive() {
+        StreamManager.shared.stopStreaming()
+        
+        if LocalVideoRecorder.shared.isRecordingState {
+            LocalVideoRecorder.shared.stopRecording { [weak self] savedUrl in
+                DispatchQueue.main.async {
+                    if let _ = savedUrl {
+                        self?.showToast(message: "🎬 Match salvato in Galleria!")
                     }
                 }
             }
-            
-            startStreamButton.setTitle("GO\nLIVE", for: .normal)
-            startStreamButton.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
-            showToast(message: "⏹️ LIVE terminata")
-            
-            localState.isStreaming = false
-            localState.streamingStatus = "OFFLINE"
-            updateLocalState(saveHistory: false)
         }
+        
+        startStreamButton.setTitle("GO\nLIVE", for: .normal)
+        startStreamButton.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+        showToast(message: "⏹️ LIVE terminata")
+        
+        localState.isStreaming = false
+        localState.streamingStatus = "OFFLINE"
+        updateLocalState(saveHistory: false)
     }
     
     // MARK: - Remote Control Command Handler

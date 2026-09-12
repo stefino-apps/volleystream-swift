@@ -72,6 +72,14 @@ class ReplayManager {
     // MARK: - Registratore Audio Continuo per Highlights
     
     func startRollingAudioRecording() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playAndRecord, mode: .videoRecording, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+            try session.setActive(true)
+        } catch {
+            print("ReplayManager: Setup audio session error: \(error)")
+        }
+        
         let tempDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let audioUrl = tempDir.appendingPathComponent("replay_rolling_audio.m4a")
         self.rollingAudioUrl = audioUrl
@@ -87,8 +95,14 @@ class ReplayManager {
         ]
         
         do {
-            audioRecorder = try AVAudioRecorder(url: audioUrl, settings: settings)
-            audioRecorder?.record()
+            let recorder = try AVAudioRecorder(url: audioUrl, settings: settings)
+            recorder.isMeteringEnabled = false
+            recorder.prepareToRecord()
+            if recorder.record() {
+                self.audioRecorder = recorder
+            } else {
+                print("ReplayManager: audioRecorder.record() returned false")
+            }
         } catch {
             print("ReplayManager: Avvio audio recorder per highlight: \(error)")
         }
@@ -298,14 +312,28 @@ class ReplayManager {
     
     func saveHighlightClip(completion: @escaping (Bool, String?) -> Void) {
         queue.async {
+            // 1. Ferma e finalizza la registrazione audio per scrivere l'header moov
+            self.audioRecorder?.stop()
+            self.audioRecorder = nil
+            
+            let tempDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let highlightAudioUrl = tempDir.appendingPathComponent("HighlightAudio_\(timestamp).m4a")
+            
+            if let rollingUrl = self.rollingAudioUrl, FileManager.default.fileExists(atPath: rollingUrl.path) {
+                try? FileManager.default.copyItem(at: rollingUrl, to: highlightAudioUrl)
+            }
+            
+            // 2. Riavvia immediatamente la registrazione audio rolling per i prossimi highlight
+            self.startRollingAudioRecording()
+            
             let framesToExport = self.frameBuffer.isEmpty ? self.playbackBuffer : self.frameBuffer
             guard !framesToExport.isEmpty else {
+                try? FileManager.default.removeItem(at: highlightAudioUrl)
                 DispatchQueue.main.async { completion(false, "Nessun frame registrato per l'highlight") }
                 return
             }
             
-            let tempDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            let timestamp = Int(Date().timeIntervalSince1970)
             let tempVideoUrl = tempDir.appendingPathComponent("TempHighlightVideo_\(timestamp).mp4")
             let finalOutputUrl = tempDir.appendingPathComponent("Highlight_\(timestamp).mp4")
             
@@ -362,7 +390,7 @@ class ReplayManager {
                     guard let self = self else { return }
                     
                     // Unisci l'audio registrato dal rolling recorder con la clip video
-                    self.mergeHighlightAudioAndVideo(videoUrl: tempVideoUrl, videoDurationSeconds: Double(framesToExport.count) / 30.0, outputUrl: finalOutputUrl) { success in
+                    self.mergeHighlightAudioAndVideo(videoUrl: tempVideoUrl, audioUrl: highlightAudioUrl, videoDurationSeconds: Double(framesToExport.count) / 30.0, outputUrl: finalOutputUrl) { success in
                         let targetUrl = success ? finalOutputUrl : tempVideoUrl
                         
                         PHPhotoLibrary.requestAuthorization { status in
@@ -371,6 +399,7 @@ class ReplayManager {
                                     PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: targetUrl)
                                 }) { saved, error in
                                     try? FileManager.default.removeItem(at: tempVideoUrl)
+                                    try? FileManager.default.removeItem(at: highlightAudioUrl)
                                     if success { try? FileManager.default.removeItem(at: finalOutputUrl) }
                                     
                                     DispatchQueue.main.async {
@@ -380,8 +409,10 @@ class ReplayManager {
                             } else {
                                 if UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(targetUrl.path) {
                                     UISaveVideoAtPathToSavedPhotosAlbum(targetUrl.path, nil, nil, nil)
+                                    try? FileManager.default.removeItem(at: highlightAudioUrl)
                                     DispatchQueue.main.async { completion(true, nil) }
                                 } else {
+                                    try? FileManager.default.removeItem(at: highlightAudioUrl)
                                     DispatchQueue.main.async { completion(false, "Permesso galleria non concesso") }
                                 }
                             }
@@ -390,13 +421,14 @@ class ReplayManager {
                 }
                 
             } catch {
+                try? FileManager.default.removeItem(at: highlightAudioUrl)
                 DispatchQueue.main.async { completion(false, error.localizedDescription) }
             }
         }
     }
     
-    private func mergeHighlightAudioAndVideo(videoUrl: URL, videoDurationSeconds: Double, outputUrl: URL, completion: @escaping (Bool) -> Void) {
-        guard let audioUrl = self.rollingAudioUrl, FileManager.default.fileExists(atPath: audioUrl.path) else {
+    private func mergeHighlightAudioAndVideo(videoUrl: URL, audioUrl: URL, videoDurationSeconds: Double, outputUrl: URL, completion: @escaping (Bool) -> Void) {
+        guard FileManager.default.fileExists(atPath: audioUrl.path) else {
             completion(false)
             return
         }
