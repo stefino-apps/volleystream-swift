@@ -117,6 +117,8 @@ public class StreamManager: NSObject {
         rtmpStream.videoOrientation = orientation
     }
     
+    public var onPublishStatusChanged: ((Bool) -> Void)?
+    
     public func startStreaming(url: String, streamKey: String) {
         self.streamKeyToPublish = streamKey
         rtmpConnection.addEventListener(.rtmpStatus, selector: #selector(statusHandler), observer: self)
@@ -133,6 +135,14 @@ public class StreamManager: NSObject {
         if code == RTMPConnection.Code.connectSuccess.rawValue {
             rtmpStream.publish(streamKeyToPublish)
             self.isPublishing = true
+            DispatchQueue.main.async {
+                self.onPublishStatusChanged?(true)
+            }
+        } else if code == RTMPConnection.Code.connectClosed.rawValue || code == RTMPConnection.Code.connectFailed.rawValue {
+            self.isPublishing = false
+            DispatchQueue.main.async {
+                self.onPublishStatusChanged?(false)
+            }
         }
     }
     
@@ -140,5 +150,8 @@ public class StreamManager: NSObject {
         self.isPublishing = false
         rtmpStream.close()
         rtmpConnection.close()
+        DispatchQueue.main.async {
+            self.onPublishStatusChanged?(false)
+        }
     }
 }

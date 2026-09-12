@@ -38,6 +38,11 @@ class FirebaseManager {
         }
     }
     
+    var sessionStartTime: TimeInterval = 0
+    private var lastDispatchedCommand: String = ""
+    private var lastDispatchedTime: TimeInterval = 0
+    private var processedCommandKeys = Set<String>()
+    
     // (HOST) Crea o si collega come Director
     func createSession(id: String, initialState: RemoteMatchState = RemoteMatchState(), completion: @escaping (Bool) -> Void) {
         ensureAuth { [weak self] uid in
@@ -45,30 +50,21 @@ class FirebaseManager {
             let hostUid = uid ?? UUID().uuidString
             self.isHost = true
             self.sessionId = id
+            self.sessionStartTime = Date().timeIntervalSince1970
             
-            print("Firebase HOST: Creating session \(id) with owner \(hostUid)")
+            print("Firebase HOST: Creating session \(id) with owner \(hostUid) at timestamp \(self.sessionStartTime)")
             self.stopListening()
             self.processedCommandKeys.removeAll()
             
             let sessionRef = self.ref.child("sessions/\(id)")
-            sessionRef.child("owner").setValue(hostUid)
-            sessionRef.child("state").setValue(initialState.toDictionary())
             
-            // Pulisci completamente i nodi di comando prima di attivare i listener per evitare replay di match precedenti
-            let dispatchGroup = DispatchGroup()
-            
-            dispatchGroup.enter()
-            sessionRef.child("commands").removeValue { _, _ in dispatchGroup.leave() }
-            
-            dispatchGroup.enter()
-            sessionRef.child("command").removeValue { _, _ in dispatchGroup.leave() }
-            
-            dispatchGroup.enter()
-            sessionRef.child("action").removeValue { _, _ in dispatchGroup.leave() }
-            
-            dispatchGroup.notify(queue: .main) {
-                self.listenForCommands()
-                completion(true)
+            // Pulisci completamente la sessione prima di scrivere per evitare replay di match precedenti
+            sessionRef.removeValue { _, _ in
+                sessionRef.child("owner").setValue(hostUid)
+                sessionRef.child("state").setValue(initialState.toDictionary()) { _, _ in
+                    self.listenForCommands()
+                    completion(true)
+                }
             }
         }
     }
@@ -117,21 +113,24 @@ class FirebaseManager {
         self.ref.child("sessions/\(id)/state").setValue(dict)
     }
     
-    private var lastDispatchedCommand: String = ""
-    private var lastDispatchedTime: TimeInterval = 0
-    private var processedCommandKeys = Set<String>()
-    
     // (CLIENT) Invia un comando all'Host
     func sendCommand(_ command: String) {
         guard let id = sessionId else { return }
         let cmdId = UUID().uuidString
+        let timestamp = Date().timeIntervalSince1970
         print("Firebase CLIENT: Sending command '\(command)' to session '\(id)' (cmdId: \(cmdId))")
-        self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(command)
+        let payload: [String: Any] = [
+            "command": command,
+            "action": command,
+            "timestamp": timestamp
+        ]
+        self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(payload)
+        self.ref.child("sessions/\(id)/command").setValue(command)
     }
     
     private func listenForCommands() {
         guard let id = sessionId else { return }
-        print("Firebase HOST: Listening for commands on session \(id)...")
+        print("Firebase HOST: Listening for commands on session \(id) from start time \(sessionStartTime)...")
         self.processedCommandKeys.removeAll()
         
         // 1. Ascolta sulla lista commands (standard Android & iOS Remote)
@@ -152,8 +151,9 @@ class FirebaseManager {
         
         // 2. Ascolta su command singolo (per telecomando Web)
         ref.child("sessions/\(id)/command").observe(.value) { [weak self] snapshot in
+            guard let self = self else { return }
             guard let val = snapshot.value as? String, !val.isEmpty else { return }
-            self?.dispatchCommandIfNew(val)
+            self.dispatchCommandIfNew(val)
             snapshot.ref.removeValue()
         }
     }
@@ -164,6 +164,11 @@ class FirebaseManager {
             return
         }
         if let dict = snapshot.value as? [String: Any] {
+            // Anti-replay check: se presente timestamp, scarta se anteriore alla sessione
+            if let ts = dict["timestamp"] as? TimeInterval, ts < (self.sessionStartTime - 2.0) {
+                print("Firebase HOST: Discarding stale pre-session command (timestamp: \(ts))")
+                return
+            }
             let possibleKeys = ["action", "command", "cmd", "type", "event", "name", "val", "value"]
             for key in possibleKeys {
                 if let val = dict[key] as? String, !val.isEmpty {

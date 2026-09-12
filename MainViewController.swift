@@ -213,14 +213,27 @@ class MainViewController: UIViewController {
         view.addGestureRecognizer(tap)
         self.backgroundTapGesture = tap
         
-        let sessionId = UserDefaults.standard.string(forKey: "remote_session_id") ?? "REGIA_01"
-        FirebaseManager.shared.createSession(id: sessionId, initialState: self.localState) { success in
-            print("Firebase Host Session Created: \(success)")
+        let sessionCode = "VS-" + String(UUID().uuidString.prefix(6)).uppercased()
+        UserDefaults.standard.set(sessionCode, forKey: "remote_session_id")
+        
+        FirebaseManager.shared.createSession(id: sessionCode, initialState: self.localState) { success in
+            print("Firebase Host Session Created: \(sessionCode) (success: \(success))")
         }
         
         FirebaseManager.shared.onCommandReceived = { [weak self] command in
             DispatchQueue.main.async {
                 self?.handleRemoteCommand(command)
+            }
+        }
+        
+        StreamManager.shared.onPublishStatusChanged = { [weak self] isPublishing in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.localState.isStreaming = isPublishing
+                self.localState.streamingStatus = isPublishing ? "LIVE" : "OFFLINE"
+                self.startStreamButton?.setTitle(isPublishing ? "STOP" : "GO\nLIVE", for: .normal)
+                self.startStreamButton?.backgroundColor = isPublishing ? .systemGray : UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+                self.updateLocalState(saveHistory: false)
             }
         }
     }
@@ -1279,10 +1292,13 @@ class MainViewController: UIViewController {
         guard isViewLoaded, let sv = scoreboardView else { return }
         
         UIDevice.current.isBatteryMonitoringEnabled = true
-        let bat = Int(UIDevice.current.batteryLevel * 100)
-        localState.batteryLevel = (bat > 0) ? bat : 100
-        localState.isStreaming = StreamManager.shared.isPublishing
-        localState.streamingStatus = StreamManager.shared.isPublishing ? "LIVE" : "OFFLINE"
+        let batLevel = UIDevice.current.batteryLevel
+        let bat = (batLevel >= 0) ? Int(batLevel * 100) : 100
+        localState.batteryLevel = max(1, bat)
+        
+        let streamingActive = StreamManager.shared.isPublishing || (startStreamButton?.title(for: .normal)?.contains("STOP") == true)
+        localState.isStreaming = streamingActive
+        localState.streamingStatus = streamingActive ? "LIVE" : "OFFLINE"
         localState.isMuted = isAudioMuted
         
         if saveHistory {
