@@ -12,8 +12,15 @@ class ReplayManager {
     }
     
     private var frameBuffer: [CIImage] = []
-    var replayDuration: Int = 5
-    var replaySpeed: Double = 0.4 // Rallentatore Broadcast Fluido (40% velocità)
+    var replayDuration: Int = UserDefaults.standard.integer(forKey: "replay_duration_seconds") == 0 ? 5 : UserDefaults.standard.integer(forKey: "replay_duration_seconds")
+    var replaySpeed: Double = UserDefaults.standard.double(forKey: "replay_speed_factor") == 0 ? 0.5 : UserDefaults.standard.double(forKey: "replay_speed_factor")
+    
+    // Stinger Transition (TV Broadcast animation before replay starts and after it ends)
+    var stingerStartTime: TimeInterval = 0
+    let stingerDuration: TimeInterval = 1.0 // 1.0s matching Android
+    var isStingerPlaying: Bool = false
+    var isOutroStinger: Bool = false
+    
     private var maxFrames: Int { return replayDuration * 30 }
     private var isRecording = true
     private var isPlaying = false
@@ -24,6 +31,13 @@ class ReplayManager {
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     
     private init() {}
+    
+    func configure(durationSeconds: Int, speedFactor: Double) {
+        queue.async {
+            self.replayDuration = max(5, min(durationSeconds, 10))
+            self.replaySpeed = speedFactor
+        }
+    }
     
     func recordFrame(_ image: CIImage) {
         guard isRecording else { return }
@@ -54,25 +68,94 @@ class ReplayManager {
     }
     
     func startPlayback() {
+        startReplay()
+    }
+    
+    func startReplay() {
         queue.async {
+            guard !self.frameBuffer.isEmpty else { return }
             self.isRecording = false
             self.isPlaying = true
+            self.isStingerPlaying = true
+            self.isOutroStinger = false
+            self.stingerStartTime = CACurrentMediaTime()
             self.playbackFraction = 0.0
+            DispatchQueue.main.async {
+                ReplayAudioPlayer.shared.playSwoosh()
+            }
         }
     }
     
     func stopPlayback() {
+        stopReplay()
+    }
+    
+    func stopReplay() {
+        queue.async {
+            if self.isPlaying && !self.isOutroStinger {
+                self.triggerOutroStinger()
+            } else if !self.isStingerPlaying {
+                self.forceStopReplay()
+            }
+        }
+    }
+    
+    func triggerOutroStinger() {
+        queue.async {
+            guard self.isPlaying, !self.isOutroStinger else { return }
+            self.isStingerPlaying = true
+            self.isOutroStinger = true
+            self.stingerStartTime = CACurrentMediaTime()
+            DispatchQueue.main.async {
+                ReplayAudioPlayer.shared.playSwoosh()
+            }
+        }
+    }
+    
+    func forceStopReplay() {
         queue.async {
             self.isPlaying = false
+            self.isStingerPlaying = false
+            self.isOutroStinger = false
             self.isRecording = true
             self.playbackFraction = 0.0
         }
+    }
+    
+    func getStingerProgress() -> Double {
+        var progress: Double = 0.0
+        queue.sync {
+            if !self.isStingerPlaying { return }
+            let elapsed = CACurrentMediaTime() - self.stingerStartTime
+            progress = min(max(elapsed / self.stingerDuration, 0.0), 1.0)
+        }
+        return progress
     }
     
     func getPlaybackFrame() -> CIImage? {
         var frame: CIImage?
         queue.sync {
             guard self.isPlaying, !self.frameBuffer.isEmpty else { return }
+            
+            if self.isStingerPlaying {
+                let elapsed = CACurrentMediaTime() - self.stingerStartTime
+                if elapsed >= self.stingerDuration {
+                    self.isStingerPlaying = false
+                    if self.isOutroStinger {
+                        self.isPlaying = false
+                        self.isOutroStinger = false
+                        self.isRecording = true
+                        self.playbackFraction = 0.0
+                        return
+                    }
+                } else {
+                    if !self.isOutroStinger {
+                        // Durante l'intro stinger teniamo il primo fotogramma del replay
+                        frame = self.frameBuffer.first
+                        return
+                    }
+                }
+            }
             
             let idx = min(Int(self.playbackFraction), self.frameBuffer.count - 1)
             frame = self.frameBuffer[idx]
@@ -81,10 +164,15 @@ class ReplayManager {
             self.playbackFraction += self.replaySpeed
             
             if Int(self.playbackFraction) >= self.frameBuffer.count {
-                // Fine del replay
-                self.isPlaying = false
-                self.isRecording = true
-                self.playbackFraction = 0.0
+                // Raggiunta la fine del replay: attiva la transizione stinger in uscita (Outro)
+                if !self.isOutroStinger {
+                    self.isStingerPlaying = true
+                    self.isOutroStinger = true
+                    self.stingerStartTime = CACurrentMediaTime()
+                    DispatchQueue.main.async {
+                        ReplayAudioPlayer.shared.playSwoosh()
+                    }
+                }
             }
         }
         return frame
@@ -94,6 +182,18 @@ class ReplayManager {
         var playing = false
         queue.sync { playing = self.isPlaying }
         return playing
+    }
+    
+    var isStingerActive: Bool {
+        var active = false
+        queue.sync { active = self.isStingerPlaying }
+        return active
+    }
+    
+    var isOutroActive: Bool {
+        var outro = false
+        queue.sync { outro = self.isOutroStinger }
+        return outro
     }
     
     func saveHighlightClip(completion: @escaping (Bool, String?) -> Void) {

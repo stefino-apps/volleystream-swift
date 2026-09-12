@@ -1142,4 +1142,138 @@ class ScoreboardOverlayView: UIView {
         
         ctx.restoreGState()
     }
+    
+    // MARK: - Replay TV Stinger & Flashing Badge
+    
+    func drawReplayBadge(ctx: CGContext, rect: CGRect) {
+        ctx.saveGState()
+        let text = "REPLAY"
+        let pStyle = NSMutableParagraphStyle()
+        pStyle.alignment = .center
+        
+        let font = UIFont.systemFont(ofSize: min(60.0, rect.height * 0.075), weight: .black)
+        let x: CGFloat = 0
+        let y: CGFloat = max(24.0, rect.height * 0.04)
+        let textRect = CGRect(x: x, y: y, width: rect.width, height: 70)
+        
+        // 1. Dark Shadow Stroke
+        let shadowAttrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor.clear,
+            .strokeColor: UIColor(white: 0.0, alpha: 0.8),
+            .strokeWidth: -10.0,
+            .paragraphStyle: pStyle
+        ]
+        text.draw(in: CGRect(x: textRect.origin.x, y: textRect.origin.y + 4, width: textRect.width, height: textRect.height), withAttributes: shadowAttrs)
+        
+        // 2. Red Outline & White Fill
+        let redAttrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor.white,
+            .strokeColor: UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0),
+            .strokeWidth: -6.0,
+            .paragraphStyle: pStyle
+        ]
+        text.draw(in: textRect, withAttributes: redAttrs)
+        
+        ctx.restoreGState()
+    }
+    
+    func drawReplayStingerTransition(ctx: CGContext, rect: CGRect, progress: Double, isOutro: Bool) {
+        ctx.saveGState()
+        let sweepProgress = CGFloat(progress)
+        
+        let width = rect.width
+        let height = rect.height
+        
+        // Intro: from left to right (-width to 2*width)
+        // Outro: from right to left (2*width to -width)
+        let sweepX: CGFloat = isOutro ? (width * 2.0 - sweepProgress * width * 3.0) : (-width + sweepProgress * width * 3.0)
+        let stingerText = isOutro ? "LIVE" : "REPLAY"
+        
+        // 1. Diagonal dark background band
+        let pathDark = UIBezierPath()
+        pathDark.move(to: CGPoint(x: sweepX - width * 0.25, y: 0))
+        pathDark.addLine(to: CGPoint(x: sweepX + width * 0.85, y: 0))
+        pathDark.addLine(to: CGPoint(x: sweepX + width * 0.65, y: height))
+        pathDark.addLine(to: CGPoint(x: sweepX - width * 0.45, y: height))
+        pathDark.close()
+        
+        UIColor(red: 11/255, green: 19/255, blue: 43/255, alpha: 0.94).setFill()
+        pathDark.fill()
+        
+        // 2. Red accent diagonal stripe
+        let pathRed = UIBezierPath()
+        pathRed.move(to: CGPoint(x: sweepX + width * 0.78, y: 0))
+        pathRed.addLine(to: CGPoint(x: sweepX + width * 0.86, y: 0))
+        pathRed.addLine(to: CGPoint(x: sweepX + width * 0.66, y: height))
+        pathRed.addLine(to: CGPoint(x: sweepX + width * 0.58, y: height))
+        pathRed.close()
+        
+        UIColor(red: 220/255, green: 38/255, blue: 38/255, alpha: 1.0).setFill()
+        pathRed.fill()
+        
+        // 3. Cyan accent diagonal stripe
+        let pathCyan = UIBezierPath()
+        pathCyan.move(to: CGPoint(x: sweepX - width * 0.28, y: 0))
+        pathCyan.addLine(to: CGPoint(x: sweepX - width * 0.22, y: 0))
+        pathCyan.addLine(to: CGPoint(x: sweepX - width * 0.42, y: height))
+        pathCyan.addLine(to: CGPoint(x: sweepX - width * 0.48, y: height))
+        pathCyan.close()
+        
+        UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0).setFill()
+        pathCyan.fill()
+        
+        // 4. Centered Badge Element (with scale & alpha animation when progress is 0.15...0.85)
+        if sweepProgress >= 0.15 && sweepProgress <= 0.85 {
+            let centerProgress = (sweepProgress - 0.15) / 0.70
+            let alpha: CGFloat = centerProgress < 0.2 ? (centerProgress / 0.2) : (centerProgress > 0.8 ? ((1.0 - centerProgress) / 0.2) : 1.0)
+            let scale: CGFloat = 0.85 + 0.30 * CGFloat(sin(Double(centerProgress) * .pi))
+            
+            ctx.saveGState()
+            ctx.translateBy(x: rect.midX, y: rect.midY)
+            ctx.scaleBy(x: scale, y: scale)
+            
+            let boxW: CGFloat = min(620.0, rect.width * 0.45)
+            let boxH: CGFloat = min(160.0, rect.height * 0.18)
+            let boxRect = CGRect(x: -boxW / 2, y: -boxH / 2, width: boxW, height: boxH)
+            let boxPath = UIBezierPath(roundedRect: boxRect, cornerRadius: 24.0)
+            
+            UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: alpha * 0.95).setFill()
+            boxPath.fill()
+            
+            UIColor(red: 220/255, green: 38/255, blue: 38/255, alpha: alpha).setStroke()
+            boxPath.lineWidth = 4.0
+            boxPath.stroke()
+            
+            let pStyle = NSMutableParagraphStyle()
+            pStyle.alignment = .center
+            
+            let font = UIFont.systemFont(ofSize: min(80.0, boxH * 0.55), weight: .black)
+            
+            // Text Shadow
+            let textShadowAttrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: UIColor.clear,
+                .strokeColor: UIColor(white: 0.0, alpha: alpha * 0.8),
+                .strokeWidth: -12.0,
+                .paragraphStyle: pStyle
+            ]
+            stingerText.draw(in: CGRect(x: -boxW / 2, y: -boxH * 0.32, width: boxW, height: boxH), withAttributes: textShadowAttrs)
+            
+            // Text Fill
+            let textFillAttrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: UIColor(white: 1.0, alpha: alpha),
+                .strokeColor: UIColor(red: 220/255, green: 38/255, blue: 38/255, alpha: alpha * 0.8),
+                .strokeWidth: -3.0,
+                .paragraphStyle: pStyle
+            ]
+            stingerText.draw(in: CGRect(x: -boxW / 2, y: -boxH * 0.32, width: boxW, height: boxH), withAttributes: textFillAttrs)
+            
+            ctx.restoreGState()
+        }
+        
+        ctx.restoreGState()
+    }
 }

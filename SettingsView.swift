@@ -366,6 +366,15 @@ struct SettingsView: View {
                     }
                     .padding(.vertical, 4)
                 }
+                
+                // Scoreboard Theme Live Preview
+                ScoreboardThemePreviewCard(
+                    themeId: selectedTheme,
+                    teamA: teamHome.isEmpty ? "CASA" : teamHome,
+                    teamB: teamAway.isEmpty ? "OSPITE" : teamAway,
+                    sport: selectedSport
+                )
+                .padding(.top, 4)
             }
             .padding(.top, 4)
         }
@@ -379,44 +388,61 @@ struct SettingsView: View {
     private var cardTeamA: some View {
         HStack(alignment: .center, spacing: 16) {
             // Logo A Picker
-            PhotosPicker(selection: $logoHomePickerItem, matching: .images) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color(hex: "#050b16"))
-                        .frame(width: 64, height: 64)
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(hex: "#1e293b"), lineWidth: 1))
-                    
-                    if let img = logoHomeImage {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 52, height: 52)
-                            .cornerRadius(10)
-                    } else {
-                        VStack(spacing: 2) {
-                            Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
-                            Text("LOGO")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+            ZStack(alignment: .topTrailing) {
+                PhotosPicker(selection: $logoHomePickerItem, matching: .images) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(hex: "#050b16"))
+                            .frame(width: 64, height: 64)
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(hex: "#1e293b"), lineWidth: 1))
+                        
+                        if let img = logoHomeImage {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 52, height: 52)
+                                .cornerRadius(10)
+                        } else {
+                            VStack(spacing: 2) {
+                                Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+                                Text("LOGO")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+                            }
                         }
                     }
                 }
-            }
-            .onChange(of: logoHomePickerItem) { newItem in
-                if !storeManager.canUseFeature(.customLogos) {
-                    showPremiumPaywall = true
-                    logoHomePickerItem = nil
-                    return
-                }
-                Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self),
-                       let uiImg = UIImage(data: data) {
-                        AppPreferences.shared.saveImage(data, name: "logo_team_a.png")
-                        AppPreferences.shared.saveImage(data, name: "logoHome.png")
-                        DispatchQueue.main.async { self.logoHomeImage = uiImg }
+                .onChange(of: logoHomePickerItem) { newItem in
+                    if !storeManager.canUseFeature(.customLogos) {
+                        showPremiumPaywall = true
+                        logoHomePickerItem = nil
+                        return
                     }
+                    Task {
+                        if let data = try? await newItem?.loadTransferable(type: Data.self),
+                           let uiImg = UIImage(data: data) {
+                            AppPreferences.shared.saveImage(data, name: "logo_team_a.png")
+                            AppPreferences.shared.saveImage(data, name: "logoHome.png")
+                            DispatchQueue.main.async { self.logoHomeImage = uiImg }
+                        }
+                    }
+                }
+                
+                if logoHomeImage != nil {
+                    Button(action: {
+                        logoHomeImage = nil
+                        logoHomePickerItem = nil
+                        AppPreferences.shared.deleteImage(name: "logo_team_a.png")
+                        AppPreferences.shared.deleteImage(name: "logoHome.png")
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(hex: "#EF4444"))
+                            .background(Circle().fill(Color.black))
+                    }
+                    .offset(x: 6, y: -6)
                 }
             }
             
@@ -477,44 +503,61 @@ struct SettingsView: View {
     private var cardTeamB: some View {
         HStack(alignment: .center, spacing: 16) {
             // Logo B Picker
-            PhotosPicker(selection: $logoAwayPickerItem, matching: .images) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color(hex: "#050b16"))
-                        .frame(width: 64, height: 64)
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(hex: "#1e293b"), lineWidth: 1))
-                    
-                    if let img = logoAwayImage {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 52, height: 52)
-                            .cornerRadius(10)
-                    } else {
-                        VStack(spacing: 2) {
-                            Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
-                            Text("LOGO")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+            ZStack(alignment: .topTrailing) {
+                PhotosPicker(selection: $logoAwayPickerItem, matching: .images) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(hex: "#050b16"))
+                            .frame(width: 64, height: 64)
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(hex: "#1e293b"), lineWidth: 1))
+                        
+                        if let img = logoAwayImage {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 52, height: 52)
+                                .cornerRadius(10)
+                        } else {
+                            VStack(spacing: 2) {
+                                Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+                                Text("LOGO")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+                            }
                         }
                     }
                 }
-            }
-            .onChange(of: logoAwayPickerItem) { newItem in
-                if !storeManager.canUseFeature(.customLogos) {
-                    showPremiumPaywall = true
-                    logoAwayPickerItem = nil
-                    return
-                }
-                Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self),
-                       let uiImg = UIImage(data: data) {
-                        AppPreferences.shared.saveImage(data, name: "logo_team_b.png")
-                        AppPreferences.shared.saveImage(data, name: "logoAway.png")
-                        DispatchQueue.main.async { self.logoAwayImage = uiImg }
+                .onChange(of: logoAwayPickerItem) { newItem in
+                    if !storeManager.canUseFeature(.customLogos) {
+                        showPremiumPaywall = true
+                        logoAwayPickerItem = nil
+                        return
                     }
+                    Task {
+                        if let data = try? await newItem?.loadTransferable(type: Data.self),
+                           let uiImg = UIImage(data: data) {
+                            AppPreferences.shared.saveImage(data, name: "logo_team_b.png")
+                            AppPreferences.shared.saveImage(data, name: "logoAway.png")
+                            DispatchQueue.main.async { self.logoAwayImage = uiImg }
+                        }
+                    }
+                }
+                
+                if logoAwayImage != nil {
+                    Button(action: {
+                        logoAwayImage = nil
+                        logoAwayPickerItem = nil
+                        AppPreferences.shared.deleteImage(name: "logo_team_b.png")
+                        AppPreferences.shared.deleteImage(name: "logoAway.png")
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(hex: "#EF4444"))
+                            .background(Circle().fill(Color.black))
+                    }
+                    .offset(x: 6, y: -6)
                 }
             }
             
@@ -621,48 +664,65 @@ struct SettingsView: View {
     }
     
     private func sponsorSlot(index: Int) -> some View {
-        PhotosPicker(selection: Binding(
-            get: { sponsorPickerItems[index] },
-            set: { sponsorPickerItems[index] = $0 }
-        ), matching: .images) {
-            VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "#050b16"))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 58)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#1e293b"), lineWidth: 1))
-                    
-                    if let img = sponsorImages[index] {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 46)
-                            .cornerRadius(8)
-                    } else {
-                        Image(systemName: !storeManager.canUseFeature(.sponsors) ? "lock.fill" : "plus")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(!storeManager.canUseFeature(.sponsors) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+        ZStack(alignment: .topTrailing) {
+            PhotosPicker(selection: Binding(
+                get: { sponsorPickerItems[index] },
+                set: { sponsorPickerItems[index] = $0 }
+            ), matching: .images) {
+                VStack(spacing: 6) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(hex: "#050b16"))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 58)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#1e293b"), lineWidth: 1))
+                        
+                        if let img = sponsorImages[index] {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 46)
+                                .cornerRadius(8)
+                        } else {
+                            Image(systemName: !storeManager.canUseFeature(.sponsors) ? "lock.fill" : "plus")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(!storeManager.canUseFeature(.sponsors) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+                        }
+                    }
+                    Text("\(index + 1)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+            .onChange(of: sponsorPickerItems[index]) { newItem in
+                if !storeManager.canUseFeature(.sponsors) {
+                    showPremiumPaywall = true
+                    sponsorPickerItems[index] = nil
+                    return
+                }
+                Task {
+                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                       let uiImg = UIImage(data: data) {
+                        AppPreferences.shared.saveImage(data, name: "sponsor_\(index + 1).png")
+                        if index == 0 { AppPreferences.shared.saveImage(data, name: "sponsorFull.png") }
+                        DispatchQueue.main.async { self.sponsorImages[index] = uiImg }
                     }
                 }
-                Text("\(index + 1)")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(Color(hex: "#64748b"))
             }
-        }
-        .onChange(of: sponsorPickerItems[index]) { newItem in
-            if !storeManager.canUseFeature(.sponsors) {
-                showPremiumPaywall = true
-                sponsorPickerItems[index] = nil
-                return
-            }
-            Task {
-                if let data = try? await newItem?.loadTransferable(type: Data.self),
-                   let uiImg = UIImage(data: data) {
-                    AppPreferences.shared.saveImage(data, name: "sponsor_\(index + 1).png")
-                    if index == 0 { AppPreferences.shared.saveImage(data, name: "sponsorFull.png") }
-                    DispatchQueue.main.async { self.sponsorImages[index] = uiImg }
+            
+            if sponsorImages[index] != nil {
+                Button(action: {
+                    sponsorImages[index] = nil
+                    sponsorPickerItems[index] = nil
+                    AppPreferences.shared.deleteImage(name: "sponsor_\(index + 1).png")
+                    if index == 0 { AppPreferences.shared.deleteImage(name: "sponsorFull.png") }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "#EF4444"))
+                        .background(Circle().fill(Color.black))
                 }
+                .offset(x: 4, y: -4)
             }
         }
     }
@@ -721,52 +781,71 @@ struct SettingsView: View {
     }
     
     private func bannerSlot(index: Int) -> some View {
-        PhotosPicker(selection: Binding(
-            get: { bannerPickerItems[index] },
-            set: { bannerPickerItems[index] = $0 }
-        ), matching: .images) {
-            VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "#050b16"))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#1e293b"), lineWidth: 1))
-                    
-                    if let img = bannerImages[index] {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 42)
-                            .cornerRadius(6)
-                    } else {
-                        Image(systemName: !storeManager.canUseFeature(.sponsors) ? "lock.fill" : "plus")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(!storeManager.canUseFeature(.sponsors) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+        ZStack(alignment: .topTrailing) {
+            PhotosPicker(selection: Binding(
+                get: { bannerPickerItems[index] },
+                set: { bannerPickerItems[index] = $0 }
+            ), matching: .images) {
+                VStack(spacing: 6) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(hex: "#050b16"))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#1e293b"), lineWidth: 1))
+                        
+                        if let img = bannerImages[index] {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 42)
+                                .cornerRadius(6)
+                        } else {
+                            Image(systemName: !storeManager.canUseFeature(.sponsors) ? "lock.fill" : "plus")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(!storeManager.canUseFeature(.sponsors) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
+                        }
+                    }
+                    Text("\(index + 1)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+            .onChange(of: bannerPickerItems[index]) { newItem in
+                if !storeManager.canUseFeature(.sponsors) {
+                    showPremiumPaywall = true
+                    bannerPickerItems[index] = nil
+                    return
+                }
+                Task {
+                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                       let uiImg = UIImage(data: data) {
+                        AppPreferences.shared.saveImage(data, name: "banner_\(index + 1).png")
+                        AppPreferences.shared.saveImage(data, name: "sponsorRotating_\(index).png")
+                        DispatchQueue.main.async {
+                            self.bannerImages[index] = uiImg
+                            let count = self.bannerImages.filter { $0 != nil }.count
+                            UserDefaults.standard.set(count, forKey: "rotating_sponsors_count")
+                        }
                     }
                 }
-                Text("\(index + 1)")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(Color(hex: "#64748b"))
             }
-        }
-        .onChange(of: bannerPickerItems[index]) { newItem in
-            if !storeManager.canUseFeature(.sponsors) {
-                showPremiumPaywall = true
-                bannerPickerItems[index] = nil
-                return
-            }
-            Task {
-                if let data = try? await newItem?.loadTransferable(type: Data.self),
-                   let uiImg = UIImage(data: data) {
-                    AppPreferences.shared.saveImage(data, name: "banner_\(index + 1).png")
-                    AppPreferences.shared.saveImage(data, name: "sponsorRotating_\(index).png")
-                    DispatchQueue.main.async {
-                        self.bannerImages[index] = uiImg
-                        let count = self.bannerImages.filter { $0 != nil }.count
-                        UserDefaults.standard.set(count, forKey: "rotating_sponsors_count")
-                    }
+            
+            if bannerImages[index] != nil {
+                Button(action: {
+                    bannerImages[index] = nil
+                    bannerPickerItems[index] = nil
+                    AppPreferences.shared.deleteImage(name: "banner_\(index + 1).png")
+                    AppPreferences.shared.deleteImage(name: "sponsorRotating_\(index).png")
+                    let count = bannerImages.filter { $0 != nil }.count
+                    UserDefaults.standard.set(count, forKey: "rotating_sponsors_count")
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "#EF4444"))
+                        .background(Circle().fill(Color.black))
                 }
+                .offset(x: 4, y: -4)
             }
         }
     }
@@ -850,6 +929,7 @@ struct SettingsView: View {
                     Picker("Durata Replay", selection: $replayDuration) {
                         Text("5 secondi").tag(5)
                         Text("7 secondi").tag(7)
+                        Text("10 secondi").tag(10)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     
@@ -1101,6 +1181,233 @@ struct SettingsView: View {
         withAnimation { toastMessage = msg }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             withAnimation { self.toastMessage = nil }
+        }
+    }
+}
+
+// MARK: - Scoreboard Theme Live Preview Card (matching Android ThemeSpinnerAdapter)
+struct ScoreboardThemePreviewCard: View {
+    let themeId: String
+    let teamA: String
+    let teamB: String
+    let sport: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("ANTEPRIMA GRAFICA IN DIRETTA")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(Color(hex: "#64748b"))
+                .tracking(1.0)
+            
+            ZStack {
+                previewBackground
+                
+                VStack(spacing: 2) {
+                    if themeId == "classic" {
+                        classicTopBar
+                    }
+                    
+                    HStack(spacing: 8) {
+                        // Team A Name
+                        Text(teamA.uppercased())
+                            .font(.system(size: 12, weight: .black))
+                            .foregroundColor(teamNameColorA)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        
+                        // Score A
+                        Text("25")
+                            .font(.system(size: 17, weight: .black))
+                            .foregroundColor(scoreColorA)
+                            .frame(minWidth: 26)
+                        
+                        // Center Set Badge / Divider
+                        centerBadge
+                        
+                        // Score B
+                        Text("21")
+                            .font(.system(size: 17, weight: .black))
+                            .foregroundColor(scoreColorB)
+                            .frame(minWidth: 26)
+                        
+                        // Team B Name
+                        Text(teamB.uppercased())
+                            .font(.system(size: 12, weight: .black))
+                            .foregroundColor(teamNameColorB)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, themeId == "minimal" ? 3 : 5)
+                    
+                    if themeId == "minimal" || themeId.contains("odometer") {
+                        bottomPillBadge
+                    }
+                }
+                .padding(.vertical, 3)
+            }
+            .frame(height: 56)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(borderColor, lineWidth: 1.5)
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private var previewBackground: some View {
+        switch themeId {
+        case "neon":
+            Color(hex: "#090D16")
+        case "minimal":
+            Color(hex: "#0F172A")
+        case "glass":
+            Color(hex: "#141E33").opacity(0.85)
+        case "classic":
+            Color(hex: "#003366")
+        case "odometer_blue":
+            LinearGradient(
+                colors: [Color(hex: "#001D3D"), Color(hex: "#003566"), Color(hex: "#00509E")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case "odometer_red":
+            LinearGradient(
+                colors: [Color(hex: "#4A0404"), Color(hex: "#8B0000"), Color(hex: "#C62828")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case "odometer_dark":
+            LinearGradient(
+                colors: [Color(hex: "#0D0D0D"), Color(hex: "#1A1A2E"), Color(hex: "#16213E")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        default:
+            Color(hex: "#090D16")
+        }
+    }
+    
+    private var borderColor: Color {
+        switch themeId {
+        case "neon": return Color(hex: "#06B6D4")
+        case "minimal": return Color(hex: "#475569")
+        case "glass": return Color.white.opacity(0.3)
+        case "classic": return Color(hex: "#FFD700")
+        case "odometer_blue": return Color(hex: "#00A8E8")
+        case "odometer_red": return Color(hex: "#FF6B6B")
+        case "odometer_dark": return Color(hex: "#E94560")
+        default: return Color(hex: "#06B6D4")
+        }
+    }
+    
+    private var teamNameColorA: Color {
+        switch themeId {
+        case "neon": return Color(hex: "#F472B6")
+        case "classic": return Color(hex: "#FFD700")
+        case "odometer_blue": return Color(hex: "#E0F2FE")
+        case "odometer_red": return Color(hex: "#FEF08A")
+        case "odometer_dark": return Color(hex: "#FECDD3")
+        default: return .white
+        }
+    }
+    
+    private var teamNameColorB: Color {
+        switch themeId {
+        case "neon": return Color(hex: "#67E8F9")
+        case "classic": return Color(hex: "#FFD700")
+        case "odometer_blue": return Color(hex: "#E0F2FE")
+        case "odometer_red": return Color(hex: "#FEF08A")
+        case "odometer_dark": return Color(hex: "#FECDD3")
+        default: return .white
+        }
+    }
+    
+    private var scoreColorA: Color {
+        switch themeId {
+        case "neon": return Color(hex: "#EC4899")
+        case "classic": return .white
+        case "odometer_blue": return Color(hex: "#90E0EF")
+        case "odometer_red": return Color(hex: "#FFD93D")
+        case "odometer_dark": return Color(hex: "#E94560")
+        default: return .white
+        }
+    }
+    
+    private var scoreColorB: Color {
+        switch themeId {
+        case "neon": return Color(hex: "#06B6D4")
+        case "classic": return .white
+        case "odometer_blue": return Color(hex: "#90E0EF")
+        case "odometer_red": return Color(hex: "#FFD93D")
+        case "odometer_dark": return Color(hex: "#E94560")
+        default: return .white
+        }
+    }
+    
+    @ViewBuilder
+    private var centerBadge: some View {
+        if themeId == "classic" {
+            Text("SET 3")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(Color(hex: "#FFD700"))
+                .padding(.horizontal, 4)
+        } else if themeId == "glass" {
+            Text("SET 3")
+                .font(.system(size: 8, weight: .black))
+                .foregroundColor(.white)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color.white.opacity(0.15))
+                .cornerRadius(4)
+        } else if themeId == "neon" {
+            Text("SET 3")
+                .font(.system(size: 8, weight: .black))
+                .foregroundColor(.white)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color(hex: "#06B6D4").opacity(0.3))
+                .cornerRadius(4)
+        } else {
+            Text("•")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(borderColor)
+        }
+    }
+    
+    @ViewBuilder
+    private var classicTopBar: some View {
+        HStack {
+            Text("LIVE MATCH")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(Color(hex: "#FFD700"))
+            Spacer()
+            Text("SET 2 - 1")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, 10)
+    }
+    
+    @ViewBuilder
+    private var bottomPillBadge: some View {
+        if themeId == "minimal" {
+            Text("SET 3  |  2 - 1")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(Color(hex: "#0F172A"))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 1)
+                .background(Color(hex: "#E2E8F0"))
+                .cornerRadius(8)
+        } else {
+            Text("SET 3 (2-1)")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(.black)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 1)
+                .background(Color(hex: "#FFD60A"))
+                .cornerRadius(8)
         }
     }
 }

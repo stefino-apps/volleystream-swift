@@ -32,14 +32,13 @@ class StreamVideoEffect: VideoEffect {
         var outputImage = image
         
         let currentlyReplaying = ReplayManager.shared.isReplaying
-        if currentlyReplaying != lastReplayState {
-            isTransitioningToReplay = true
-            stingerFrameCount = 15 // 0.25 sec @ 60fps
-            lastReplayState = currentlyReplaying
-        }
+        let isStinger = ReplayManager.shared.isStingerActive
+        let isOutro = ReplayManager.shared.isOutroActive
+        let stingerProgress = ReplayManager.shared.getStingerProgress()
         
         if currentlyReplaying {
-            if let replayFrame = ReplayManager.shared.getPlaybackFrame() {
+            let showReplay = !(isOutro && stingerProgress >= 0.5)
+            if showReplay, let replayFrame = ReplayManager.shared.getPlaybackFrame() {
                 outputImage = replayFrame
             }
         }
@@ -62,12 +61,6 @@ class StreamVideoEffect: VideoEffect {
             }
         }
         
-        if isTransitioningToReplay {
-            stingerFrameCount -= 1
-            if stingerFrameCount <= 0 { isTransitioningToReplay = false }
-            let flash = CIImage(color: CIColor.white).cropped(to: outputImage.extent)
-            return flash.composited(over: outputImage)
-        }
         return outputImage
     }
     
@@ -103,6 +96,21 @@ class StreamVideoEffect: VideoEffect {
                     sv.draw(CGRect(x: 0, y: 0, width: 240, height: 58))
                 }
                 context.cgContext.restoreGState()
+                
+                // Disegna la scritta REPLAY lampeggiante in alto al centro per tutta la durata del Replay
+                if ReplayManager.shared.isReplaying && !ReplayManager.shared.isStingerActive {
+                    let show = ((Int(Date().timeIntervalSince1970 * 1000) % 600) < 400)
+                    if show {
+                        sv.drawReplayBadge(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+                    }
+                }
+                
+                // Disegna l'animazione di transizione Stinger (Intro e Outro) TV broadcast a tutto schermo
+                if ReplayManager.shared.isStingerActive {
+                    let progress = ReplayManager.shared.getStingerProgress()
+                    let isOutro = ReplayManager.shared.isOutroActive
+                    sv.drawReplayStingerTransition(ctx: context.cgContext, rect: CGRect(x: 0, y: 0, width: 1920, height: 1080), progress: progress, isOutro: isOutro)
+                }
                 
                 // Disegna l'animazione Set Point / Match Point al centro dello schermo (1920x1080) per 4 secondi
                 if sv.isBlinkingAlert, let sp = sv.getSetPointInfo(state: state) {
