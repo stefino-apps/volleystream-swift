@@ -35,6 +35,7 @@ class ReplayManager {
     private var isPlaying = false
     private var playbackFraction: Double = 0.0
     private var lastRecordedTime: TimeInterval = 0
+    private var lastPlaybackTime: TimeInterval = 0
     
     // Registrazione continua audio per Highlights
     private var audioRecorder: AVAudioRecorder?
@@ -150,10 +151,11 @@ class ReplayManager {
             self.isStingerPlaying = true
             self.isOutroStinger = false
             self.stingerStartTime = CACurrentMediaTime()
+            self.lastPlaybackTime = 0
             self.playbackFraction = 0.0
             
             DispatchQueue.main.async {
-                ReplayAudioPlayer.shared.playSwoosh()
+                ReplayAudioPlayer.shared.playSwoosh() // Effetto audio SOLO all'inizio del Replay
                 self.onReplayStateChanged?(true)
             }
         }
@@ -179,9 +181,7 @@ class ReplayManager {
             self.isStingerPlaying = true
             self.isOutroStinger = true
             self.stingerStartTime = CACurrentMediaTime()
-            DispatchQueue.main.async {
-                ReplayAudioPlayer.shared.playSwoosh()
-            }
+            // Nessun effetto audio in uscita dal replay su richiesta utente
         }
     }
     
@@ -192,6 +192,7 @@ class ReplayManager {
             self.isOutroStinger = false
             self.isRecording = true
             self.playbackFraction = 0.0
+            self.lastPlaybackTime = 0
             self.playbackBuffer.removeAll()
             DispatchQueue.main.async {
                 self.onReplayStateChanged?(false)
@@ -214,16 +215,20 @@ class ReplayManager {
         queue.sync {
             guard self.isPlaying, !self.playbackBuffer.isEmpty else { return }
             
+            let now = CACurrentMediaTime()
+            
             if self.isStingerPlaying {
-                let elapsed = CACurrentMediaTime() - self.stingerStartTime
+                let elapsed = now - self.stingerStartTime
                 if elapsed >= self.stingerDuration {
                     self.isStingerPlaying = false
+                    self.lastPlaybackTime = now
                     if self.isOutroStinger {
                         // Replay terminato: torna alla trasmissione live
                         self.isPlaying = false
                         self.isOutroStinger = false
                         self.isRecording = true
                         self.playbackFraction = 0.0
+                        self.lastPlaybackTime = 0
                         self.playbackBuffer.removeAll()
                         DispatchQueue.main.async {
                             self.onReplayStateChanged?(false)
@@ -245,8 +250,18 @@ class ReplayManager {
             let buffer = self.playbackBuffer[idx]
             frame = CIImage(cvPixelBuffer: buffer).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
             
-            // Avanzamento a velocità rallentata (Slow Motion: es. 0.5x aggiunge 0.5 per frame)
-            self.playbackFraction += self.replaySpeed
+            // Avanzamento a tempo reale calibrato per il vero RALLENTATORE (Slow Motion)
+            let dt: Double
+            if self.lastPlaybackTime == 0 {
+                dt = 0.016 // ~60fps step
+            } else {
+                dt = min(max(now - self.lastPlaybackTime, 0.001), 0.050)
+            }
+            self.lastPlaybackTime = now
+            
+            // 30 frame/secondo registrati: a 0.5x avanziamo di 15 frame ogni secondo di orologio
+            let deltaFrames = dt * 30.0 * self.replaySpeed
+            self.playbackFraction += deltaFrames
             
             if Int(self.playbackFraction) >= self.playbackBuffer.count {
                 // Raggiunta la fine dell'azione: attiva lo stinger in uscita (Outro verso LIVE)
@@ -254,9 +269,7 @@ class ReplayManager {
                     self.isStingerPlaying = true
                     self.isOutroStinger = true
                     self.stingerStartTime = CACurrentMediaTime()
-                    DispatchQueue.main.async {
-                        ReplayAudioPlayer.shared.playSwoosh()
-                    }
+                    // Nessun audio swoosh in uscita dal replay
                 }
             }
         }
