@@ -164,18 +164,20 @@ struct WelcomeView: View {
                                 
                                 Button(action: { navigateToRemote = true }) {
                                     Text("btn_remote_mode".localized)
-                                        .font(.system(size: 13, weight: .bold))
+                                        .font(.system(size: 16, weight: .heavy))
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 14)
+                                        .frame(minHeight: 58)
+                                        .padding(.vertical, 16)
                                         .background(Color(hex: "#EF4444"))
-                                        .cornerRadius(8)
+                                        .cornerRadius(10)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color.white, lineWidth: 2)
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(Color.white, lineWidth: 2.5)
                                         )
                                 }
-                                .padding(.top, 12)
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.top, 14)
                                 
                                 NavigationLink(destination: RemoteControlView(), isActive: $navigateToRemote) {
                                     EmptyView()
@@ -309,22 +311,23 @@ struct AndroidBadgeView: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .font(.system(size: 17, weight: .bold))
+                .font(.system(size: 19, weight: .bold))
                 .foregroundColor(Color(hex: "#00FFCC"))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.85)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 56)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .background(Color(hex: "#0f172a").opacity(0.4))
-                .cornerRadius(8)
+                .frame(minHeight: 64)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
+                .background(Color(hex: "#0f172a").opacity(0.5))
+                .cornerRadius(10)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(hex: "#FACC15"), lineWidth: 1.5)
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color(hex: "#FACC15"), lineWidth: 2)
                 )
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

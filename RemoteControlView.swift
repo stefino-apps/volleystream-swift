@@ -76,7 +76,7 @@ struct RemoteControlView: View {
                         
                         Button(action: {
                             if let url = URL(string: "https://volleystreampro.com/remote") {
-                                UIApplication.shared.open(url)
+                                UIApplication.shared.open(url, options: [:], completionHandler: nil)
                             }
                         }) {
                             Text("CLICCA QUI")
@@ -86,6 +86,7 @@ struct RemoteControlView: View {
                                 .background(Color(hex: "#D97706"))
                                 .cornerRadius(6)
                         }
+                        .buttonStyle(PlainButtonStyle())
                         
                         Text("Se i link non aprono l'app automaticamente: 1. Clicca il pulsante qui sopra 2. Cerca 'Apri per impostazione predefinita' o 'Link supportati' 3. Seleziona la casella 'volleystreampro.com'")
                             .font(.system(size: 12))
