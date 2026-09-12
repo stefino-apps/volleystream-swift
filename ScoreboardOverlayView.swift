@@ -43,12 +43,13 @@ class ScoreboardOverlayView: UIView {
     
     private func setupDisplayLink() {
         displayLink = CADisplayLink(target: self, selector: #selector(handleDisplayTick))
-        displayLink?.preferredFramesPerSecond = 15
+        displayLink?.preferredFramesPerSecond = 10
         displayLink?.isPaused = true
         displayLink?.add(to: .main, forMode: .common)
     }
     
     func triggerTimeoutAlert(teamName: String) {
+        self.isBlinkingAlert = false
         self.timeoutTeamName = teamName
         self.timeoutStartTime = Date().timeIntervalSince1970
         self.isBlinkingTimeout = true
@@ -59,8 +60,8 @@ class ScoreboardOverlayView: UIView {
     
     @objc private func handleDisplayTick() {
         let now = Date().timeIntervalSince1970
-        // Limita il tick di ridisegno a max 12 FPS durante il lampeggio per preservare il 99% della CPU
-        guard (now - lastTickTime) >= 0.08 else { return }
+        // Limita il tick di ridisegno a max 3 FPS durante il lampeggio per un uso CPU praticamente a zero
+        guard (now - lastTickTime) >= 0.35 else { return }
         lastTickTime = now
         
         var alertActive = false
@@ -102,10 +103,15 @@ class ScoreboardOverlayView: UIView {
             self.awayLogo = UIImage(data: awayData)
         }
         
-        // Reset tracking se il set cambia o se il set/match è terminato
+        // Reset tracking e spegni animazioni se il set cambia o se il set/match è terminato
         if state.currentSet != lastSetPointSetIndex || state.isSetFinished || state.isMatchFinished {
             lastSetPointTeamTriggered = nil
             lastSetPointSetIndex = state.currentSet
+            if state.isSetFinished || state.isMatchFinished {
+                isBlinkingAlert = false
+                isBlinkingTimeout = false
+                displayLink?.isPaused = true
+            }
         }
         
         // Controlla se siamo entrati in Set Point o Match Point
@@ -115,6 +121,7 @@ class ScoreboardOverlayView: UIView {
                 lastSetPointTeamTriggered = sp.team
                 lastSetPointSetIndex = state.currentSet
                 alertStartTime = Date().timeIntervalSince1970
+                isBlinkingTimeout = false
                 isBlinkingAlert = true
                 displayLink?.isPaused = false
             }

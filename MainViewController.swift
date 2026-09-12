@@ -74,6 +74,7 @@ class MainViewController: UIViewController {
     var localState = RemoteMatchState()
     var isAudioMuted = false
     private var stateHistory: [RemoteMatchState] = []
+    private var isSetTransitionInProgress = false
     
     // MARK: - Lifecycle & Orientation
     
@@ -1447,6 +1448,7 @@ class MainViewController: UIViewController {
                 localState.scoreA -= 1
                 localState.isMatchFinished = false
                 localState.isSetFinished = false
+                isSetTransitionInProgress = false
             }
         }
         updateLocalState()
@@ -1531,6 +1533,7 @@ class MainViewController: UIViewController {
                 localState.scoreB -= 1
                 localState.isMatchFinished = false
                 localState.isSetFinished = false
+                isSetTransitionInProgress = false
             }
         }
         updateLocalState()
@@ -1567,6 +1570,8 @@ class MainViewController: UIViewController {
     }
     
     private func checkVolleySetWin() {
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
+        
         let sport = localState.sportType.lowercased()
         let isBeach = (sport == "beach_volley" || sport == "beach volley")
         let setsToWin = isBeach ? 2 : 3
@@ -1580,6 +1585,7 @@ class MainViewController: UIViewController {
         }
         
         if let winTeam = winner {
+            isSetTransitionInProgress = true
             let finalScoreA = localState.scoreA
             let finalScoreB = localState.scoreB
             localState.setScores.append([finalScoreA, finalScoreB])
@@ -1594,8 +1600,8 @@ class MainViewController: UIViewController {
             
             showToast(message: isMatchFin ? "🏆 \(winName) vince il Match!" : "🎉 \(winName) vince il \(localState.currentSet)° Set!")
             
-            // 1. La grafica di fine set appare 10 secondi dopo che è stato vinto il set
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+            // 1. La grafica di fine set appare dopo 2 secondi
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
                 guard let self = self else { return }
                 self.localState.isSetFinished = true
                 if isMatchFin {
@@ -1603,8 +1609,8 @@ class MainViewController: UIViewController {
                 }
                 self.updateLocalState()
                 
-                // 2. Dura 10 secondi e poi sparisce / avanza al set successivo
-                DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+                // 2. Dura 8 secondi e poi avanza al set successivo
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
                     guard let self = self else { return }
                     if !isMatchFin {
                         self.localState.currentSet += 1
@@ -1614,7 +1620,10 @@ class MainViewController: UIViewController {
                         self.localState.timeoutB = 0
                         self.localState.isFifthSet = (!isBeach && self.localState.currentSet == 5)
                         self.localState.isSetFinished = false
+                        self.isSetTransitionInProgress = false
                         self.updateLocalState()
+                    } else {
+                        self.isSetTransitionInProgress = false
                     }
                 }
             }

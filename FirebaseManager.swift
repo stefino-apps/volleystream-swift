@@ -107,6 +107,7 @@ class FirebaseManager {
     
     private var lastDispatchedCommand: String = ""
     private var lastDispatchedTime: TimeInterval = 0
+    private var processedCommandKeys = Set<String>()
     
     // (CLIENT) Invia un comando all'Host
     func sendCommand(_ command: String) {
@@ -119,10 +120,21 @@ class FirebaseManager {
     private func listenForCommands() {
         guard let id = sessionId else { return }
         print("Firebase HOST: Listening for commands on session \(id)...")
+        self.processedCommandKeys.removeAll()
         
         // 1. Ascolta sulla lista commands (standard Android & iOS Remote)
         ref.child("sessions/\(id)/commands").observe(.childAdded) { [weak self] snapshot in
-            self?.extractAndDispatchCommand(from: snapshot)
+            guard let self = self else { return }
+            let key = snapshot.key
+            if self.processedCommandKeys.contains(key) {
+                snapshot.ref.removeValue()
+                return
+            }
+            self.processedCommandKeys.insert(key)
+            if self.processedCommandKeys.count > 200 {
+                self.processedCommandKeys.removeFirst()
+            }
+            self.extractAndDispatchCommand(from: snapshot)
             snapshot.ref.removeValue()
         }
         
