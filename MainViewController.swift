@@ -46,19 +46,25 @@ class MainViewController: UIViewController {
     
     // Grid Overlay
     var gridLayer: CAShapeLayer?
-    var currentMode: Int = 0 // 0 = Normal, 1 = Clean, 2 = Grid
+    var currentMode: Int = 0 // 0 = Normal, 1 = Grid, 2 = Clean
     
     // Grid Mode 4-Quadrant UI
     var gridContainerTR: UIView!
     var gridContainerBL: UIView!
     var gridContainerBR: UIView!
+    var imgTeamAGrid: UIImageView!
     var lblTeamAGrid: UILabel!
     var lblScoreAGrid: UILabel!
+    var imgTeamBGrid: UIImageView!
     var lblTeamBGrid: UILabel!
     var lblScoreBGrid: UILabel!
+    var btnTextGrid: UIButton!
+    var btnCrGrid: UIButton!
+    var setPillContainer: UIView!
     var btnSetMinusGrid: UIButton!
     var lblSetGrid: UILabel!
     var btnSetPlusGrid: UIButton!
+    var lblStorageGrid: UILabel!
     
     var initialSport: String = "volley"
     var initialTheme: String = "neon"
@@ -425,74 +431,121 @@ class MainViewController: UIViewController {
         gridContainerTR.layer.borderWidth = 1
         gridContainerTR.layer.borderColor = UIColor(red: 39/255, green: 39/255, blue: 42/255, alpha: 1.0).cgColor
         gridContainerTR.isHidden = true
-        view.insertSubview(gridContainerTR, belowSubview: closeButton)
+        view.addSubview(gridContainerTR)
         
+        btnTextGrid = createButton(title: "TEXT", systemImage: nil, bgColor: UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9), tintColor: .white, radius: 14)
+        btnTextGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 12)
+        btnTextGrid.addTarget(self, action: #selector(toggleTextAction), for: .touchUpInside)
+        btnTextGrid.isHidden = true
+        view.addSubview(btnTextGrid)
+        
+        btnCrGrid = createButton(title: "CR", systemImage: nil, bgColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), tintColor: .black, radius: 14)
+        btnCrGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+        btnCrGrid.setTitleColor(.black, for: .normal)
+        btnCrGrid.addTarget(self, action: #selector(confirmResetMatch), for: .touchUpInside)
+        btnCrGrid.isHidden = true
+        view.addSubview(btnCrGrid)
+        
+        setPillContainer = UIView()
+        setPillContainer.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.9)
+        setPillContainer.layer.cornerRadius = 16
+        setPillContainer.layer.borderWidth = 1
+        setPillContainer.layer.borderColor = UIColor(white: 1.0, alpha: 0.15).cgColor
+        setPillContainer.isHidden = true
+        view.addSubview(setPillContainer)
+        
+        btnSetMinusGrid = createButton(title: "−", systemImage: nil, bgColor: UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0), tintColor: .white, radius: 14)
+        btnSetMinusGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
+        btnSetMinusGrid.addTarget(self, action: #selector(decSetAction), for: .touchUpInside)
+        btnSetMinusGrid.isHidden = true
+        view.addSubview(btnSetMinusGrid)
+        
+        lblSetGrid = UILabel()
+        lblSetGrid.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        lblSetGrid.textColor = .white
+        lblSetGrid.textAlignment = .center
+        lblSetGrid.text = "SET"
+        lblSetGrid.isHidden = true
+        view.addSubview(lblSetGrid)
+        
+        btnSetPlusGrid = createButton(title: "+", systemImage: nil, bgColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), tintColor: .black, radius: 14)
+        btnSetPlusGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
+        btnSetPlusGrid.setTitleColor(.black, for: .normal)
+        btnSetPlusGrid.addTarget(self, action: #selector(incSetAction), for: .touchUpInside)
+        btnSetPlusGrid.isHidden = true
+        view.addSubview(btnSetPlusGrid)
+        
+        lblStorageGrid = UILabel()
+        lblStorageGrid.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        lblStorageGrid.textColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
+        lblStorageGrid.textAlignment = .right
+        lblStorageGrid.text = "0.00 GB"
+        lblStorageGrid.isHidden = true
+        view.addSubview(lblStorageGrid)
+        
+        // Bottom Left (Team A)
         gridContainerBL = UIView()
         gridContainerBL.backgroundColor = UIColor(red: 24/255, green: 24/255, blue: 27/255, alpha: 0.95)
         gridContainerBL.layer.cornerRadius = 14
         gridContainerBL.layer.borderWidth = 1.5
         gridContainerBL.layer.borderColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.4).cgColor
         gridContainerBL.isHidden = true
-        view.insertSubview(gridContainerBL, belowSubview: btnScoreHome)
+        view.addSubview(gridContainerBL)
         
-        gridContainerBR = UIView()
-        gridContainerBR.backgroundColor = UIColor(red: 24/255, green: 24/255, blue: 27/255, alpha: 0.95)
-        gridContainerBR.layer.cornerRadius = 14
-        gridContainerBR.layer.borderWidth = 1.5
-        gridContainerBR.layer.borderColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.4).cgColor
-        gridContainerBR.isHidden = true
-        view.insertSubview(gridContainerBR, belowSubview: btnScoreAway)
+        imgTeamAGrid = UIImageView()
+        imgTeamAGrid.contentMode = .scaleAspectFit
+        imgTeamAGrid.layer.cornerRadius = 6
+        imgTeamAGrid.clipsToBounds = true
+        imgTeamAGrid.tintColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
+        imgTeamAGrid.isHidden = true
+        view.addSubview(imgTeamAGrid)
         
         lblTeamAGrid = UILabel()
-        lblTeamAGrid.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        lblTeamAGrid.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         lblTeamAGrid.textColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
-        lblTeamAGrid.text = "HOME"
+        lblTeamAGrid.text = "CASA"
         lblTeamAGrid.isHidden = true
         view.addSubview(lblTeamAGrid)
         
         lblScoreAGrid = UILabel()
-        lblScoreAGrid.font = UIFont.systemFont(ofSize: 26, weight: .heavy)
+        lblScoreAGrid.font = UIFont.systemFont(ofSize: 32, weight: .heavy)
         lblScoreAGrid.textColor = .white
         lblScoreAGrid.textAlignment = .right
         lblScoreAGrid.text = "0"
         lblScoreAGrid.isHidden = true
         view.addSubview(lblScoreAGrid)
         
+        // Bottom Right (Team B)
+        gridContainerBR = UIView()
+        gridContainerBR.backgroundColor = UIColor(red: 24/255, green: 24/255, blue: 27/255, alpha: 0.95)
+        gridContainerBR.layer.cornerRadius = 14
+        gridContainerBR.layer.borderWidth = 1.5
+        gridContainerBR.layer.borderColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.4).cgColor
+        gridContainerBR.isHidden = true
+        view.addSubview(gridContainerBR)
+        
+        imgTeamBGrid = UIImageView()
+        imgTeamBGrid.contentMode = .scaleAspectFit
+        imgTeamBGrid.layer.cornerRadius = 6
+        imgTeamBGrid.clipsToBounds = true
+        imgTeamBGrid.tintColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
+        imgTeamBGrid.isHidden = true
+        view.addSubview(imgTeamBGrid)
+        
         lblTeamBGrid = UILabel()
-        lblTeamBGrid.font = UIFont.systemFont(ofSize: 15, weight: .bold)
+        lblTeamBGrid.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         lblTeamBGrid.textColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
-        lblTeamBGrid.text = "GUEST"
+        lblTeamBGrid.text = "OSPITE"
         lblTeamBGrid.isHidden = true
         view.addSubview(lblTeamBGrid)
         
         lblScoreBGrid = UILabel()
-        lblScoreBGrid.font = UIFont.systemFont(ofSize: 26, weight: .heavy)
+        lblScoreBGrid.font = UIFont.systemFont(ofSize: 32, weight: .heavy)
         lblScoreBGrid.textColor = .white
         lblScoreBGrid.textAlignment = .right
         lblScoreBGrid.text = "0"
         lblScoreBGrid.isHidden = true
         view.addSubview(lblScoreBGrid)
-        
-        btnSetMinusGrid = createButton(title: "−", systemImage: nil, bgColor: UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0), tintColor: .white, radius: 10)
-        btnSetMinusGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
-        btnSetMinusGrid.addTarget(self, action: #selector(decSetAction), for: .touchUpInside)
-        btnSetMinusGrid.isHidden = true
-        view.addSubview(btnSetMinusGrid)
-        
-        lblSetGrid = UILabel()
-        lblSetGrid.font = UIFont.systemFont(ofSize: 12, weight: .bold)
-        lblSetGrid.textColor = UIColor(red: 226/255, green: 232/255, blue: 240/255, alpha: 1.0)
-        lblSetGrid.textAlignment = .center
-        lblSetGrid.text = "SET 1"
-        lblSetGrid.isHidden = true
-        view.addSubview(lblSetGrid)
-        
-        btnSetPlusGrid = createButton(title: "+", systemImage: nil, bgColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), tintColor: .black, radius: 10)
-        btnSetPlusGrid.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
-        btnSetPlusGrid.setTitleColor(.black, for: .normal)
-        btnSetPlusGrid.addTarget(self, action: #selector(incSetAction), for: .touchUpInside)
-        btnSetPlusGrid.isHidden = true
-        view.addSubview(btnSetPlusGrid)
     }
     
     private func createButton(title: String?, systemImage: String?, bgColor: UIColor, tintColor: UIColor, radius: CGFloat) -> UIButton {
@@ -536,8 +589,10 @@ class MainViewController: UIViewController {
             btnScoreHome, btnTimeoutHome, btnMinusHome, btnScoreAway, btnTimeoutAway, btnMinusAway,
             btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter,
             gridContainerTR, gridContainerBL, gridContainerBR,
-            lblTeamAGrid, lblScoreAGrid, lblTeamBGrid, lblScoreBGrid,
-            btnSetMinusGrid, lblSetGrid, btnSetPlusGrid
+            imgTeamAGrid, lblTeamAGrid, lblScoreAGrid,
+            imgTeamBGrid, lblTeamBGrid, lblScoreBGrid,
+            btnTextGrid, btnCrGrid, setPillContainer,
+            btnSetMinusGrid, lblSetGrid, btnSetPlusGrid, lblStorageGrid
         ]
         
         if isClean {
@@ -620,20 +675,23 @@ class MainViewController: UIViewController {
         
         if isGrid {
             // ==========================================
-            // === MODE 2: 4-QUADRANT GRID REGIA MODE ===
+            // === MODE 1: 4-QUADRANT GRID REGIA MODE ===
             // ==========================================
-            gridLayer?.isHidden = false
+            gridLayer?.isHidden = true
             
             let contentW = w - safeLeft - safeRight
             let contentH = h - safeTop - safeBottom
             let gap: CGFloat = 8.0
-            let halfW = (contentW - gap) / 2.0
-            let halfH = (contentH - gap) / 2.0
+            let topHalfW = (contentW - gap) / 2.0
+            let topHalfH = (contentH - gap) * 0.52
+            let bottomHalfH = contentH - topHalfH - gap
+            let centerW: CGFloat = 86.0
+            let bottomSideW = (contentW - centerW - (gap * 2.0)) / 2.0
             
             // ----------------------------------------------------
             // QUADRANT 1: TOP-LEFT (Camera Preview + Scaled Scoreboard)
             // ----------------------------------------------------
-            let q1Frame = CGRect(x: safeLeft, y: safeTop, width: halfW, height: halfH)
+            let q1Frame = CGRect(x: safeLeft, y: safeTop, width: topHalfW, height: topHalfH)
             lfView.frame = q1Frame
             lfView.layer.cornerRadius = 12
             lfView.clipsToBounds = true
@@ -643,188 +701,262 @@ class MainViewController: UIViewController {
             scoreboardView.isHidden = false
             
             // ----------------------------------------------------
-            // QUADRANT 2: TOP-RIGHT (Director Bar & Set Controls)
+            // QUADRANT 2: TOP-RIGHT (Director Bar & Set Controls Pill)
             // ----------------------------------------------------
-            let trX = safeLeft + halfW + gap
+            let trX = safeLeft + topHalfW + gap
             let trY = safeTop
-            let trW = halfW
-            let trH = halfH
+            let trW = topHalfW
+            let trH = topHalfH
             
             gridContainerTR.frame = CGRect(x: trX, y: trY, width: trW, height: trH)
             gridContainerTR.isHidden = false
             
-            let pad: CGFloat = 6.0
-            let numTopBtns: CGFloat = 8.0
-            let btnGap: CGFloat = 4.0
-            let topBtnW = (trW - 2 * pad - (numTopBtns - 1) * btnGap) / numTopBtns
-            let topBtnH = min(36.0, (trH - 3 * pad) * 0.45)
-            let row1Y = trY + pad
+            // Top Circular Button Row (TEXT, S, CR, Share, Mute, Mode)
+            let topBtnCount: CGFloat = 6.0
+            let topBtnSize = min(36.0, (trW - 20.0 - ((topBtnCount - 1.0) * 6.0)) / topBtnCount)
+            let topSpacing = (trW - 20.0 - (topBtnCount * topBtnSize)) / (topBtnCount - 1.0)
+            let topRowY = trY + 8.0
             
-            closeButton.frame = CGRect(x: trX + pad + 0 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
-            modeButton.frame = CGRect(x: trX + pad + 1 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
-            shareLiveButton.frame = CGRect(x: trX + pad + 2 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
-            shareRemoteButton.frame = CGRect(x: trX + pad + 3 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
-            replayButton.frame = CGRect(x: trX + pad + 4 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
-            highlightButton.frame = CGRect(x: trX + pad + 5 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
-            muteButton.frame = CGRect(x: trX + pad + 6 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
-            sponsorButton.frame = CGRect(x: trX + pad + 7 * (topBtnW + btnGap), y: row1Y, width: topBtnW, height: topBtnH)
+            // 1. TEXT button
+            btnTextGrid.frame = CGRect(x: trX + 10.0 + 0 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            btnTextGrid.layer.cornerRadius = topBtnSize / 2
+            btnTextGrid.backgroundColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9)
+            btnTextGrid.setTitleColor(.white, for: .normal)
+            btnTextGrid.isHidden = false
             
-            closeButton.isHidden = false
-            modeButton.isHidden = false
-            shareLiveButton.isHidden = false
-            shareRemoteButton.isHidden = false
-            replayButton.isHidden = false
-            highlightButton.isHidden = false
-            muteButton.isHidden = false
+            // 2. Sponsor S button (Yellow circle, black text)
+            sponsorButton.frame = CGRect(x: trX + 10.0 + 1 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            sponsorButton.layer.cornerRadius = topBtnSize / 2
+            sponsorButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+            sponsorButton.setTitle("S", for: .normal)
+            sponsorButton.setTitleColor(.black, for: .normal)
+            sponsorButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
             sponsorButton.isHidden = false
             
-            zoomInButton.isHidden = true
-            zoomOutButton.isHidden = true
+            // 3. CR (Clear / Reset) button (Yellow circle, black text)
+            btnCrGrid.frame = CGRect(x: trX + 10.0 + 2 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            btnCrGrid.layer.cornerRadius = topBtnSize / 2
+            btnCrGrid.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+            btnCrGrid.setTitleColor(.black, for: .normal)
+            btnCrGrid.isHidden = false
             
-            // Row 2: Stream Action Button & Set Increment/Decrement
-            let row2Y = row1Y + topBtnH + pad
-            let row2H = trH - pad - (row2Y - trY)
-            let liveW = max(70.0, trW * 0.28)
-            startStreamButton.frame = CGRect(x: trX + pad, y: row2Y, width: liveW, height: row2H)
-            startStreamButton.isHidden = false
+            // 4. Share Live button (Yellow circle, black icon)
+            shareLiveButton.frame = CGRect(x: trX + 10.0 + 3 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            shareLiveButton.layer.cornerRadius = topBtnSize / 2
+            shareLiveButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+            shareLiveButton.tintColor = .black
+            shareLiveButton.isHidden = false
             
-            let setBtnW: CGFloat = min(36.0, row2H)
-            let lblSetW = max(70.0, trW * 0.24)
-            let setStartX = trX + pad + liveW + 8.0
-            btnSetMinusGrid.frame = CGRect(x: setStartX, y: row2Y, width: setBtnW, height: row2H)
-            lblSetGrid.frame = CGRect(x: setStartX + setBtnW + 4.0, y: row2Y, width: lblSetW, height: row2H)
-            btnSetPlusGrid.frame = CGRect(x: setStartX + setBtnW + 4.0 + lblSetW + 4.0, y: row2Y, width: setBtnW, height: row2H)
+            // 5. Mute Audio button (Yellow circle, black icon)
+            muteButton.frame = CGRect(x: trX + 10.0 + 4 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            muteButton.layer.cornerRadius = topBtnSize / 2
+            muteButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+            muteButton.tintColor = .black
+            muteButton.setImage(UIImage(systemName: isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill"), for: .normal)
+            muteButton.isHidden = false
             
+            // 6. Mode Switch button (Yellow circle, black "L")
+            modeButton.frame = CGRect(x: trX + 10.0 + 5 * (topBtnSize + topSpacing), y: topRowY, width: topBtnSize, height: topBtnSize)
+            modeButton.layer.cornerRadius = topBtnSize / 2
+            modeButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+            modeButton.setTitleColor(.black, for: .normal)
+            modeButton.setTitle("L", for: .normal)
+            modeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
+            modeButton.isHidden = false
+            
+            // Row 2: Set Controls Pill Container
+            let pillY = topRowY + topBtnSize + 10.0
+            let pillH = max(34.0, trH - (pillY - trY) - 10.0)
+            let pillW = trW - 20.0
+            setPillContainer.frame = CGRect(x: trX + 10.0, y: pillY, width: pillW, height: pillH)
+            setPillContainer.layer.cornerRadius = pillH / 2
+            setPillContainer.isHidden = false
+            
+            let btnSetSize = max(26.0, pillH - 6.0)
+            btnSetMinusGrid.frame = CGRect(x: trX + 13.0, y: pillY + (pillH - btnSetSize) / 2, width: btnSetSize, height: btnSetSize)
+            btnSetMinusGrid.layer.cornerRadius = btnSetSize / 2
+            btnSetMinusGrid.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
             btnSetMinusGrid.isHidden = false
+            
+            lblSetGrid.frame = CGRect(x: trX + 13.0 + btnSetSize + 6.0, y: pillY, width: 44.0, height: pillH)
             lblSetGrid.isHidden = false
+            
+            btnSetPlusGrid.frame = CGRect(x: trX + 13.0 + btnSetSize + 6.0 + 44.0 + 6.0, y: pillY + (pillH - btnSetSize) / 2, width: btnSetSize, height: btnSetSize)
+            btnSetPlusGrid.layer.cornerRadius = btnSetSize / 2
+            btnSetPlusGrid.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
             btnSetPlusGrid.isHidden = false
             
-            let eqX = setStartX + setBtnW + 4.0 + lblSetW + 4.0 + setBtnW + 8.0
-            let eqW = trX + trW - pad - eqX
-            if (isBasket || isSoccer || isBiliardo || isDarts) && eqW > 40 {
-                btnEndQuarter.frame = CGRect(x: eqX, y: row2Y, width: eqW, height: row2H)
-                btnEndQuarter.isHidden = false
-            } else {
-                btnEndQuarter.isHidden = true
-            }
+            lblStorageGrid.frame = CGRect(x: trX + 10.0 + pillW - 90.0, y: pillY, width: 82.0, height: pillH)
+            lblStorageGrid.text = getFreeDiskSpaceString()
+            lblStorageGrid.isHidden = false
+            
+            closeButton.isHidden = true
+            shareRemoteButton.isHidden = true
+            zoomInButton.isHidden = true
+            zoomOutButton.isHidden = true
+            btnEndQuarter.isHidden = true
             
             // ----------------------------------------------------
             // QUADRANT 3: BOTTOM-LEFT (Team A Home Card)
             // ----------------------------------------------------
             let blX = safeLeft
-            let blY = safeTop + halfH + gap
-            let blW = halfW
-            let blH = halfH
+            let blY = safeTop + topHalfH + gap
+            let blW = bottomSideW
+            let blH = bottomHalfH
             
             gridContainerBL.frame = CGRect(x: blX, y: blY, width: blW, height: blH)
             gridContainerBL.isHidden = false
             
-            lblTeamAGrid.frame = CGRect(x: blX + 12, y: blY + 6, width: blW - 80, height: 24)
-            lblScoreAGrid.frame = CGRect(x: blX + blW - 70, y: blY + 4, width: 58, height: 28)
+            let logoSize: CGFloat = 28.0
+            imgTeamAGrid.frame = CGRect(x: blX + 12.0, y: blY + 8.0, width: logoSize, height: logoSize)
+            imgTeamAGrid.isHidden = false
+            
+            lblTeamAGrid.frame = CGRect(x: blX + 12.0 + logoSize + 8.0, y: blY + 6.0, width: max(40.0, blW - 20.0 - logoSize - 8.0 - 55.0), height: 32.0)
             lblTeamAGrid.isHidden = false
+            
+            lblScoreAGrid.frame = CGRect(x: blX + blW - 60.0, y: blY + 4.0, width: 50.0, height: 34.0)
             lblScoreAGrid.isHidden = false
             
-            let aBtnsY = blY + 34
-            let aBtnsH = blH - 40
-            let subW: CGFloat = 46.0
-            let btnG: CGFloat = 6.0
+            let btnSize = min(46.0, blH - 50.0)
+            let btnRowY = blY + blH - btnSize - 10.0
+            let btnSpacing = (blW - 24.0 - (3.0 * btnSize)) / 2.0
             
-            if hasExtraScoreBtns {
-                let bskW: CGFloat = 36.0
-                let mainScoreW = blW - 24 - subW - subW - (bskW * 2) - (btnG * 4)
-                btnScoreHome.frame = CGRect(x: blX + 12, y: aBtnsY, width: mainScoreW, height: aBtnsH)
-                btnMinusHome.frame = CGRect(x: blX + 12 + mainScoreW + btnG, y: aBtnsY, width: subW, height: aBtnsH)
-                btnTimeoutHome.frame = CGRect(x: blX + 12 + mainScoreW + btnG + subW + btnG, y: aBtnsY, width: subW, height: aBtnsH)
-                btnScoreHome2.frame = CGRect(x: blX + 12 + mainScoreW + btnG + subW + btnG + subW + btnG, y: aBtnsY, width: bskW, height: aBtnsH)
-                btnScoreHome3.frame = CGRect(x: blX + 12 + mainScoreW + btnG + subW + btnG + subW + btnG + bskW + btnG, y: aBtnsY, width: bskW, height: aBtnsH)
-                btnScoreHome2.isHidden = false
-                btnScoreHome3.isHidden = false
-            } else {
-                let mainScoreW = blW - 24 - subW - subW - (btnG * 2)
-                btnScoreHome.frame = CGRect(x: blX + 12, y: aBtnsY, width: mainScoreW, height: aBtnsH)
-                btnMinusHome.frame = CGRect(x: blX + 12 + mainScoreW + btnG, y: aBtnsY, width: subW, height: aBtnsH)
-                btnTimeoutHome.frame = CGRect(x: blX + 12 + mainScoreW + btnG + subW + btnG, y: aBtnsY, width: subW, height: aBtnsH)
-                btnScoreHome2.isHidden = true
-                btnScoreHome3.isHidden = true
-            }
+            btnScoreHome.frame = CGRect(x: blX + 12.0, y: btnRowY, width: btnSize, height: btnSize)
+            btnScoreHome.layer.cornerRadius = btnSize / 2
+            btnScoreHome.setTitle("+", for: .normal)
+            btnScoreHome.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
+            btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 24)
             btnScoreHome.isHidden = false
+            
+            btnMinusHome.frame = CGRect(x: blX + 12.0 + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
+            btnMinusHome.layer.cornerRadius = btnSize / 2
+            btnMinusHome.setTitle("−", for: .normal)
+            btnMinusHome.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+            btnMinusHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
             btnMinusHome.isHidden = false
+            
+            btnTimeoutHome.frame = CGRect(x: blX + 12.0 + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
+            btnTimeoutHome.layer.cornerRadius = btnSize / 2
+            btnTimeoutHome.setTitle("T", for: .normal)
+            btnTimeoutHome.backgroundColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9)
+            btnTimeoutHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
             btnTimeoutHome.isHidden = false
+            
+            btnScoreHome2.isHidden = true
+            btnScoreHome3.isHidden = true
+            
+            // ----------------------------------------------------
+            // BOTTOM-CENTER: (Go Live + Replay & Highlight)
+            // ----------------------------------------------------
+            let bcX = safeLeft + bottomSideW + gap
+            let bcY = blY
+            let bcW = centerW
+            let bcH = blH
+            
+            let liveH = min(42.0, bcH * 0.44)
+            startStreamButton.frame = CGRect(x: bcX, y: bcY + 4.0, width: bcW, height: liveH)
+            startStreamButton.layer.cornerRadius = 12
+            startStreamButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+            startStreamButton.setTitle(StreamManager.shared.isStreaming ? "STOP\nLIVE" : "GO\nLIVE", for: .normal)
+            startStreamButton.isHidden = false
+            
+            let subBtnSize = min(36.0, bcH - liveH - 16.0)
+            let subY = bcY + liveH + 8.0
+            let subSpacing = (bcW - (2.0 * subBtnSize)) / 3.0
+            
+            replayButton.frame = CGRect(x: bcX + subSpacing, y: subY, width: subBtnSize, height: subBtnSize)
+            replayButton.layer.cornerRadius = subBtnSize / 2
+            replayButton.backgroundColor = UIColor(red: 37/255, green: 99/255, blue: 235/255, alpha: 1.0)
+            replayButton.setTitle("REP", for: .normal)
+            replayButton.setTitleColor(.white, for: .normal)
+            replayButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 12)
+            replayButton.isHidden = false
+            
+            highlightButton.frame = CGRect(x: bcX + subSpacing + subBtnSize + subSpacing, y: subY, width: subBtnSize, height: subBtnSize)
+            highlightButton.layer.cornerRadius = subBtnSize / 2
+            highlightButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+            highlightButton.setTitle("HL", for: .normal)
+            highlightButton.setTitleColor(.black, for: .normal)
+            highlightButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+            highlightButton.isHidden = false
             
             // ----------------------------------------------------
             // QUADRANT 4: BOTTOM-RIGHT (Team B Away Card)
             // ----------------------------------------------------
-            let brX = safeLeft + halfW + gap
-            let brY = safeTop + halfH + gap
-            let brW = halfW
-            let brH = halfH
+            let brX = bcX + bcW + gap
+            let brY = blY
+            let brW = bottomSideW
+            let brH = blH
             
             gridContainerBR.frame = CGRect(x: brX, y: brY, width: brW, height: brH)
             gridContainerBR.isHidden = false
             
-            lblTeamBGrid.frame = CGRect(x: brX + 12, y: brY + 6, width: brW - 80, height: 24)
-            lblScoreBGrid.frame = CGRect(x: brX + brW - 70, y: brY + 4, width: 58, height: 28)
+            imgTeamBGrid.frame = CGRect(x: brX + 12.0, y: brY + 8.0, width: logoSize, height: logoSize)
+            imgTeamBGrid.isHidden = false
+            
+            lblTeamBGrid.frame = CGRect(x: brX + 12.0 + logoSize + 8.0, y: brY + 6.0, width: max(40.0, brW - 20.0 - logoSize - 8.0 - 55.0), height: 32.0)
             lblTeamBGrid.isHidden = false
+            
+            lblScoreBGrid.frame = CGRect(x: brX + brW - 60.0, y: brY + 4.0, width: 50.0, height: 34.0)
             lblScoreBGrid.isHidden = false
             
-            let bBtnsY = brY + 34
-            let bBtnsH = brH - 40
-            
-            if hasExtraScoreBtns {
-                let bskW: CGFloat = 36.0
-                let mainScoreW = brW - 24 - subW - subW - (bskW * 2) - (btnG * 4)
-                btnScoreAway.frame = CGRect(x: brX + 12, y: bBtnsY, width: mainScoreW, height: bBtnsH)
-                btnMinusAway.frame = CGRect(x: brX + 12 + mainScoreW + btnG, y: bBtnsY, width: subW, height: bBtnsH)
-                btnTimeoutAway.frame = CGRect(x: brX + 12 + mainScoreW + btnG + subW + btnG, y: bBtnsY, width: subW, height: bBtnsH)
-                btnScoreAway2.frame = CGRect(x: brX + 12 + mainScoreW + btnG + subW + btnG + subW + btnG, y: bBtnsY, width: bskW, height: bBtnsH)
-                btnScoreAway3.frame = CGRect(x: brX + 12 + mainScoreW + btnG + subW + btnG + subW + btnG + bskW + btnG, y: bBtnsY, width: bskW, height: bBtnsH)
-                btnScoreAway2.isHidden = false
-                btnScoreAway3.isHidden = false
-            } else {
-                let mainScoreW = brW - 24 - subW - subW - (btnG * 2)
-                btnScoreAway.frame = CGRect(x: brX + 12, y: bBtnsY, width: mainScoreW, height: bBtnsH)
-                btnMinusAway.frame = CGRect(x: brX + 12 + mainScoreW + btnG, y: bBtnsY, width: subW, height: bBtnsH)
-                btnTimeoutAway.frame = CGRect(x: brX + 12 + mainScoreW + btnG + subW + btnG, y: bBtnsY, width: subW, height: bBtnsH)
-                btnScoreAway2.isHidden = true
-                btnScoreAway3.isHidden = true
-            }
+            btnScoreAway.frame = CGRect(x: brX + 12.0, y: btnRowY, width: btnSize, height: btnSize)
+            btnScoreAway.layer.cornerRadius = btnSize / 2
+            btnScoreAway.setTitle("+", for: .normal)
+            btnScoreAway.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
+            btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 24)
             btnScoreAway.isHidden = false
+            
+            btnMinusAway.frame = CGRect(x: brX + 12.0 + btnSize + btnSpacing, y: btnRowY, width: btnSize, height: btnSize)
+            btnMinusAway.layer.cornerRadius = btnSize / 2
+            btnMinusAway.setTitle("−", for: .normal)
+            btnMinusAway.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+            btnMinusAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 22)
             btnMinusAway.isHidden = false
+            
+            btnTimeoutAway.frame = CGRect(x: brX + 12.0 + 2.0 * (btnSize + btnSpacing), y: btnRowY, width: btnSize, height: btnSize)
+            btnTimeoutAway.layer.cornerRadius = btnSize / 2
+            btnTimeoutAway.setTitle("T", for: .normal)
+            btnTimeoutAway.backgroundColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9)
+            btnTimeoutAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 17)
             btnTimeoutAway.isHidden = false
+            
+            btnScoreAway2.isHidden = true
+            btnScoreAway3.isHidden = true
             
             // Bring all 4-quadrant views to front
             view.bringSubviewToFront(gridContainerTR)
-            view.bringSubviewToFront(closeButton)
-            view.bringSubviewToFront(modeButton)
-            view.bringSubviewToFront(shareLiveButton)
-            view.bringSubviewToFront(shareRemoteButton)
-            view.bringSubviewToFront(replayButton)
-            view.bringSubviewToFront(highlightButton)
-            view.bringSubviewToFront(muteButton)
+            view.bringSubviewToFront(btnTextGrid)
             view.bringSubviewToFront(sponsorButton)
-            view.bringSubviewToFront(startStreamButton)
+            view.bringSubviewToFront(btnCrGrid)
+            view.bringSubviewToFront(shareLiveButton)
+            view.bringSubviewToFront(muteButton)
+            view.bringSubviewToFront(modeButton)
+            view.bringSubviewToFront(setPillContainer)
             view.bringSubviewToFront(btnSetMinusGrid)
             view.bringSubviewToFront(lblSetGrid)
             view.bringSubviewToFront(btnSetPlusGrid)
-            view.bringSubviewToFront(btnEndQuarter)
+            view.bringSubviewToFront(lblStorageGrid)
             
             view.bringSubviewToFront(gridContainerBL)
+            view.bringSubviewToFront(imgTeamAGrid)
             view.bringSubviewToFront(lblTeamAGrid)
             view.bringSubviewToFront(lblScoreAGrid)
             view.bringSubviewToFront(btnScoreHome)
             view.bringSubviewToFront(btnMinusHome)
             view.bringSubviewToFront(btnTimeoutHome)
-            view.bringSubviewToFront(btnScoreHome2)
-            view.bringSubviewToFront(btnScoreHome3)
+            
+            view.bringSubviewToFront(startStreamButton)
+            view.bringSubviewToFront(replayButton)
+            view.bringSubviewToFront(highlightButton)
             
             view.bringSubviewToFront(gridContainerBR)
+            view.bringSubviewToFront(imgTeamBGrid)
             view.bringSubviewToFront(lblTeamBGrid)
             view.bringSubviewToFront(lblScoreBGrid)
             view.bringSubviewToFront(btnScoreAway)
             view.bringSubviewToFront(btnMinusAway)
             view.bringSubviewToFront(btnTimeoutAway)
-            view.bringSubviewToFront(btnScoreAway2)
-            view.bringSubviewToFront(btnScoreAway3)
             
             view.bringSubviewToFront(scoreboardView)
             
@@ -842,13 +974,21 @@ class MainViewController: UIViewController {
             gridContainerTR.isHidden = true
             gridContainerBL.isHidden = true
             gridContainerBR.isHidden = true
+            imgTeamAGrid.isHidden = true
             lblTeamAGrid.isHidden = true
             lblScoreAGrid.isHidden = true
+            imgTeamBGrid.isHidden = true
             lblTeamBGrid.isHidden = true
             lblScoreBGrid.isHidden = true
+            btnTextGrid.isHidden = true
+            btnCrGrid.isHidden = true
+            setPillContainer.isHidden = true
             btnSetMinusGrid.isHidden = true
             lblSetGrid.isHidden = true
             btnSetPlusGrid.isHidden = true
+            lblStorageGrid.isHidden = true
+            
+            let darkBg = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.85)
             
             // 1. TOP RIGHT ACTION BAR
             let isPortrait = w < h
@@ -857,28 +997,47 @@ class MainViewController: UIViewController {
             var currentRightX = w - safeRight - btnSize
             
             closeButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            closeButton.layer.cornerRadius = 12
+            closeButton.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.9)
+            closeButton.tintColor = .white
             closeButton.isHidden = false
             currentRightX -= (btnSize + btnGap)
             
             modeButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            modeButton.layer.cornerRadius = 12
+            modeButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+            modeButton.setTitleColor(.black, for: .normal)
+            modeButton.setTitle("L", for: .normal)
             modeButton.isHidden = false
             currentRightX -= (btnSize + btnGap)
             
             shareLiveButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            shareLiveButton.layer.cornerRadius = 12
+            shareLiveButton.backgroundColor = darkBg
+            shareLiveButton.tintColor = UIColor(red: 74/255, green: 222/255, blue: 128/255, alpha: 1.0)
             shareLiveButton.isHidden = false
             currentRightX -= (btnSize + btnGap)
             
             shareRemoteButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            shareRemoteButton.layer.cornerRadius = 12
+            shareRemoteButton.backgroundColor = darkBg
+            shareRemoteButton.setTitleColor(.white, for: .normal)
             shareRemoteButton.isHidden = false
             currentRightX -= (btnSize + btnGap)
             
             let isReplayActive = AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported
             replayButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            replayButton.layer.cornerRadius = 12
+            replayButton.backgroundColor = UIColor(red: 37/255, green: 99/255, blue: 235/255, alpha: 0.9)
+            replayButton.setTitleColor(.white, for: .normal)
             replayButton.isHidden = false
             replayButton.alpha = isReplayActive ? 1.0 : 0.35
             currentRightX -= (btnSize + btnGap)
             
             highlightButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
+            highlightButton.layer.cornerRadius = 12
+            highlightButton.backgroundColor = darkBg
+            highlightButton.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
             highlightButton.isHidden = false
             highlightButton.alpha = isReplayActive ? 1.0 : 0.35
             
@@ -899,12 +1058,21 @@ class MainViewController: UIViewController {
             let sideBtnSize: CGFloat = isPortrait ? 38 : 44
             
             startStreamButton.frame = CGRect(x: centerX - streamBtnW / 2, y: bottomCenterY, width: streamBtnW, height: streamBtnH)
+            startStreamButton.layer.cornerRadius = 14
+            startStreamButton.setTitle(StreamManager.shared.isStreaming ? "STOP\nLIVE" : "GO\nLIVE", for: .normal)
             startStreamButton.isHidden = false
             
             muteButton.frame = CGRect(x: centerX - streamBtnW / 2 - sideBtnSize - 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
+            muteButton.layer.cornerRadius = 14
+            muteButton.backgroundColor = darkBg
+            muteButton.tintColor = UIColor(red: 56/255, green: 189/255, blue: 248/255, alpha: 1.0)
+            muteButton.setImage(UIImage(systemName: isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill"), for: .normal)
             muteButton.isHidden = false
             
             sponsorButton.frame = CGRect(x: centerX + streamBtnW / 2 + 8, y: bottomCenterY + (streamBtnH - sideBtnSize) / 2, width: sideBtnSize, height: sideBtnSize)
+            sponsorButton.layer.cornerRadius = 14
+            sponsorButton.backgroundColor = darkBg
+            sponsorButton.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
             sponsorButton.isHidden = false
             
             if isBasket || isSoccer || isBiliardo || isDarts {
@@ -921,10 +1089,20 @@ class MainViewController: UIViewController {
             let bottomScoreY = h - safeBottom - scoreBtnSize
             
             btnTimeoutHome.frame = CGRect(x: safeLeft, y: bottomScoreY, width: subBtnW, height: subBtnH)
-            btnMinusHome.frame = CGRect(x: safeLeft, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
-            btnScoreHome.frame = CGRect(x: safeLeft + subBtnW + 8, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
+            btnTimeoutHome.layer.cornerRadius = 10
+            btnTimeoutHome.backgroundColor = darkBg
             btnTimeoutHome.isHidden = false
+            
+            btnMinusHome.frame = CGRect(x: safeLeft, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
+            btnMinusHome.layer.cornerRadius = 10
+            btnMinusHome.backgroundColor = darkBg
             btnMinusHome.isHidden = false
+            
+            btnScoreHome.frame = CGRect(x: safeLeft + subBtnW + 8, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
+            btnScoreHome.layer.cornerRadius = 20
+            btnScoreHome.setTitle(isSoccer || isTennis || isBiliardo ? "+1" : "+1", for: .normal)
+            btnScoreHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 30)
+            btnScoreHome.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.95)
             btnScoreHome.isHidden = false
             
             if hasExtraScoreBtns {
@@ -941,12 +1119,21 @@ class MainViewController: UIViewController {
             // 4. BOTTOM RIGHT CONTROLS (Team B)
             let rightSubX = w - safeRight - subBtnW
             btnTimeoutAway.frame = CGRect(x: rightSubX, y: bottomScoreY, width: subBtnW, height: subBtnH)
+            btnTimeoutAway.layer.cornerRadius = 10
+            btnTimeoutAway.backgroundColor = darkBg
+            btnTimeoutAway.isHidden = false
+            
             btnMinusAway.frame = CGRect(x: rightSubX, y: bottomScoreY + subBtnH + 4, width: subBtnW, height: subBtnH)
+            btnMinusAway.layer.cornerRadius = 10
+            btnMinusAway.backgroundColor = darkBg
+            btnMinusAway.isHidden = false
             
             let rightScoreX = rightSubX - scoreBtnSize - 8
             btnScoreAway.frame = CGRect(x: rightScoreX, y: bottomScoreY, width: scoreBtnSize, height: scoreBtnSize)
-            btnTimeoutAway.isHidden = false
-            btnMinusAway.isHidden = false
+            btnScoreAway.layer.cornerRadius = 20
+            btnScoreAway.setTitle(isSoccer || isTennis || isBiliardo ? "+1" : "+1", for: .normal)
+            btnScoreAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 30)
+            btnScoreAway.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.95)
             btnScoreAway.isHidden = false
             
             if hasExtraScoreBtns {
@@ -960,6 +1147,44 @@ class MainViewController: UIViewController {
                 btnScoreAway3.isHidden = true
             }
         }
+    }
+    
+    // MARK: - Helper Methods & Actions
+    
+    private func getFreeDiskSpaceString() -> String {
+        if let space = try? URL(fileURLWithPath: NSHomeDirectory()).resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]).volumeAvailableCapacityForImportantUsage {
+            let gb = Double(space) / (1024.0 * 1024.0 * 1024.0)
+            return String(format: "%.2f GB", gb)
+        } else if let space = try? URL(fileURLWithPath: NSHomeDirectory()).resourceValues(forKeys: [.volumeAvailableCapacityKey]).volumeAvailableCapacity {
+            let gb = Double(space) / (1024.0 * 1024.0 * 1024.0)
+            return String(format: "%.2f GB", gb)
+        }
+        return "0.00 GB"
+    }
+    
+    @objc func toggleTextAction() {
+        localState.showScrollText.toggle()
+        refreshMatchState()
+        showToast(message: localState.showScrollText ? "📝 Testo scorrevole ON" : "📝 Testo scorrevole OFF")
+    }
+    
+    @objc func confirmResetMatch() {
+        let alert = UIAlertController(title: "Reset Partita", message: "Vuoi azzerare il punteggio e i set della partita in corso?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Azzera", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            self.localState.scoreA = 0
+            self.localState.scoreB = 0
+            self.localState.setsA = 0
+            self.localState.setsB = 0
+            self.localState.currentSet = 1
+            self.localState.timeoutsA = 0
+            self.localState.timeoutsB = 0
+            self.localState.servingTeam = ""
+            self.updateLocalState()
+            self.showToast(message: "🔄 Partita azzerata")
+        })
+        present(alert, animated: true)
     }
     
     // MARK: - Actions & Mode Switching
@@ -1044,12 +1269,26 @@ class MainViewController: UIViewController {
         StreamManager.shared.videoEffect.currentState = localState
         FirebaseManager.shared.updateMatchState(localState)
         
-        // Update Grid Mode Cards
+        // Update Grid Mode Logos & Cards
+        if let imgA = imgTeamAGrid {
+            if let d = AppPreferences.shared.loadImage(name: "logo_team_a.png") ?? AppPreferences.shared.loadImage(name: "logoHome.png") {
+                imgA.image = UIImage(data: d)
+            } else {
+                imgA.image = UIImage(systemName: "shield.fill")
+            }
+        }
+        if let imgB = imgTeamBGrid {
+            if let d = AppPreferences.shared.loadImage(name: "logo_team_b.png") ?? AppPreferences.shared.loadImage(name: "logoAway.png") {
+                imgB.image = UIImage(data: d)
+            } else {
+                imgB.image = UIImage(systemName: "shield.fill")
+            }
+        }
         if let lblTeamA = lblTeamAGrid {
-            lblTeamA.text = localState.teamA.isEmpty ? "HOME" : localState.teamA.uppercased()
+            lblTeamA.text = localState.teamA.isEmpty ? "CASA" : localState.teamA.uppercased()
         }
         if let lblTeamB = lblTeamBGrid {
-            lblTeamB.text = localState.teamB.isEmpty ? "GUEST" : localState.teamB.uppercased()
+            lblTeamB.text = localState.teamB.isEmpty ? "OSPITE" : localState.teamB.uppercased()
         }
         if let lblScoreA = lblScoreAGrid {
             lblScoreA.text = "\(localState.scoreA)"
@@ -1063,11 +1302,12 @@ class MainViewController: UIViewController {
                 lblSet.text = "QUARTO \(localState.currentSet)"
             } else if sport == "soccer" {
                 lblSet.text = "TEMPO \(localState.currentSet)"
-            } else if sport == "tennis" || sport == "padel" {
-                lblSet.text = "SET \(localState.currentSet)"
             } else {
                 lblSet.text = "SET \(localState.currentSet)"
             }
+        }
+        if let lblStorage = lblStorageGrid {
+            lblStorage.text = getFreeDiskSpaceString()
         }
     }
     

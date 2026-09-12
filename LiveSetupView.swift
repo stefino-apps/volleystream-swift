@@ -166,9 +166,22 @@ struct LiveSetupView: View {
         }
         .onAppear {
             AppDelegate.setOrientationLock(.allButUpsideDown, rotateTo: .portrait)
-            isYouTubeLoggedIn = YouTubeManager.shared.accessToken != nil
-            if isYouTubeLoggedIn {
+            if YouTubeManager.shared.accessToken != nil {
+                isYouTubeLoggedIn = true
                 channelName = YouTubeManager.shared.displayName ?? YouTubeManager.shared.userEmail ?? "Canale Connesso"
+            } else if UserDefaults.standard.bool(forKey: "is_yt_connected") {
+                channelName = UserDefaults.standard.string(forKey: "saved_yt_name") ?? "Canale Connesso"
+                isYouTubeLoggedIn = true
+                YouTubeManager.shared.restoreSession { success, name in
+                    DispatchQueue.main.async {
+                        self.isYouTubeLoggedIn = success
+                        if success {
+                            self.channelName = name ?? "Canale Connesso"
+                        }
+                    }
+                }
+            } else {
+                isYouTubeLoggedIn = false
             }
         }
     }

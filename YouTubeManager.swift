@@ -9,8 +9,39 @@ public class YouTubeManager: NSObject {
     public var accessToken: String?
     public var displayName: String?
     
+    public var isConnected: Bool {
+        return accessToken != nil || (UserDefaults.standard.bool(forKey: "is_yt_connected") && GIDSignIn.sharedInstance.hasPreviousSignIn())
+    }
+    
     private override init() {
         super.init()
+        restoreSession()
+    }
+    
+    public func restoreSession(completion: ((Bool, String?) -> Void)? = nil) {
+        if GIDSignIn.sharedInstance.hasPreviousSignIn() {
+            GIDSignIn.sharedInstance.restorePreviousSignIn { [weak self] user, error in
+                guard let self = self else { return }
+                if let user = user, error == nil {
+                    self.userEmail = user.profile?.email
+                    self.accessToken = user.accessToken.tokenString
+                    let name = user.profile?.name ?? user.profile?.email ?? "Canale YouTube"
+                    self.displayName = name
+                    UserDefaults.standard.set(self.userEmail, forKey: "saved_yt_email")
+                    UserDefaults.standard.set(name, forKey: "saved_yt_name")
+                    UserDefaults.standard.set(true, forKey: "is_yt_connected")
+                    completion?(true, name)
+                } else {
+                    self.userEmail = nil
+                    self.accessToken = nil
+                    self.displayName = nil
+                    UserDefaults.standard.set(false, forKey: "is_yt_connected")
+                    completion?(false, nil)
+                }
+            }
+        } else {
+            completion?(false, nil)
+        }
     }
     
     public func signIn(presentingViewController: UIViewController, completion: @escaping (Bool, String?, Error?) -> Void) {
@@ -20,7 +51,8 @@ public class YouTubeManager: NSObject {
             "https://www.googleapis.com/auth/youtube.readonly"
         ]
         
-        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes) { result, error in
+        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes) { [weak self] result, error in
+            guard let self = self else { return }
             if let error = error {
                 completion(false, nil, error)
                 return
@@ -35,6 +67,9 @@ public class YouTubeManager: NSObject {
             self.accessToken = result.user.accessToken.tokenString
             let name = result.user.profile?.name ?? result.user.profile?.email ?? "Canale YouTube"
             self.displayName = name
+            UserDefaults.standard.set(self.userEmail, forKey: "saved_yt_email")
+            UserDefaults.standard.set(name, forKey: "saved_yt_name")
+            UserDefaults.standard.set(true, forKey: "is_yt_connected")
             completion(true, name, nil)
         }
     }
@@ -44,6 +79,9 @@ public class YouTubeManager: NSObject {
         self.userEmail = nil
         self.accessToken = nil
         self.displayName = nil
+        UserDefaults.standard.removeObject(forKey: "saved_yt_email")
+        UserDefaults.standard.removeObject(forKey: "saved_yt_name")
+        UserDefaults.standard.set(false, forKey: "is_yt_connected")
     }
     
     public func disconnect() {

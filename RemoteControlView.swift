@@ -29,91 +29,214 @@ struct RemoteControlView: View {
         }
     }
     
-    // MARK: - Setup / Connection View
+    // MARK: - Setup / Connection View (Matching Android Photos 4 & 5)
     var setupView: some View {
         VStack(spacing: 0) {
-            // Header with Back Button
-            HStack {
+            // Top Bar with red INDIETRO button and Cyan Title
+            HStack(alignment: .center) {
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .bold))
-                        Text("Indietro")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(Color(hex: "#64748b"))
-                    .padding(8)
+                    Text("INDIETRO")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color(hex: "#EF4444"))
+                        .cornerRadius(6)
                 }
+                
                 Spacer()
+                
+                Text("CONTROLLO\nREMOTO")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(Color(hex: "#06B6D4"))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                
+                Spacer()
+                
+                // Invisible placeholder to keep title centered
+                Text("INDIETRO")
+                    .font(.system(size: 13, weight: .bold))
+                    .opacity(0)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
+            .padding(.bottom, 8)
             
-            Spacer()
-            
-            // Connection Card matching Android
-            VStack(spacing: 20) {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 52))
-                    .foregroundColor(Color(hex: "#FACC15"))
-                    .shadow(color: Color(hex: "#FACC15").opacity(0.4), radius: 12)
-                
-                VStack(spacing: 6) {
-                    Text("CONTROLLO REMOTO")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.white)
-                        .tracking(1.0)
-                    
-                    Text("Inserisci il codice generato dalla Regia per collegarti al match")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "#94A3B8"))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
-                }
-                
-                TextField("REGIA_01", text: $sessionCode)
-                    .font(.system(size: 26, weight: .bold, design: .monospaced))
-                    .multilineTextAlignment(.center)
-                    .autocapitalization(.allCharacters)
-                    .disableAutocorrection(true)
-                    .foregroundColor(Color(hex: "#FACC15"))
-                    .frame(maxWidth: 260)
-                    .frame(height: 60)
-                    .background(Color(hex: "#050b16"))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#06B6D4"), lineWidth: 1.5)
-                    )
-                    .padding(.top, 4)
-                
-                Button(action: { connectToSession() }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "bolt.fill")
-                        Text("CONNETTI TELECOMANDO")
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Card 1: Link Troubleshooting
+                    VStack(spacing: 12) {
+                        Text("Problemi con il link? Clicca\nsul pulsante qui sotto")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                        
+                        Button(action: {
+                            if let url = URL(string: "https://volleystreampro.com/remote") {
+                                UIApplication.shared.open(url)
+                            }
+                        }) {
+                            Text("CLICCA QUI")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 160, height: 38)
+                                .background(Color(hex: "#D97706"))
+                                .cornerRadius(6)
+                        }
+                        
+                        Text("Se i link non aprono l'app automaticamente: 1. Clicca il pulsante qui sopra 2. Cerca 'Apri per impostazione predefinita' o 'Link supportati' 3. Seleziona la casella 'volleystreampro.com'")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#94a3b8"))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(2)
+                            .padding(.horizontal, 8)
                     }
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.black)
+                    .padding(20)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color(hex: "#06B6D4"))
-                    .cornerRadius(14)
-                    .shadow(color: Color(hex: "#06B6D4").opacity(0.4), radius: 8, y: 3)
+                    .background(Color(hex: "#09111e"))
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(hex: "#1e293b"), lineWidth: 1)
+                    )
+                    
+                    // Card 2: How to Use Remote Control
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "iphone")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(Color(hex: "#06B6D4"))
+                            
+                            Text("COME UTILIZZARE IL\nCONTROLLO REMOTO")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(Color(hex: "#06B6D4"))
+                                .lineLimit(2)
+                        }
+                        
+                        HStack {
+                            Spacer()
+                            Text("R.C.")
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 6)
+                                .background(Color(hex: "#050b16"))
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color(hex: "#1e293b"), lineWidth: 1)
+                                )
+                            Spacer()
+                        }
+                        .padding(.vertical, 2)
+                        
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("1. Dalla schermata di Regia del dispositivo che riprende il match, premi il pulsante [R.C.] e invia il link (es. tramite WhatsApp) al dispositivo che userai come telecomando.")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#cbd5e1"))
+                                .lineSpacing(2)
+                            
+                            Text("2. Installa l'app VolleyStream Pro anche sul secondo dispositivo (non è richiesto alcun abbonamento).")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#cbd5e1"))
+                                .lineSpacing(2)
+                            
+                            Text("3. Clicca sul link ricevuto sul secondo dispositivo: l'app si aprirà all'istante con tutti i comandi per gestire il punteggio a distanza in tempo reale!")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(Color(hex: "#FACC15"))
+                                .lineSpacing(2)
+                        }
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(hex: "#09111e"))
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(hex: "#1e293b"), lineWidth: 1)
+                    )
+                    
+                    // Card 3: Session Code Entry
+                    VStack(spacing: 16) {
+                        // Yellow Remote Icon Badge
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(hex: "#FACC15"))
+                                .frame(width: 32, height: 44)
+                            
+                            VStack(spacing: 4) {
+                                Circle()
+                                    .fill(Color.black)
+                                    .frame(width: 6, height: 6)
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(Color.black)
+                                    .frame(width: 14, height: 3)
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(Color.black)
+                                    .frame(width: 14, height: 3)
+                            }
+                        }
+                        .padding(.top, 4)
+                        
+                        VStack(spacing: 4) {
+                            Text("Inserisci Codice Sessione")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                            
+                            Text("Inserisci il codice generato dalla\nRegia per collegarti al match")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#94a3b8"))
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        TextField("CODICE", text: $sessionCode)
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                            .multilineTextAlignment(.center)
+                            .autocapitalization(.allCharacters)
+                            .disableAutocorrection(true)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color(hex: "#050b16"))
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "#06B6D4"), lineWidth: 2)
+                            )
+                            .padding(.horizontal, 12)
+                        
+                        Button(action: { connectToSession() }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "bolt.fill")
+                                Text("CONNETTI TELECOMANDO")
+                            }
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(Color(hex: "#06B6D4"))
+                            .cornerRadius(12)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 6)
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(hex: "#09111e"))
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(hex: "#1e293b"), lineWidth: 1)
+                    )
                 }
-                .padding(.horizontal, 8)
-                .padding(.top, 8)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
-            .padding(28)
-            .background(Color(hex: "#09111e"))
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color(hex: "#1e293b"), lineWidth: 1)
-            )
-            .padding(.horizontal, 24)
-            
-            Spacer()
         }
+        .navigationBarHidden(true)
     }
     
     // MARK: - Active Broadcast Remote View

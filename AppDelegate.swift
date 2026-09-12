@@ -21,6 +21,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Inizializza Firebase
         FirebaseApp.configure()
         
+        // Ripristina sessione YouTube / Google persistente
+        YouTubeManager.shared.restoreSession()
+        
         // Fallback per iOS che non carica SceneDelegate
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.rootViewController = UIHostingController(rootView: WelcomeView())
