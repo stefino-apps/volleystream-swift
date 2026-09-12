@@ -156,16 +156,6 @@ class FirebaseManager {
             }
         }
     }
-    
-    func stopListening() {
-        if let id = sessionId {
-            ref.child("sessions/\(id)").removeAllObservers()
-            ref.child("sessions/\(id)/state").removeAllObservers()
-            ref.child("sessions/\(id)/commands").removeAllObservers()
-            ref.child("sessions/\(id)/command").removeAllObservers()
-            ref.child("sessions/\(id)/action").removeAllObservers()
-        }
-    }
 }
 
 // Extension per convertire struct in dictionary per Firebase

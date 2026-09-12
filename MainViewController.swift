@@ -591,7 +591,7 @@ class MainViewController: UIViewController {
         if isClean {
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.isHidden = true
+            scoreboardView?.isHidden = true
             gridLayer?.isHidden = true
             allControls.forEach { $0.isHidden = true }
             return
@@ -686,7 +686,7 @@ class MainViewController: UIViewController {
             lfView.frame = q1Frame
             lfView.layer.cornerRadius = 10
             lfView.clipsToBounds = true
-            scoreboardView.isHidden = true
+            scoreboardView?.isHidden = true
             
             // ----------------------------------------------------
             // QUADRANT 2: TOP-RIGHT (Director Bar & Set Controls Pill)
@@ -959,7 +959,7 @@ class MainViewController: UIViewController {
             // ==========================================
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.isHidden = true
+            scoreboardView?.isHidden = true
             gridLayer?.isHidden = true
             
             gridContainerTR.isHidden = true
