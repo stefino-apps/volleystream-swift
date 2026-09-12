@@ -38,6 +38,14 @@ class MainViewController: UIViewController {
     
     // Center Action Button
     var btnEndQuarter: UIButton!
+    var btnSoccerTimer: UIButton!
+    var btnDartsCalc: UIButton!
+    var matchTimer: Timer?
+    var dartsKeypadContainer: UIView?
+    var dartsCurrentInput: String = ""
+    var dartsInputLabel: UILabel?
+    var dartsPlayerBtnA: UIButton?
+    var dartsPlayerBtnB: UIButton?
     
     // Zoom Controls
     var zoomInButton: UIButton!
@@ -250,6 +258,17 @@ class MainViewController: UIViewController {
                 if !isReplaying {
                     self.showToast(message: "🔴 LIVE")
                 }
+            }
+        }
+        
+        // Timer cronometro 1-secondo per Soccer e Handball
+        matchTimer?.invalidate()
+        matchTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            if self.localState.timerRunning {
+                self.localState.timerSeconds += 1
+                self.updateSoccerTimerButton()
+                self.overlayEffect.triggerOverlayUpdate(state: self.localState)
             }
         }
     }
@@ -481,6 +500,23 @@ class MainViewController: UIViewController {
         btnEndQuarter.addTarget(self, action: #selector(endQuarter), for: .touchUpInside)
         view.addSubview(btnEndQuarter)
         
+        // Soccer / Handball Timer Button
+        btnSoccerTimer = createButton(title: "⏱️ 00:00", systemImage: nil, bgColor: UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95), tintColor: .white, radius: 10)
+        btnSoccerTimer.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+        btnSoccerTimer.addTarget(self, action: #selector(toggleSoccerTimer), for: .touchUpInside)
+        let longPressTimer = UILongPressGestureRecognizer(target: self, action: #selector(resetSoccerTimerAction(_:)))
+        btnSoccerTimer.addGestureRecognizer(longPressTimer)
+        btnSoccerTimer.isHidden = true
+        view.addSubview(btnSoccerTimer)
+        
+        // Darts Calculator Button
+        btnDartsCalc = createButton(title: "🎯 CALC", systemImage: nil, bgColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.95), tintColor: .black, radius: 10)
+        btnDartsCalc.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+        btnDartsCalc.setTitleColor(.black, for: .normal)
+        btnDartsCalc.addTarget(self, action: #selector(toggleDartsKeypad), for: .touchUpInside)
+        btnDartsCalc.isHidden = true
+        view.addSubview(btnDartsCalc)
+        
         // MARK: - Grid Mode 4-Quadrant UI Elements
         gridContainerTR = UIView()
         gridContainerTR.backgroundColor = .clear
@@ -636,7 +672,7 @@ class MainViewController: UIViewController {
             closeButton, modeButton, shareLiveButton, shareRemoteButton, replayButton, highlightButton,
             zoomInButton, zoomOutButton, startStreamButton, muteButton, sponsorButton,
             btnScoreHome, btnTimeoutHome, btnMinusHome, btnFoulHome, btnScoreAway, btnTimeoutAway, btnMinusAway, btnFoulAway,
-            btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter,
+            btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter, btnSoccerTimer, btnDartsCalc,
             gridContainerTR, gridContainerBL, gridContainerBR,
             imgTeamAGrid, lblTeamAGrid, lblScoreAGrid,
             imgTeamBGrid, lblTeamBGrid, lblScoreBGrid,
@@ -873,6 +909,24 @@ class MainViewController: UIViewController {
             zoomInButton.isHidden = true
             zoomOutButton.isHidden = true
             btnEndQuarter.isHidden = true
+            
+            if isSoccer || isHandball {
+                btnSoccerTimer.frame = CGRect(x: trX + 8.0, y: trY + trH - 34.0, width: trW - 16.0, height: 30.0)
+                btnSoccerTimer.layer.cornerRadius = 8
+                btnSoccerTimer.isHidden = false
+                updateSoccerTimerButton()
+                view.bringSubviewToFront(btnSoccerTimer)
+            } else {
+                btnSoccerTimer.isHidden = true
+            }
+            if isDarts {
+                btnDartsCalc.frame = CGRect(x: trX + 8.0, y: trY + trH - 34.0, width: trW - 16.0, height: 30.0)
+                btnDartsCalc.layer.cornerRadius = 8
+                btnDartsCalc.isHidden = false
+                view.bringSubviewToFront(btnDartsCalc)
+            } else {
+                btnDartsCalc.isHidden = true
+            }
             
             // ----------------------------------------------------
             // QUADRANT 3: BOTTOM-LEFT (Team A Home Row)
@@ -1256,13 +1310,38 @@ class MainViewController: UIViewController {
             sponsorButton.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
             sponsorButton.isHidden = false
             
-            if isBasket || isSoccer || isBiliardo || isDarts || isCricket || isHandball {
+            if isSoccer || isHandball {
+                btnEndQuarter.frame = CGRect(x: centerX - 125, y: bottomCenterY - 40, width: 120, height: 34)
+                btnEndQuarter.layer.cornerRadius = 10
+                btnEndQuarter.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+                btnEndQuarter.isHidden = false
+                
+                btnSoccerTimer.frame = CGRect(x: centerX + 5, y: bottomCenterY - 40, width: 120, height: 34)
+                btnSoccerTimer.layer.cornerRadius = 10
+                btnSoccerTimer.isHidden = false
+                updateSoccerTimerButton()
+                btnDartsCalc.isHidden = true
+            } else if isDarts {
+                btnEndQuarter.frame = CGRect(x: centerX - 125, y: bottomCenterY - 40, width: 120, height: 34)
+                btnEndQuarter.layer.cornerRadius = 10
+                btnEndQuarter.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+                btnEndQuarter.isHidden = false
+                
+                btnDartsCalc.frame = CGRect(x: centerX + 5, y: bottomCenterY - 40, width: 120, height: 34)
+                btnDartsCalc.layer.cornerRadius = 10
+                btnDartsCalc.isHidden = false
+                btnSoccerTimer.isHidden = true
+            } else if isBasket || isBiliardo || isCricket {
                 btnEndQuarter.frame = CGRect(x: centerX - 70, y: bottomCenterY - 40, width: 140, height: 34)
                 btnEndQuarter.layer.cornerRadius = 10
                 btnEndQuarter.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
                 btnEndQuarter.isHidden = false
+                btnSoccerTimer.isHidden = true
+                btnDartsCalc.isHidden = true
             } else {
                 btnEndQuarter.isHidden = true
+                btnSoccerTimer.isHidden = true
+                btnDartsCalc.isHidden = true
             }
             
             // 3. BOTTOM LEFT CONTROLS (Team A)
@@ -1361,8 +1440,9 @@ class MainViewController: UIViewController {
                 closeButton, modeButton, shareLiveButton, shareRemoteButton, replayButton, highlightButton,
                 zoomInButton, zoomOutButton, startStreamButton, muteButton, sponsorButton,
                 btnScoreHome, btnTimeoutHome, btnMinusHome, btnFoulHome, btnScoreAway, btnTimeoutAway, btnMinusAway, btnFoulAway,
-                btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter
+                btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter, btnSoccerTimer, btnDartsCalc
             ]
+            mode0Buttons.forEach { view.bringSubviewToFront($0) }
             mode0Buttons.forEach { view.bringSubviewToFront($0) }
         }
     }
@@ -2050,6 +2130,250 @@ class MainViewController: UIViewController {
         updateLocalState()
     }
     
+    // MARK: - Soccer / Handball Timer Actions
+    
+    @objc func toggleSoccerTimer() {
+        localState.timerRunning.toggle()
+        updateSoccerTimerButton()
+        updateLocalState(saveHistory: false)
+        showToast(message: localState.timerRunning ? "⏱️ Timer Avviato" : "⏸️ Timer in Pausa")
+    }
+    
+    @objc func resetSoccerTimer() {
+        localState.timerSeconds = 0
+        localState.timerRunning = false
+        updateSoccerTimerButton()
+        updateLocalState(saveHistory: false)
+        showToast(message: "🔄 Timer Azzerato")
+    }
+    
+    @objc func resetSoccerTimerAction(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        let alert = UIAlertController(title: "⏱️ Reset Timer", message: "Vuoi azzerare il cronometro della partita?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Azzera", style: .destructive) { [weak self] _ in
+            self?.resetSoccerTimer()
+        })
+        present(alert, animated: true)
+    }
+    
+    func updateSoccerTimerButton() {
+        let m = localState.timerSeconds / 60
+        let s = localState.timerSeconds % 60
+        let timeStr = String(format: "%02d:%02d", m, s)
+        let icon = localState.timerRunning ? "⏸️" : "▶️"
+        btnSoccerTimer?.setTitle("\(icon) \(timeStr)", for: .normal)
+        btnSoccerTimer?.backgroundColor = localState.timerRunning ? UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.95) : UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95)
+    }
+
+    // MARK: - Darts Calculator Modal
+    
+    @objc func toggleDartsKeypad() {
+        if let container = dartsKeypadContainer, container.superview != nil {
+            closeDartsKeypad()
+        } else {
+            openDartsKeypad()
+        }
+    }
+    
+    func openDartsKeypad() {
+        dartsKeypadContainer?.removeFromSuperview()
+        
+        let container = UIView()
+        container.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.97)
+        container.layer.cornerRadius = 18
+        container.layer.borderWidth = 1.5
+        container.layer.borderColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.8).cgColor
+        container.clipsToBounds = true
+        
+        let modalW: CGFloat = 340
+        let modalH: CGFloat = 310
+        container.frame = CGRect(x: (view.bounds.width - modalW) / 2, y: (view.bounds.height - modalH) / 2, width: modalW, height: modalH)
+        
+        // 1. Header: Player Selection + Close
+        let pA = UIButton(type: .system)
+        pA.frame = CGRect(x: 12, y: 10, width: 120, height: 32)
+        pA.layer.cornerRadius = 8
+        pA.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+        let nameA = localState.teamA.isEmpty ? "CASA (A)" : localState.teamA
+        pA.setTitle("🎯 \(nameA)", for: .normal)
+        pA.addTarget(self, action: #selector(dartsSelectPlayerA), for: .touchUpInside)
+        container.addSubview(pA)
+        self.dartsPlayerBtnA = pA
+        
+        let pB = UIButton(type: .system)
+        pB.frame = CGRect(x: 138, y: 10, width: 120, height: 32)
+        pB.layer.cornerRadius = 8
+        pB.titleLabel?.font = UIFont.boldSystemFont(ofSize: 13)
+        let nameB = localState.teamB.isEmpty ? "OSPITE (B)" : localState.teamB
+        pB.setTitle("🎯 \(nameB)", for: .normal)
+        pB.addTarget(self, action: #selector(dartsSelectPlayerB), for: .touchUpInside)
+        container.addSubview(pB)
+        self.dartsPlayerBtnB = pB
+        
+        let btnClose = UIButton(type: .system)
+        btnClose.frame = CGRect(x: modalW - 40, y: 10, width: 30, height: 32)
+        btnClose.setTitle("✕", for: .normal)
+        btnClose.setTitleColor(.white, for: .normal)
+        btnClose.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+        btnClose.addTarget(self, action: #selector(closeDartsKeypad), for: .touchUpInside)
+        container.addSubview(btnClose)
+        
+        // 2. Score Preview Display
+        let lblDisplay = UILabel(frame: CGRect(x: 12, y: 48, width: modalW - 24, height: 36))
+        lblDisplay.backgroundColor = UIColor(red: 30/255, green: 41/255, blue: 59/255, alpha: 1.0)
+        lblDisplay.textColor = .white
+        lblDisplay.textAlignment = .center
+        lblDisplay.layer.cornerRadius = 8
+        lblDisplay.clipsToBounds = true
+        lblDisplay.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .bold)
+        container.addSubview(lblDisplay)
+        self.dartsInputLabel = lblDisplay
+        
+        // 3. Numeric Keypad (4 rows x 3 cols)
+        let keys = [
+            ["1", "2", "3"],
+            ["4", "5", "6"],
+            ["7", "8", "9"],
+            ["C", "0", "⌫"]
+        ]
+        let padStartY: CGFloat = 90
+        let keyW: CGFloat = (modalW - 24 - 16) / 3
+        let keyH: CGFloat = 36
+        let keyGap: CGFloat = 6
+        
+        for (rIdx, row) in keys.enumerated() {
+            for (cIdx, key) in row.enumerated() {
+                let btn = UIButton(type: .system)
+                btn.frame = CGRect(x: 12 + CGFloat(cIdx) * (keyW + keyGap), y: padStartY + CGFloat(rIdx) * (keyH + keyGap), width: keyW, height: keyH)
+                btn.setTitle(key, for: .normal)
+                btn.layer.cornerRadius = 8
+                btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+                
+                if key == "C" {
+                    btn.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.8)
+                    btn.setTitleColor(.white, for: .normal)
+                    btn.addTarget(self, action: #selector(dartsKeypadClear), for: .touchUpInside)
+                } else if key == "⌫" {
+                    btn.backgroundColor = UIColor(red: 234/255, green: 179/255, blue: 8/255, alpha: 0.8)
+                    btn.setTitleColor(.black, for: .normal)
+                    btn.addTarget(self, action: #selector(dartsKeypadBackspace), for: .touchUpInside)
+                } else {
+                    btn.backgroundColor = UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.9)
+                    btn.setTitleColor(.white, for: .normal)
+                    btn.addTarget(self, action: #selector(dartsKeypadTapped(_:)), for: .touchUpInside)
+                }
+                container.addSubview(btn)
+            }
+        }
+        
+        // 4. Action Buttons: BUST & SOTTRAI
+        let actionY = padStartY + 4 * (keyH + keyGap) + 4
+        let bustBtn = UIButton(type: .system)
+        bustBtn.frame = CGRect(x: 12, y: actionY, width: 90, height: 38)
+        bustBtn.setTitle("💥 BUST", for: .normal)
+        bustBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+        bustBtn.setTitleColor(.white, for: .normal)
+        bustBtn.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.9)
+        bustBtn.layer.cornerRadius = 8
+        bustBtn.addTarget(self, action: #selector(dartsBustAction), for: .touchUpInside)
+        container.addSubview(bustBtn)
+        
+        let subBtn = UIButton(type: .system)
+        subBtn.frame = CGRect(x: 110, y: actionY, width: modalW - 122, height: 38)
+        subBtn.setTitle("🎯 CONFERMA SOTTRAI", for: .normal)
+        subBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+        subBtn.setTitleColor(.white, for: .normal)
+        subBtn.backgroundColor = UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95)
+        subBtn.layer.cornerRadius = 8
+        subBtn.addTarget(self, action: #selector(dartsSubtractAction), for: .touchUpInside)
+        container.addSubview(subBtn)
+        
+        view.addSubview(container)
+        view.bringSubviewToFront(container)
+        self.dartsKeypadContainer = container
+        
+        updateDartsKeypadUI()
+    }
+    
+    @objc func closeDartsKeypad() {
+        dartsKeypadContainer?.removeFromSuperview()
+        dartsKeypadContainer = nil
+        dartsCurrentInput = ""
+    }
+    
+    @objc func dartsSelectPlayerA() {
+        localState.dartsActivePlayer = "A"
+        updateDartsKeypadUI()
+        updateLocalState(saveHistory: false)
+    }
+    
+    @objc func dartsSelectPlayerB() {
+        localState.dartsActivePlayer = "B"
+        updateDartsKeypadUI()
+        updateLocalState(saveHistory: false)
+    }
+    
+    @objc func dartsKeypadTapped(_ sender: UIButton) {
+        guard let digit = sender.title(for: .normal) else { return }
+        if dartsCurrentInput.count < 3 {
+            let nextInput = dartsCurrentInput + digit
+            if let val = Int(nextInput), val <= 180 {
+                dartsCurrentInput = nextInput
+            }
+        }
+        updateDartsKeypadUI()
+    }
+    
+    @objc func dartsKeypadClear() {
+        dartsCurrentInput = ""
+        updateDartsKeypadUI()
+    }
+    
+    @objc func dartsKeypadBackspace() {
+        if !dartsCurrentInput.isEmpty {
+            dartsCurrentInput.removeLast()
+        }
+        updateDartsKeypadUI()
+    }
+    
+    @objc func dartsSubtractAction() {
+        let pts = Int(dartsCurrentInput) ?? 0
+        guard pts > 0 else {
+            showToast(message: "Inserisci i punti tirati (1-180)")
+            return
+        }
+        let isHome = (localState.dartsActivePlayer != "B")
+        checkDartsLeg(isHome: isHome, subtract: pts)
+        dartsCurrentInput = ""
+        updateDartsKeypadUI()
+    }
+    
+    @objc func dartsBustAction() {
+        showToast(message: "💥 BUST! Turno passato.")
+        localState.dartsActivePlayer = (localState.dartsActivePlayer == "A") ? "B" : "A"
+        updateLocalState()
+        dartsCurrentInput = ""
+        updateDartsKeypadUI()
+    }
+    
+    func updateDartsKeypadUI() {
+        let isA = (localState.dartsActivePlayer != "B")
+        dartsPlayerBtnA?.backgroundColor = isA ? UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.95) : UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.8)
+        dartsPlayerBtnA?.setTitleColor(.white, for: .normal)
+        
+        dartsPlayerBtnB?.backgroundColor = !isA ? UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.95) : UIColor(red: 51/255, green: 65/255, blue: 85/255, alpha: 0.8)
+        dartsPlayerBtnB?.setTitleColor(isA ? .white : .black, for: .normal)
+        
+        let curScore = isA ? localState.scoreA : localState.scoreB
+        let pts = Int(dartsCurrentInput) ?? 0
+        let rem = curScore - pts
+        let inputStr = dartsCurrentInput.isEmpty ? "0" : dartsCurrentInput
+        let pName = isA ? (localState.teamA.isEmpty ? "CASA" : localState.teamA) : (localState.teamB.isEmpty ? "OSPITE" : localState.teamB)
+        
+        dartsInputLabel?.text = "\(pName): \(curScore)  −  [\(inputStr)]  =  \(rem)"
+    }
+    
     @objc func toggleSponsor() {
         guard StoreKitManager.shared.canUseFeature(.sponsors) else {
             showToast(message: "⭐ Funzionalità Sponsor disponibile con Premium")
@@ -2322,6 +2646,18 @@ class MainViewController: UIViewController {
             checkDartsLeg(isHome: false, subtract: 60)
         case "DARTS_SUB_100_B":
             checkDartsLeg(isHome: false, subtract: 100)
+        case let s where s.hasPrefix("DARTS_SUB_"):
+            let parts = s.components(separatedBy: "_")
+            if parts.count >= 3, let pts = Int(parts[2]) {
+                let player = parts.count >= 4 ? parts[3] : (localState.dartsActivePlayer.isEmpty ? "A" : localState.dartsActivePlayer)
+                checkDartsLeg(isHome: (player == "A"), subtract: pts)
+            }
+        case "DARTS_SET_PLAYER_A":
+            localState.dartsActivePlayer = "A"
+            updateLocalState()
+        case "DARTS_SET_PLAYER_B":
+            localState.dartsActivePlayer = "B"
+            updateLocalState()
         case "DARTS_LEG_A":
             localState.dartsLegsA += 1
             resetDartsScores()
@@ -2361,7 +2697,13 @@ class MainViewController: UIViewController {
             updateLocalState()
         case "SOCCER_TIMER_TOGGLE":
             localState.timerRunning.toggle()
-            updateLocalState()
+            updateSoccerTimerButton()
+            updateLocalState(saveHistory: false)
+        case "SOCCER_TIMER_RESET":
+            localState.timerSeconds = 0
+            localState.timerRunning = false
+            updateSoccerTimerButton()
+            updateLocalState(saveHistory: false)
         case "TOGGLE_SPONSOR":
             toggleSponsor()
         case "SPONSOR_1":

@@ -8,6 +8,8 @@ struct RemoteControlView: View {
     @State private var matchState = RemoteMatchState()
     @State private var isAudioMuted = false
     @State private var selectedSponsorIndex: Int? = nil
+    @State private var dartsInput: String = ""
+    @State private var selectedDartsPlayer: String = "A"
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -661,28 +663,67 @@ struct RemoteControlView: View {
     
     // MARK: - Soccer / Handball Controls
     var soccerControlsView: some View {
-        HStack(spacing: 12) {
-            VStack(spacing: 8) {
-                Text(matchState.teamA.isEmpty ? "CASA" : matchState.teamA).font(.headline).bold().foregroundColor(.white)
-                HStack {
-                    Button("−1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_A") }
-                        .font(.title3).foregroundColor(.gray).padding(10).background(Color.white.opacity(0.08)).cornerRadius(8)
-                    Button("GOL +1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_A") }
-                        .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(12).background(Color(red: 255/255, green: 42/255, blue: 133/255)).cornerRadius(10)
+        VStack(spacing: 10) {
+            // Timer Control Bar
+            HStack(spacing: 8) {
+                let m = matchState.timerSeconds / 60
+                let s = matchState.timerSeconds % 60
+                let timerStr = String(format: "%02d:%02d", m, s)
+                
+                Button(action: {
+                    triggerHaptic()
+                    FirebaseManager.shared.sendCommand("SOCCER_TIMER_TOGGLE")
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: matchState.timerRunning ? "pause.fill" : "play.fill")
+                        Text(matchState.timerRunning ? "PAUSA \(timerStr)" : "AVVIA \(timerStr)")
+                            .font(.system(size: 13, weight: .black))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(matchState.timerRunning ? Color.orange : Color(hex: "#10b981"))
+                    .cornerRadius(8)
+                }
+                
+                Button(action: {
+                    triggerHaptic()
+                    FirebaseManager.shared.sendCommand("SOCCER_TIMER_RESET")
+                }) {
+                    Text("🔄 RESET")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(8)
                 }
             }
-            .padding(12).background(Color.white.opacity(0.06)).cornerRadius(14)
+            .padding(.horizontal, 4)
             
-            VStack(spacing: 8) {
-                Text(matchState.teamB.isEmpty ? "OSPITE" : matchState.teamB).font(.headline).bold().foregroundColor(.white)
-                HStack {
-                    Button("−1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_B") }
-                        .font(.title3).foregroundColor(.gray).padding(10).background(Color.white.opacity(0.08)).cornerRadius(8)
-                    Button("GOL +1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_B") }
-                        .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(12).background(Color(red: 0/255, green: 229/255, blue: 255/255)).cornerRadius(10)
+            HStack(spacing: 12) {
+                VStack(spacing: 8) {
+                    Text(matchState.teamA.isEmpty ? "CASA" : matchState.teamA).font(.headline).bold().foregroundColor(.white)
+                    HStack {
+                        Button("−1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_A") }
+                            .font(.title3).foregroundColor(.gray).padding(10).background(Color.white.opacity(0.08)).cornerRadius(8)
+                        Button("GOL +1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_A") }
+                            .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(12).background(Color(red: 255/255, green: 42/255, blue: 133/255)).cornerRadius(10)
+                    }
                 }
+                .padding(12).background(Color.white.opacity(0.06)).cornerRadius(14)
+                
+                VStack(spacing: 8) {
+                    Text(matchState.teamB.isEmpty ? "OSPITE" : matchState.teamB).font(.headline).bold().foregroundColor(.white)
+                    HStack {
+                        Button("−1") { triggerHaptic(); FirebaseManager.shared.sendCommand("MINUS_B") }
+                            .font(.title3).foregroundColor(.gray).padding(10).background(Color.white.opacity(0.08)).cornerRadius(8)
+                        Button("GOL +1") { triggerHaptic(); FirebaseManager.shared.sendCommand("POINT_B") }
+                            .font(.headline).foregroundColor(.white).frame(maxWidth: .infinity).padding(12).background(Color(red: 0/255, green: 229/255, blue: 255/255)).cornerRadius(10)
+                    }
+                }
+                .padding(12).background(Color.white.opacity(0.06)).cornerRadius(14)
             }
-            .padding(12).background(Color.white.opacity(0.06)).cornerRadius(14)
         }
     }
     
@@ -715,63 +756,169 @@ struct RemoteControlView: View {
         }
     }
     
-    // MARK: - Darts (Freccette) Controls
+    // MARK: - Darts (Freccette) Controls con Tastierino Calcolatrice
     var dartsControlsView: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 10) {
-                // CASA Darts
-                VStack(spacing: 6) {
-                    Text(matchState.teamA.isEmpty ? "GIOCATORE 1" : matchState.teamA)
-                        .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
-                    HStack(spacing: 4) {
-                        Button("-20") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_20_A") }
-                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 255/255, green: 42/255, blue: 133/255)).cornerRadius(6)
-                        Button("-60") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_60_A") }
-                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 255/255, green: 42/255, blue: 133/255).opacity(0.85)).cornerRadius(6)
-                        Button("-100") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_100_A") }
-                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 255/255, green: 42/255, blue: 133/255).opacity(0.7)).cornerRadius(6)
+            // Player Switcher & Current Scores
+            HStack(spacing: 8) {
+                // Giocatore CASA
+                Button(action: {
+                    triggerHaptic()
+                    selectedDartsPlayer = "A"
+                    FirebaseManager.shared.sendCommand("DARTS_SET_PLAYER_A")
+                }) {
+                    VStack(spacing: 2) {
+                        Text(matchState.teamA.isEmpty ? "GIOCATORE 1" : matchState.teamA)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                        Text("\(matchState.scoreA)")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(Color(red: 255/255, green: 42/255, blue: 133/255))
+                        Text("Legs: \(matchState.dartsLegsA)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.yellow)
                     }
-                    HStack {
-                        Button("BUST") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_BUST") }
-                            .font(.caption).foregroundColor(.red).padding(4)
-                        Spacer()
-                        Text("Leg: \(matchState.dartsLegsA)")
-                            .font(.system(size: 11, weight: .bold)).foregroundColor(.yellow)
-                        Button("+LEG") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_LEG_A") }
-                            .font(.caption).foregroundColor(.white).padding(4).background(Color.white.opacity(0.1)).cornerRadius(4)
-                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(6)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke((matchState.dartsActivePlayer == "A" || selectedDartsPlayer == "A") ? Color(red: 255/255, green: 42/255, blue: 133/255) : Color.clear, lineWidth: 2))
                 }
-                .padding(8)
-                .background(Color.white.opacity(0.06))
-                .cornerRadius(10)
                 
-                // OSPITE Darts
-                VStack(spacing: 6) {
-                    Text(matchState.teamB.isEmpty ? "GIOCATORE 2" : matchState.teamB)
-                        .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
-                    HStack(spacing: 4) {
-                        Button("-20") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_20_B") }
-                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 0/255, green: 229/255, blue: 255/255)).cornerRadius(6)
-                        Button("-60") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_60_B") }
-                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.85)).cornerRadius(6)
-                        Button("-100") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_SUB_100_B") }
-                            .font(.system(size: 12, weight: .black)).foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 8).background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.7)).cornerRadius(6)
+                // Giocatore OSPITE
+                Button(action: {
+                    triggerHaptic()
+                    selectedDartsPlayer = "B"
+                    FirebaseManager.shared.sendCommand("DARTS_SET_PLAYER_B")
+                }) {
+                    VStack(spacing: 2) {
+                        Text(matchState.teamB.isEmpty ? "GIOCATORE 2" : matchState.teamB)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                        Text("\(matchState.scoreB)")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(Color(red: 0/255, green: 229/255, blue: 255/255))
+                        Text("Legs: \(matchState.dartsLegsB)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.yellow)
                     }
-                    HStack {
-                        Button("BUST") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_BUST") }
-                            .font(.caption).foregroundColor(.red).padding(4)
-                        Spacer()
-                        Text("Leg: \(matchState.dartsLegsB)")
-                            .font(.system(size: 11, weight: .bold)).foregroundColor(.yellow)
-                        Button("+LEG") { triggerHaptic(); FirebaseManager.shared.sendCommand("DARTS_LEG_B") }
-                            .font(.caption).foregroundColor(.white).padding(4).background(Color.white.opacity(0.1)).cornerRadius(4)
+                    .frame(maxWidth: .infinity)
+                    .padding(6)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke((matchState.dartsActivePlayer == "B" || selectedDartsPlayer == "B") ? Color(red: 0/255, green: 229/255, blue: 255/255) : Color.clear, lineWidth: 2))
+                }
+            }
+            
+            // Display Valore Calcolatrice
+            HStack {
+                Text("Punti lancio:")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(hex: "#94a3b8"))
+                Spacer()
+                Text(dartsInput.isEmpty ? "0" : dartsInput)
+                    .font(.system(size: 24, weight: .black))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 2)
+                    .background(Color.black.opacity(0.4))
+                    .cornerRadius(6)
+            }
+            .padding(.horizontal, 6)
+            
+            // Tastiera Calcolatrice (1-9, C, 0, Canc)
+            VStack(spacing: 4) {
+                let rows = [
+                    ["1", "2", "3"],
+                    ["4", "5", "6"],
+                    ["7", "8", "9"],
+                    ["C", "0", "⌫"]
+                ]
+                ForEach(rows, id: \.self) { row in
+                    HStack(spacing: 4) {
+                        ForEach(row, id: \.self) { key in
+                            Button(action: {
+                                triggerHaptic()
+                                if key == "C" {
+                                    dartsInput = ""
+                                } else if key == "⌫" {
+                                    if !dartsInput.isEmpty { dartsInput.removeLast() }
+                                } else {
+                                    if dartsInput.count < 3 {
+                                        let candidate = dartsInput + key
+                                        if let val = Int(candidate), val <= 180 {
+                                            dartsInput = candidate
+                                        }
+                                    }
+                                }
+                            }) {
+                                Text(key)
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(key == "C" ? .red : (key == "⌫" ? .yellow : .white))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 36)
+                                    .background(Color.white.opacity(0.12))
+                                    .cornerRadius(6)
+                            }
+                        }
                     }
                 }
-                .padding(8)
-                .background(Color.white.opacity(0.06))
-                .cornerRadius(10)
+            }
+            
+            // Tasti Azione: SOTTRAI, BUST, +LEG
+            HStack(spacing: 6) {
+                Button(action: {
+                    triggerHaptic()
+                    let pts = Int(dartsInput) ?? 0
+                    if pts > 0 {
+                        let player = (selectedDartsPlayer == "B" || matchState.dartsActivePlayer == "B") ? "B" : "A"
+                        FirebaseManager.shared.sendCommand("DARTS_SUB_\(pts)_\(player)")
+                        dartsInput = ""
+                    }
+                }) {
+                    Text("🎯 SOTTRAI \(dartsInput.isEmpty ? "" : dartsInput)")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(Color(hex: "#06B6D4"))
+                        .cornerRadius(8)
+                }
+                
+                Button(action: {
+                    triggerHaptic()
+                    FirebaseManager.shared.sendCommand("DARTS_BUST")
+                    dartsInput = ""
+                }) {
+                    Text("BUST")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .frame(height: 40)
+                        .background(Color.red.opacity(0.8))
+                        .cornerRadius(8)
+                }
+                
+                Button(action: {
+                    triggerHaptic()
+                    let player = (selectedDartsPlayer == "B" || matchState.dartsActivePlayer == "B") ? "B" : "A"
+                    FirebaseManager.shared.sendCommand("DARTS_LEG_\(player)")
+                }) {
+                    Text("+LEG")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 10)
+                        .frame(height: 40)
+                        .background(Color.yellow)
+                        .cornerRadius(8)
+                }
             }
         }
+        .padding(8)
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(12)
     }
     
     // MARK: - Bottom Broadcast Bar (TEXT, HL, REP, Audio, S1-S4)

@@ -22,6 +22,11 @@ class StreamVideoEffect: VideoEffect {
     }
     
     private var cachedReplayBadgeCIImage: CIImage?
+    private var cachedBannerUIImages: [UIImage] = []
+    private var lastBannerCheckTime: TimeInterval = 0
+    private var marqueeFont = UIFont.boldSystemFont(ofSize: 32)
+    private var lastMarqueeMessage: String = ""
+    private var cachedMarqueeWidth: CGFloat = 0
     
     private func getReplayBadgeCIImage() -> CIImage? {
         if let cached = cachedReplayBadgeCIImage {
@@ -56,6 +61,193 @@ class StreamVideoEffect: VideoEffect {
         return nil
     }
     
+    // MARK: - Testo Scorrevole Dinamico in Tempo Reale
+    private func getMarqueeStripCIImage(message: String) -> CIImage? {
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        
+        if trimmed != lastMarqueeMessage {
+            lastMarqueeMessage = trimmed
+            cachedMarqueeWidth = (trimmed as NSString).size(withAttributes: [.font: marqueeFont]).width
+        }
+        
+        let totalDist = 1920.0 + cachedMarqueeWidth + 120.0
+        let speed: Double = 140.0 // Velocità fluida broadcast in px/s
+        let elapsed = CACurrentMediaTime()
+        let offset = CGFloat(fmod(elapsed * speed, Double(totalDist)))
+        let textX = 1920.0 - offset
+        
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        format.opaque = false
+        let h: CGFloat = 64.0
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: h), format: format)
+        let uiImage = renderer.image { context in
+            let barRect = CGRect(x: 0, y: 0, width: 1920, height: h)
+            
+            // Sfondo barra elegante blu scuro con trasparenza
+            UIColor(red: 10/255, green: 22/255, blue: 48/255, alpha: 0.92).setFill()
+            context.cgContext.fill(barRect)
+            
+            // Bordo superiore neon azzurro
+            let borderPath = UIBezierPath()
+            borderPath.move(to: CGPoint(x: 0, y: 1))
+            borderPath.addLine(to: CGPoint(x: 1920, y: 1))
+            UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.95).setStroke()
+            borderPath.lineWidth = 2.0
+            borderPath.stroke()
+            
+            // Badge icona "LIVE" a sinistra fissa
+            let tagRect = CGRect(x: 20, y: 14, width: 68, height: 36)
+            let tagPath = UIBezierPath(roundedRect: tagRect, cornerRadius: 6)
+            UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.95).setFill()
+            tagPath.fill()
+            let tagAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 15, weight: .black),
+                .foregroundColor: UIColor.white
+            ]
+            "LIVE".draw(at: CGPoint(x: 32, y: 22), withAttributes: tagAttrs)
+            
+            // Testo scorrevole nitido in bianco
+            let textAttrs: [NSAttributedString.Key: Any] = [
+                .font: self.marqueeFont,
+                .foregroundColor: UIColor.white
+            ]
+            (trimmed as NSString).draw(at: CGPoint(x: textX, y: 14), withAttributes: textAttrs)
+        }
+        if let cgImg = uiImage.cgImage {
+            // CIImage origin is at bottom-left, so (0,0) with height 64 sits directly at the bottom of 1080p frame
+            return CIImage(cgImage: cgImg)
+        }
+        return nil
+    }
+    
+    // MARK: - Sponsor a Tutto Schermo (Tasto 'S')
+    private func getFullScreenSponsorCIImage(state: RemoteMatchState) -> CIImage? {
+        let idx = state.currentSponsorIdx
+        let namesToTry = [
+            "sponsor_\(idx + 1).png",
+            "sponsorFull.png",
+            "sponsor_1.png",
+            "sponsor_2.png",
+            "sponsor_3.png",
+            "sponsor_4.png"
+        ]
+        var sponsorImg: UIImage?
+        for name in namesToTry {
+            if let data = AppPreferences.shared.loadImage(name: name), let img = UIImage(data: data) {
+                sponsorImg = img
+                break
+            }
+        }
+        
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: 1080), format: format)
+        let uiImage = renderer.image { context in
+            // Sfondo broadcast
+            UIColor(red: 10/255, green: 15/255, blue: 30/255, alpha: 1.0).setFill()
+            context.cgContext.fill(CGRect(x: 0, y: 0, width: 1920, height: 1080))
+            
+            if let img = sponsorImg {
+                let imgSize = img.size
+                let aspect = min(1800.0 / imgSize.width, 960.0 / imgSize.height)
+                let drawW = imgSize.width * aspect
+                let drawH = imgSize.height * aspect
+                let drawX = (1920.0 - drawW) / 2.0
+                let drawY = (1080.0 - drawH) / 2.0
+                img.draw(in: CGRect(x: drawX, y: drawY, width: drawW, height: drawH))
+            } else {
+                let cardRect = CGRect(x: 260, y: 190, width: 1400, height: 700)
+                let cardPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 28)
+                UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.95).setFill()
+                cardPath.fill()
+                UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.9).setStroke()
+                cardPath.lineWidth = 3
+                cardPath.stroke()
+                
+                let title = "PAUSA SPONSOR"
+                let titleFont = UIFont.systemFont(ofSize: 56, weight: .black)
+                let titleAttrs: [NSAttributedString.Key: Any] = [
+                    .font: titleFont,
+                    .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
+                ]
+                let tSize = (title as NSString).size(withAttributes: titleAttrs)
+                (title as NSString).draw(at: CGPoint(x: (1920 - tSize.width) / 2, y: 440), withAttributes: titleAttrs)
+                
+                let sub = "LA DIRETTA RIPRENDERÀ A BREVE"
+                let subFont = UIFont.systemFont(ofSize: 28, weight: .bold)
+                let subAttrs: [NSAttributedString.Key: Any] = [
+                    .font: subFont,
+                    .foregroundColor: UIColor.white
+                ]
+                let sSize = (sub as NSString).size(withAttributes: subAttrs)
+                (sub as NSString).draw(at: CGPoint(x: (1920 - sSize.width) / 2, y: 530), withAttributes: subAttrs)
+            }
+        }
+        if let cgImg = uiImage.cgImage {
+            return CIImage(cgImage: cgImg)
+        }
+        return nil
+    }
+    
+    // MARK: - Sponsor a Rotazione in Alto a Destra
+    private func reloadRotatingBannersIfNeeded() {
+        let now = CACurrentMediaTime()
+        guard now - lastBannerCheckTime > 5.0 else { return }
+        lastBannerCheckTime = now
+        
+        var images: [UIImage] = []
+        for i in 1...5 {
+            if let data = AppPreferences.shared.loadImage(name: "banner_\(i).png"), let img = UIImage(data: data) {
+                images.append(img)
+            } else if let data = AppPreferences.shared.loadImage(name: "sponsorRotating_\(i - 1).png"), let img = UIImage(data: data) {
+                images.append(img)
+            }
+        }
+        self.cachedBannerUIImages = images
+    }
+    
+    private func getRotatingBannerCIImage() -> CIImage? {
+        reloadRotatingBannersIfNeeded()
+        guard !cachedBannerUIImages.isEmpty else { return nil }
+        
+        let count = cachedBannerUIImages.count
+        let index = Int(Date().timeIntervalSince1970 / 12.0) % count
+        let banner = cachedBannerUIImages[index]
+        
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        format.opaque = false
+        let boxW: CGFloat = 220.0
+        let boxH: CGFloat = 60.0
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: boxW, height: boxH), format: format)
+        let uiImage = renderer.image { context in
+            let rect = CGRect(x: 0, y: 0, width: boxW, height: boxH)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: 10)
+            UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.90).setFill()
+            path.fill()
+            UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.8).setStroke()
+            path.lineWidth = 1.5
+            path.stroke()
+            
+            let bSize = banner.size
+            let aspect = min((boxW - 16) / bSize.width, (boxH - 12) / bSize.height)
+            let dw = bSize.width * aspect
+            let dh = bSize.height * aspect
+            let dx = (boxW - dw) / 2.0
+            let dy = (boxH - dh) / 2.0
+            banner.draw(in: CGRect(x: dx, y: dy, width: dw, height: dh))
+        }
+        if let cgImg = uiImage.cgImage {
+            let ci = CIImage(cgImage: cgImg)
+            let transform = CGAffineTransform(translationX: 1920.0 - 35.0 - boxW, y: 1080.0 - 35.0 - boxH)
+            return ci.transformed(by: transform)
+        }
+        return nil
+    }
+    
     override func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
         // Registra frame nel buffer circolare per Replay e Highlights
         ReplayManager.shared.recordFrame(image)
@@ -74,15 +266,29 @@ class StreamVideoEffect: VideoEffect {
             }
         }
         
-        let isRecording = LocalVideoRecorder.shared.isRecordingState
-        
-        // Compositing overlay grafico nativo e velocissimo via GPU
-        lock.lock()
-        let currentOverlay = overlayImage
-        lock.unlock()
-        
-        if let overlay = currentOverlay {
-            outputImage = overlay.composited(over: outputImage)
+        // Verifica se è attivo lo sponsor a tutto schermo
+        let isFullScreenSponsor = (currentState?.fullScreenSponsor == true) || (currentState?.showSponsor == true)
+        if isFullScreenSponsor, let state = currentState, let sponsorCI = getFullScreenSponsorCIImage(state: state) {
+            outputImage = sponsorCI.composited(over: outputImage)
+        } else {
+            // Compositing overlay grafico (tabellone TV)
+            lock.lock()
+            let currentOverlay = overlayImage
+            lock.unlock()
+            
+            if let overlay = currentOverlay {
+                outputImage = overlay.composited(over: outputImage)
+            }
+            
+            // Sponsor rotanti in alto a destra
+            if let bannerCI = getRotatingBannerCIImage() {
+                outputImage = bannerCI.composited(over: outputImage)
+            }
+            
+            // Testo scorrevole dinamico a 60fps in basso
+            if let state = currentState, state.showScrollText, let marqueeCI = getMarqueeStripCIImage(message: state.scrollMessage) {
+                outputImage = marqueeCI.composited(over: outputImage)
+            }
         }
         
         // Disegna dinamici in tempo reale: Transizione Stinger TV e Scritta REPLAY Lampeggiante
@@ -97,6 +303,7 @@ class StreamVideoEffect: VideoEffect {
             }
         }
         
+        let isRecording = LocalVideoRecorder.shared.isRecordingState
         if isRecording {
             if let sampleBuffer = info {
                 let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
@@ -202,11 +409,6 @@ class StreamVideoEffect: VideoEffect {
                     ]
                     let textRect = CGRect(x: pillX + 2, y: pillY + 7, width: pillW - 4, height: 28)
                     watermarkText.draw(in: textRect, withAttributes: attrs)
-                }
-            }
-            
-            if let mv = self.marqueeView {
-                mv.layer.render(in: context.cgContext)
             }
         }
         

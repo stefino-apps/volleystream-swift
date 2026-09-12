@@ -434,10 +434,16 @@ class ScoreboardOverlayView: UIView {
             baseTitle = "BASKET | Q\(state.currentSet)/\(state.totalPeriods)"
         case "soccer":
             let half = state.currentSet == 1 ? "1° TEMPO" : (state.currentSet == 2 ? "2° TEMPO" : "SUPPL.")
-            baseTitle = "CALCIO | \(half)"
+            let m = state.timerSeconds / 60
+            let s = state.timerSeconds % 60
+            let timeStr = String(format: "%02d:%02d", m, s)
+            baseTitle = "CALCIO | \(half) | \(timeStr)"
         case "handball", "pallamano":
             let half = state.currentSet == 1 ? "1° TEMPO" : "2° TEMPO"
-            baseTitle = "PALLAMANO | \(half)"
+            let m = state.timerSeconds / 60
+            let s = state.timerSeconds % 60
+            let timeStr = String(format: "%02d:%02d", m, s)
+            baseTitle = "PALLAMANO | \(half) | \(timeStr)"
         case "tennis":
             let setStr = state.isTiebreak ? "TIE-BREAK" : "SET \(state.currentSet)"
             baseTitle = "TENNIS | \(setStr)"

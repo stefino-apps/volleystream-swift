@@ -12,9 +12,19 @@ class ReplayManager {
         return true
     }
     
-    // Configurazione Replay
-    var replayDuration: Int = UserDefaults.standard.integer(forKey: "replay_duration_seconds") == 0 ? 5 : UserDefaults.standard.integer(forKey: "replay_duration_seconds")
-    var replaySpeed: Double = UserDefaults.standard.double(forKey: "replay_speed_factor") == 0 ? 0.5 : UserDefaults.standard.double(forKey: "replay_speed_factor")
+    // Configurazione Replay e Highlights
+    var replayDuration: Int {
+        let d = UserDefaults.standard.integer(forKey: "replay_duration_seconds")
+        return d == 0 ? 5 : d
+    }
+    var highlightDuration: Int {
+        let d = UserDefaults.standard.integer(forKey: "highlight_duration_seconds")
+        return d == 0 ? 10 : d
+    }
+    var replaySpeed: Double {
+        let s = UserDefaults.standard.double(forKey: "replay_speed_factor")
+        return s == 0 ? 0.5 : s
+    }
     
     // Callback stato Replay per sincronizzazione UI / Firebase
     var onReplayStateChanged: ((Bool) -> Void)?
@@ -30,7 +40,10 @@ class ReplayManager {
     private var playbackBuffer: [CVPixelBuffer] = []
     private var pixelBufferPool: CVPixelBufferPool?
     
-    private var maxFrames: Int { return replayDuration * 30 }
+    private var maxFrames: Int {
+        let maxSec = max(20, max(replayDuration, highlightDuration))
+        return maxSec * 30
+    }
     private var isRecording = true
     private var isPlaying = false
     private var playbackFraction: Double = 0.0
@@ -54,7 +67,7 @@ class ReplayManager {
     
     private func setupPixelBufferPool(width: Int, height: Int) {
         let poolAttributes: [String: Any] = [
-            kCVPixelBufferPoolMinimumBufferCountKey as String: 300
+            kCVPixelBufferPoolMinimumBufferCountKey as String: 700
         ]
         let pixelBufferAttributes: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
@@ -109,10 +122,8 @@ class ReplayManager {
     }
     
     func configure(durationSeconds: Int, speedFactor: Double) {
-        queue.async {
-            self.replayDuration = max(5, min(durationSeconds, 10))
-            self.replaySpeed = speedFactor
-        }
+        UserDefaults.standard.set(max(5, min(durationSeconds, 10)), forKey: "replay_duration_seconds")
+        UserDefaults.standard.set(speedFactor, forKey: "replay_speed_factor")
     }
     
     // MARK: - Registrazione Frame Live (Zero CPU lag via Metal CVPixelBuffer)
@@ -157,7 +168,8 @@ class ReplayManager {
     func startReplay() {
         queue.async {
             guard !self.frameBuffer.isEmpty else { return }
-            self.playbackBuffer = Array(self.frameBuffer)
+            let count = min(self.replayDuration * 30, self.frameBuffer.count)
+            self.playbackBuffer = Array(self.frameBuffer.suffix(count))
             self.isPlaying = true
             self.isStingerPlaying = true
             self.isOutroStinger = false
@@ -324,7 +336,9 @@ class ReplayManager {
             // 2. Riavvia immediatamente la registrazione audio rolling per i prossimi highlight
             self.startRollingAudioRecording()
             
-            let framesToExport = self.frameBuffer.isEmpty ? self.playbackBuffer : self.frameBuffer
+            let availableFrames = self.frameBuffer.isEmpty ? self.playbackBuffer : self.frameBuffer
+            let hlFrameCount = min(self.highlightDuration * 30, availableFrames.count)
+            let framesToExport = Array(availableFrames.suffix(hlFrameCount))
             guard !framesToExport.isEmpty else {
                 try? FileManager.default.removeItem(at: highlightAudioUrl)
                 DispatchQueue.main.async { completion(false, "Nessun frame registrato per l'highlight") }

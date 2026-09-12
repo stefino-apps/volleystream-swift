@@ -14,24 +14,31 @@ class MarqueeOverlayView: UIView {
     }
     
     private func setupUI() {
-        // Questa view avra' frame 1920x1080 (o la risoluzione video)
-        // Disegniamo la striscia in basso
-        backgroundView.frame = CGRect(x: 0, y: 1080 - 60, width: 1920, height: 60)
-        backgroundView.backgroundColor = UIColor.blue.withAlphaComponent(0.8)
+        clipsToBounds = true
+        backgroundView.backgroundColor = UIColor(red: 10/255, green: 22/255, blue: 48/255, alpha: 0.92)
         backgroundView.isHidden = true
         addSubview(backgroundView)
         
-        textLabel.frame = CGRect(x: 1920, y: 0, width: 3000, height: 60)
         textLabel.textColor = .white
-        textLabel.font = UIFont.boldSystemFont(ofSize: 32)
+        textLabel.font = UIFont.boldSystemFont(ofSize: 18)
         backgroundView.addSubview(textLabel)
     }
     
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let barH: CGFloat = bounds.height > 600 ? 54 : 36
+        backgroundView.frame = CGRect(x: 0, y: bounds.height - barH, width: bounds.width, height: barH)
+        textLabel.font = UIFont.boldSystemFont(ofSize: bounds.height > 600 ? 24 : 15)
+        textLabel.sizeToFit()
+        textLabel.frame.size.height = barH
+    }
+    
     func updateMessage(_ message: String, show: Bool) {
-        if show {
+        if show && !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             backgroundView.isHidden = false
             if textLabel.text != message {
                 textLabel.text = message
+                layoutSubviews()
                 startAnimation()
             }
         } else {
@@ -43,10 +50,13 @@ class MarqueeOverlayView: UIView {
     
     private func startAnimation() {
         textLabel.layer.removeAllAnimations()
-        textLabel.frame.origin.x = 1920
+        let w = bounds.width > 0 ? bounds.width : 1920
+        let textW = textLabel.frame.width > 0 ? textLabel.frame.width : 1000
+        textLabel.frame.origin.x = w
         
-        UIView.animate(withDuration: 15.0, delay: 0, options: [.repeat, .curveLinear], animations: {
-            self.textLabel.frame.origin.x = -self.textLabel.frame.width
+        let duration = Double(w + textW) / 100.0
+        UIView.animate(withDuration: max(duration, 8.0), delay: 0, options: [.repeat, .curveLinear], animations: {
+            self.textLabel.frame.origin.x = -textW
         }, completion: nil)
     }
 }

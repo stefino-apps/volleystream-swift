@@ -746,7 +746,7 @@ struct AndroidBadgeView: View {
     }
 }
 
-// In-App Legal Document Viewer
+// In-App Native Legal Document Viewer
 struct LegalDocSheetView: View {
     let doc: WelcomeView.LegalDocType
     @Environment(\.presentationMode) var presentationMode
@@ -754,11 +754,56 @@ struct LegalDocSheetView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#0f172a").edgesIgnoringSafeArea(.all)
+                Color(hex: "#09111e").edgesIgnoringSafeArea(.all)
                 
-                LegalWebView(fileName: doc.htmlFileName)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        // Header Badge
+                        HStack {
+                            Image(systemName: doc == .privacy ? "lock.shield.fill" : "doc.text.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(Color(hex: "#06b6d4"))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(doc == .privacy ? "Informativa sulla Privacy" : "Termini di Servizio")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.white)
+                                Text("VolleyStream Pro • Ultimo aggiornamento: Marzo 2026")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#94a3b8"))
+                            }
+                        }
+                        .padding(.vertical, 8)
+                        
+                        Divider().background(Color(hex: "#334155"))
+                        
+                        if doc == .privacy {
+                            privacyContent
+                        } else {
+                            termsContent
+                        }
+                        
+                        // Contact Card
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Domande o Contatti?")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(Color(hex: "#06b6d4"))
+                            Text("Per qualsiasi domanda riguardante la privacy o i termini di servizio, puoi contattare il nostro team di supporto a:")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#cbd5e1"))
+                            Text("✉️ volleystreampro@gmail.com")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .padding(16)
+                        .background(Color(hex: "#1e293b"))
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#06b6d4").opacity(0.4), lineWidth: 1))
+                        .padding(.top, 10)
+                    }
+                    .padding(20)
+                }
             }
-            .navigationBarTitle(Text(doc.title), displayMode: .inline)
+            .navigationBarTitle(Text(doc == .privacy ? "Privacy Policy" : "Termini d'Uso"), displayMode: .inline)
             .navigationBarItems(trailing: Button(action: {
                 presentationMode.wrappedValue.dismiss()
             }) {
@@ -768,32 +813,57 @@ struct LegalDocSheetView: View {
             })
         }
     }
-}
-
-struct LegalWebView: UIViewRepresentable {
-    let fileName: String
     
-    func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.isOpaque = false
-        webView.backgroundColor = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 1.0)
-        
-        if let fileURL = Bundle.main.url(forResource: (fileName as NSString).deletingPathExtension, withExtension: (fileName as NSString).pathExtension) {
-            webView.loadFileURL(fileURL, allowingReadAccessTo: fileURL.deletingLastPathComponent())
-        } else if let localPath = Bundle.main.path(forResource: fileName, ofType: nil),
-                  let htmlString = try? String(contentsOfFile: localPath, encoding: .utf8) {
-            webView.loadHTMLString(htmlString, baseURL: nil)
-        } else {
-            // Web fallback
-            let fallbackURL = fileName.contains("privacy") ? "https://volleystreampro.com/privacy.html" : "https://volleystreampro.com/terms.html"
-            if let url = URL(string: fallbackURL) {
-                webView.load(URLRequest(url: url))
-            }
+    private var privacyContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            legalCard(title: "1. Titolare del Trattamento", text: "Il titolare del trattamento dei dati è VolleyStream Pro. Contatto email: volleystreampro@gmail.com. La protezione e riservatezza dei tuoi dati è la nostra priorità.")
+            
+            legalCard(title: "2. Fotocamera e Microfono", text: "L'applicazione richiede l'accesso a Fotocamera e Microfono esclusivamente per consentire la ripresa e la trasmissione in diretta streaming su YouTube e il salvataggio locale dei match e degli highlights sul tuo dispositivo. Nessun flusso audio/video viene registrato o memorizzato sui nostri server.")
+            
+            legalCard(title: "3. Account Google e YouTube API Services", text: "VolleyStream Pro utilizza i servizi API di YouTube per consentirti di trasmettere live sul tuo canale. L'uso dell'app implica l'accettazione dei Termini di Servizio di YouTube (https://www.youtube.com/t/terms) e delle Norme sulla Privacy di Google (https://policies.google.com/privacy). Puoi revocare l'accesso in qualsiasi momento da myaccount.google.com/permissions.")
+            
+            legalCard(title: "4. Firebase e Controllo Remoto", text: "Utilizziamo Google Firebase per la sincronizzazione temporanea dei punteggi, del tabellone e del controllo remoto durante la partita. I dati vengono crittografati in transito (HTTPS) e cancellati al termine della sessione.")
+            
+            legalCard(title: "5. Pagamenti e Abbonamenti", text: "Tutti i pagamenti e gli abbonamenti sono gestiti in modo sicuro e autonomo tramite Apple App Store / In-App Purchase. Non raccogliamo né memorizziamo alcun dato relativo a carte di credito o conti bancari.")
+            
+            legalCard(title: "6. Tutela dei Minori e Consenso", text: "Qualora le riprese coinvolgano soggetti minorenni, l'Utente ha l'obbligo tassativo di ottenere il preventivo consenso scritto dai genitori o tutori legali prima di avviare qualsiasi trasmissione o registrazione.")
+            
+            legalCard(title: "7. Diritti dell'Utente (GDPR)", text: "Hai il diritto di richiedere in qualsiasi momento l'accesso, la rettifica, la cancellazione o la revoca del consenso per qualsiasi dato associato al tuo utilizzo inviando un'email a volleystreampro@gmail.com.")
         }
-        return webView
     }
     
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    private var termsContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            legalCard(title: "1. Accettazione dei Termini", text: "Scaricando, installando o utilizzando VolleyStream Pro, accetti integralmente i presenti Termini di Servizio. Se non accetti questi termini, ti preghiamo di non utilizzare l'applicazione.")
+            
+            legalCard(title: "2. Licenza d'Uso", text: "Ti concediamo una licenza personale, non esclusiva, non trasferibile e revocabile per utilizzare l'app a scopi personali, sportivi o di trasmissione di eventi in conformità con i presenti Termini.")
+            
+            legalCard(title: "3. Abbonamenti e Rinnovo Automatico", text: "VolleyStream Pro offre piani di abbonamento per accedere a tutte le funzionalità avanzate (overlay grafici pro, replay istantaneo, highlights, controllo remoto, 10 sport). L'abbonamento si rinnova automaticamente a meno che non venga annullato almeno 24 ore prima della scadenza tramite le Impostazioni del tuo ID Apple.")
+            
+            legalCard(title: "4. Responsabilità sui Contenuti Trasmessi", text: "L'Utente è l'unico responsabile delle immagini e dei suoni trasmessi. È vietato trasmettere contenuti protetti da copyright senza autorizzazione, contenuti illeciti, diffamatori o offensivi. L'Utente si impegna a rispettare tutte le normative sulla privacy e la tutela dei minori.")
+            
+            legalCard(title: "5. YouTube API Terms of Service", text: "L'utilizzo delle funzioni di live streaming su YouTube richiede il rispetto dei YouTube Terms of Service (https://www.youtube.com/t/terms). VolleyStream Pro opera come interfaccia tecnica per la trasmissione verso la piattaforma YouTube.")
+            
+            legalCard(title: "6. Limitazione di Responsabilità", text: "VolleyStream Pro fornisce il servizio 'così com'è'. Non possiamo garantire l'assenza di interruzioni causate da problemi di rete, instabilità della connessione Wi-Fi/4G/5G dell'utente o malfunzionamenti dei server di terze parti.")
+        }
+    }
+    
+    private func legalCard(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(Color(hex: "#38bdf8"))
+            Text(text)
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "#e2e8f0"))
+                .lineSpacing(4)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(hex: "#131f33"))
+        .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: "#334155"), lineWidth: 1))
+    }
 }
 
 // MARK: - Rich Broadcast Badge Popup Modal
