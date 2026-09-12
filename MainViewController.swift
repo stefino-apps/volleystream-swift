@@ -246,7 +246,7 @@ class MainViewController: UIViewController {
         scoreboardView = ScoreboardOverlayView(frame: view.bounds)
         scoreboardView.isUserInteractionEnabled = false
         scoreboardView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        scoreboardView.isHidden = true
+        scoreboardView.isHidden = false
         view.addSubview(scoreboardView)
         StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
         
@@ -598,7 +598,9 @@ class MainViewController: UIViewController {
         if isClean {
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.isHidden = true
+            scoreboardView.frame = view.bounds
+            scoreboardView.isHidden = false
+            view.bringSubviewToFront(scoreboardView)
             gridLayer?.isHidden = true
             allControls.forEach { $0.isHidden = true }
             return
@@ -694,7 +696,9 @@ class MainViewController: UIViewController {
             lfView.layer.cornerRadius = 10
             lfView.clipsToBounds = true
             
-            scoreboardView.isHidden = true
+            scoreboardView.frame = q1Frame
+            scoreboardView.isHidden = false
+            view.bringSubviewToFront(scoreboardView)
             
             // ----------------------------------------------------
             // QUADRANT 2: TOP-RIGHT (Director Bar & Set Controls Pill)
@@ -967,7 +971,9 @@ class MainViewController: UIViewController {
             // ==========================================
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
-            scoreboardView.isHidden = true
+            scoreboardView.frame = view.bounds
+            scoreboardView.isHidden = false
+            view.bringSubviewToFront(scoreboardView)
             gridLayer?.isHidden = true
             
             gridContainerTR.isHidden = true
@@ -1145,6 +1151,15 @@ class MainViewController: UIViewController {
                 btnScoreAway2.isHidden = true
                 btnScoreAway3.isHidden = true
             }
+            
+            // Bring all control buttons to front over scoreboardView
+            let mode0Buttons: [UIView] = [
+                closeButton, modeButton, shareLiveButton, shareRemoteButton, replayButton, highlightButton,
+                zoomInButton, zoomOutButton, startStreamButton, muteButton, sponsorButton,
+                btnScoreHome, btnTimeoutHome, btnMinusHome, btnScoreAway, btnTimeoutAway, btnMinusAway,
+                btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter
+            ]
+            mode0Buttons.forEach { view.bringSubviewToFront($0) }
         }
     }
     
