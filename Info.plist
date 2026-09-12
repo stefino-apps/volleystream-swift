@@ -23,15 +23,18 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	
-	<!-- Permessi richiesti dall'app Android convertiti per iOS -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	
+	<!-- Permessi richiesti dall'app conformi alle linee guida Apple App Store -->
 	<key>NSCameraUsageDescription</key>
-	<string>VolleyStream Pro richiede l'accesso alla fotocamera per trasmettere le partite in diretta.</string>
+	<string>VolleyStream Pro utilizza la fotocamera per trasmettere in diretta streaming le partite e riprendere il campo di gioco.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>VolleyStream Pro richiede l'accesso al microfono per registrare l'audio durante la telecronaca o il match.</string>
+	<string>VolleyStream Pro utilizza il microfono per registrare l'audio della partita e la telecronaca durante la diretta streaming e il salvataggio locale.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>L'app salva le registrazioni video in locale nella galleria se attivi la funzione di registrazione.</string>
+	<string>VolleyStream Pro richiede l'accesso per salvare i video registrati dei match e le clip degli highlights nella galleria del dispositivo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Per caricare i loghi delle squadre e gli sponsor dalla galleria immagini.</string>
+	<string>VolleyStream Pro richiede l'accesso alle foto per consentirti di selezionare e caricare i loghi delle squadre e i banner degli sponsor.</string>
 	
 	<key>UIBackgroundModes</key>
 	<array>

@@ -169,26 +169,95 @@ struct WelcomeView: View {
                             
                             // Badges
                             VStack(spacing: 14) {
-                                AndroidBadgeView(text: "badge_remote".localized) { selectedBadgeInfo = "popup_remote_msg".localized }
-                                AndroidBadgeView(text: "badge_premium".localized) { selectedBadgeInfo = "popup_premium_msg".localized }
-                                AndroidBadgeView(text: "badge_tv_graphics".localized) { selectedBadgeInfo = "popup_tv_graphics_msg".localized }
-                                AndroidBadgeView(text: "badge_remote_control".localized) { selectedBadgeInfo = "popup_remote_control_msg".localized }
-                                AndroidBadgeView(text: "badge_local_record".localized) { selectedBadgeInfo = "popup_local_record_msg".localized }
-                                AndroidBadgeView(text: "badge_instant_replay".localized) { selectedBadgeInfo = "popup_instant_replay_msg".localized }
+                                AndroidBadgeView(
+                                    text: "badge_remote".localized,
+                                    isLocked: false
+                                ) {
+                                    selectedBadgeInfo = "popup_remote_msg".localized
+                                }
                                 
-                                Button(action: { navigateToRemote = true }) {
-                                    Text("btn_remote_mode".localized)
-                                        .font(.system(size: 16, weight: .heavy))
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(minHeight: 58)
-                                        .padding(.vertical, 16)
-                                        .background(Color(hex: "#EF4444"))
-                                        .cornerRadius(10)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(Color.white, lineWidth: 2.5)
-                                        )
+                                AndroidBadgeView(
+                                    text: "badge_premium".localized,
+                                    isLocked: false
+                                ) {
+                                    selectedBadgeInfo = "popup_premium_msg".localized
+                                }
+                                
+                                AndroidBadgeView(
+                                    text: "badge_tv_graphics".localized,
+                                    isLocked: !storeManager.isPremiumOrTrial
+                                ) {
+                                    if !storeManager.isPremiumOrTrial {
+                                        showPremiumPaywall = true
+                                    } else {
+                                        selectedBadgeInfo = "popup_tv_graphics_msg".localized
+                                    }
+                                }
+                                
+                                AndroidBadgeView(
+                                    text: "badge_remote_control".localized,
+                                    isLocked: !storeManager.isPremiumOrTrial
+                                ) {
+                                    if !storeManager.isPremiumOrTrial {
+                                        showPremiumPaywall = true
+                                    } else {
+                                        selectedBadgeInfo = "popup_remote_control_msg".localized
+                                    }
+                                }
+                                
+                                AndroidBadgeView(
+                                    text: "badge_local_record".localized,
+                                    isLocked: !storeManager.isPremiumOrTrial
+                                ) {
+                                    if !storeManager.isPremiumOrTrial {
+                                        showPremiumPaywall = true
+                                    } else {
+                                        selectedBadgeInfo = "popup_local_record_msg".localized
+                                    }
+                                }
+                                
+                                AndroidBadgeView(
+                                    text: "badge_instant_replay".localized,
+                                    isLocked: !storeManager.isPremiumOrTrial
+                                ) {
+                                    if !storeManager.isPremiumOrTrial {
+                                        showPremiumPaywall = true
+                                    } else {
+                                        selectedBadgeInfo = "popup_instant_replay_msg".localized
+                                    }
+                                }
+                                
+                                Button(action: {
+                                    if !storeManager.isPremiumOrTrial {
+                                        showPremiumPaywall = true
+                                    } else {
+                                        navigateToRemote = true
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        if !storeManager.isPremiumOrTrial {
+                                            Image(systemName: "lock.fill")
+                                                .font(.system(size: 18, weight: .bold))
+                                                .foregroundColor(Color(hex: "#FACC15"))
+                                        }
+                                        Text("btn_remote_mode".localized)
+                                            .font(.system(size: 16, weight: .heavy))
+                                            .foregroundColor(.white)
+                                        if !storeManager.isPremiumOrTrial {
+                                            Image(systemName: "lock.fill")
+                                                .font(.system(size: 18, weight: .bold))
+                                                .foregroundColor(Color(hex: "#FACC15"))
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 58)
+                                    .padding(.vertical, 16)
+                                    .background(Color(hex: "#EF4444"))
+                                    .cornerRadius(10)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.white, lineWidth: 2.5)
+                                    )
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .padding(.top, 14)
@@ -366,6 +435,8 @@ struct WelcomeView: View {
 struct PremiumPaywallSheet: View {
     @ObservedObject var storeManager = StoreKitManager.shared
     @Environment(\.presentationMode) var presentationMode
+    @State private var restoreAlertMessage: String? = nil
+    @State private var showLegalDoc: WelcomeView.LegalDocType? = nil
     
     var body: some View {
         ZStack {
@@ -482,6 +553,11 @@ struct PremiumPaywallSheet: View {
                     Button(action: {
                         Task {
                             await storeManager.restorePurchases()
+                            if storeManager.isPremium {
+                                restoreAlertMessage = "Abbonamento Premium ripristinato con successo!"
+                            } else {
+                                restoreAlertMessage = "Nessun abbonamento attivo trovato per questo account Apple ID."
+                            }
                         }
                     }) {
                         Text("Ripristina Acquisti")
@@ -489,10 +565,53 @@ struct PremiumPaywallSheet: View {
                             .foregroundColor(Color(hex: "#06b6d4"))
                             .underline()
                     }
-                    .padding(.top, 4)
+                    .padding(.top, 2)
+                    
+                    // Apple Review Guideline 3.1.2 Required Subscription Disclaimer
+                    VStack(spacing: 8) {
+                        Text("Dettagli abbonamento: La prova gratuita dura 7 giorni. Al termine, l'abbonamento si rinnova automaticamente a €39,99/anno a meno che non venga annullato almeno 24 ore prima della scadenza. Il pagamento viene addebitato sull'account Apple ID alla conferma. Puoi gestire e annullare l'abbonamento nelle Impostazioni dell'account App Store.")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#64748b"))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                        
+                        HStack(spacing: 16) {
+                            Button(action: { showLegalDoc = .privacy }) {
+                                Text("Informativa sulla Privacy")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#06b6d4"))
+                                    .underline()
+                            }
+                            
+                            Text("•")
+                                .font(.system(size: 10))
+                                .foregroundColor(Color(hex: "#475569"))
+                            
+                            Button(action: { showLegalDoc = .terms }) {
+                                Text("Termini di Servizio (EULA)")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#06b6d4"))
+                                    .underline()
+                            }
+                        }
+                        .padding(.top, 2)
+                    }
                     .padding(.bottom, 24)
                 }
             }
+        }
+        .sheet(item: $showLegalDoc) { doc in
+            LegalDocSheetView(doc: doc)
+        }
+        .alert(isPresented: Binding<Bool>(
+            get: { restoreAlertMessage != nil },
+            set: { if !$0 { restoreAlertMessage = nil } }
+        )) {
+            Alert(
+                title: Text("Ripristino Acquisti"),
+                message: Text(restoreAlertMessage ?? ""),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 }
@@ -529,26 +648,39 @@ struct AlertInfo: Identifiable {
 
 struct AndroidBadgeView: View {
     var text: String
+    var isLocked: Bool = false
     var action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            Text(text)
-                .font(.system(size: 19, weight: .bold))
-                .foregroundColor(Color(hex: "#00FFCC"))
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.85)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 64)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 16)
-                .background(Color(hex: "#0f172a").opacity(0.5))
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color(hex: "#FACC15"), lineWidth: 2)
-                )
+            HStack(spacing: 8) {
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(Color(hex: "#FACC15"))
+                }
+                Text(text)
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundColor(Color(hex: "#00FFCC"))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(Color(hex: "#FACC15"))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 64)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(Color(hex: "#0f172a").opacity(0.5))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(hex: "#FACC15"), lineWidth: 2)
+            )
         }
         .buttonStyle(PlainButtonStyle())
     }

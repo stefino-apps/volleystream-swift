@@ -2,6 +2,8 @@ import SwiftUI
 
 struct LiveSetupView: View {
     @Environment(\.presentationMode) var presentationMode
+    @ObservedObject private var storeManager = StoreKitManager.shared
+    @FocusState private var isTitleFocused: Bool
     
     @State private var streamPlatform = "YouTube" // "YouTube" or "Custom"
     @State private var streamVisibility = "unlisted" // "public", "unlisted", "private"
@@ -33,6 +35,7 @@ struct LiveSetupView: View {
     @State private var isCreatingEvent = false
     @State private var navigateToDirector = false
     @State private var showYouTubeInfo = false
+    @State private var showPremiumPaywall = false
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
@@ -163,6 +166,9 @@ struct LiveSetupView: View {
         }
         .sheet(isPresented: $showYouTubeInfo) {
             youtubeRequirementsSheet
+        }
+        .sheet(isPresented: $showPremiumPaywall) {
+            PremiumPaywallSheet()
         }
         .onAppear {
             AppDelegate.setOrientationLock(.portrait, rotateTo: .portrait)
@@ -359,17 +365,34 @@ struct LiveSetupView: View {
     // MARK: - Card FPS
     private var cardFPS: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("MODALITÀ FPS")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color(hex: "#06b6d4"))
-                .tracking(1.5)
+            HStack {
+                Text("MODALITÀ FPS")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(hex: "#06b6d4"))
+                    .tracking(1.5)
+                Spacer()
+                if !storeManager.isPremiumOrTrial {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                        Text("PREMIUM")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                    }
+                }
+            }
             
             VStack(spacing: 12) {
                 radioButton(title: "30 FPS", selected: streamFPS == 30) {
                     streamFPS = 30
                 }
-                radioButton(title: "60 FPS (Auto-adattivo)", selected: streamFPS == 60) {
-                    streamFPS = 60
+                radioButton(title: !storeManager.isPremiumOrTrial ? "60 FPS (Auto-adattivo) 🔒" : "60 FPS (Auto-adattivo)", selected: streamFPS == 60) {
+                    if !storeManager.isPremiumOrTrial {
+                        showPremiumPaywall = true
+                    } else {
+                        streamFPS = 60
+                    }
                 }
             }
         }
@@ -390,13 +413,23 @@ struct LiveSetupView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Titolo della diretta")
                     .font(.caption).foregroundColor(Color(hex: "#64748b"))
-                TextField("stream_title_hint".localized, text: $streamTitle)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Color(hex: "#050b16"))
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(hex: "#1e293b"), lineWidth: 1))
+                HStack {
+                    TextField("stream_title_hint".localized, text: $streamTitle)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .focused($isTitleFocused)
+                    if !streamTitle.isEmpty {
+                        Button(action: { streamTitle = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(Color(hex: "#64748b"))
+                        }
+                    }
+                }
+                .padding(10)
+                .background(Color(hex: "#050b16"))
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(hex: "#1e293b"), lineWidth: 1))
             }
             
             VStack(alignment: .leading, spacing: 4) {
@@ -494,8 +527,28 @@ struct LiveSetupView: View {
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.5)
                 Spacer()
-                Toggle("", isOn: $recordLocally)
-                    .labelsHidden()
+                if !storeManager.canUseFeature(.highlights) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                        Text("PREMIUM")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                    }
+                }
+                Toggle("", isOn: Binding(
+                    get: { recordLocally },
+                    set: { newVal in
+                        if newVal && !storeManager.canUseFeature(.highlights) {
+                            showPremiumPaywall = true
+                            recordLocally = false
+                        } else {
+                            recordLocally = newVal
+                        }
+                    }
+                ))
+                .labelsHidden()
             }
             Text("Salva una copia del match nella galleria del dispositivo")
                 .font(.system(size: 11))

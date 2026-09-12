@@ -4,6 +4,10 @@ import PhotosUI
 struct SettingsView: View {
     @Environment(\.presentationMode) var presentationMode
     
+    @ObservedObject private var storeManager = StoreKitManager.shared
+    @FocusState private var isHomeFocused: Bool
+    @FocusState private var isAwayFocused: Bool
+    
     @State private var selectedSport = AppPreferences.shared.selectedSport
     @State private var selectedTheme = AppPreferences.shared.selectedTheme
     @State private var teamHome = AppPreferences.shared.teamHome
@@ -317,18 +321,37 @@ struct SettingsView: View {
             
             // TEMA GRAFICO OVERLAY Header
             VStack(alignment: .leading, spacing: 10) {
-                Text("TEMA GRAFICO OVERLAY")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: "#06b6d4"))
-                    .tracking(2.0)
+                HStack {
+                    Text("TEMA GRAFICO OVERLAY")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(hex: "#06b6d4"))
+                        .tracking(2.0)
+                    Spacer()
+                    if !storeManager.isPremiumOrTrial {
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(Color(hex: "#FACC15"))
+                            Text("PRO THEMES")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(Color(hex: "#FACC15"))
+                        }
+                    }
+                }
                 
                 Menu {
                     ForEach(themes) { theme in
                         Button(action: {
-                            selectedTheme = theme.id
-                            AppPreferences.shared.selectedTheme = theme.id
+                            let isProTheme = theme.id == "glass" || theme.id.contains("odometer")
+                            if isProTheme && !storeManager.isPremiumOrTrial {
+                                showPremiumPaywall = true
+                            } else {
+                                selectedTheme = theme.id
+                                AppPreferences.shared.selectedTheme = theme.id
+                            }
                         }) {
-                            Text(theme.name)
+                            let isProTheme = theme.id == "glass" || theme.id.contains("odometer")
+                            Text((!storeManager.isPremiumOrTrial && isProTheme) ? "🔒 \(theme.name)" : theme.name)
                         }
                     }
                 } label: {
@@ -371,18 +394,18 @@ struct SettingsView: View {
                             .cornerRadius(10)
                     } else {
                         VStack(spacing: 2) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(Color(hex: "#64748b"))
+                            Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                             Text("LOGO")
                                 .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(Color(hex: "#64748b"))
+                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                         }
                     }
                 }
             }
             .onChange(of: logoHomePickerItem) { newItem in
-                if !StoreKitManager.shared.canUseFeature(.customLogos) {
+                if !storeManager.canUseFeature(.customLogos) {
                     showPremiumPaywall = true
                     logoHomePickerItem = nil
                     return
@@ -397,19 +420,49 @@ struct SettingsView: View {
                 }
             }
             
-            // Team A Name Field
+            // Team A Name Field (Auto clear on tap + max 14 chars)
             VStack(alignment: .leading, spacing: 4) {
-                Text("SQUADRA A (CASA)")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: "#64748b"))
-                    .tracking(1.5)
+                HStack {
+                    Text("SQUADRA A (CASA)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                        .tracking(1.5)
+                    Spacer()
+                    Text("\(teamHome.count)/14")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
                 
-                TextField("NOME SQUADRA", text: $teamHome)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                    .autocapitalization(.allCharacters)
-                    .disableAutocorrection(true)
-                    .padding(.vertical, 2)
+                HStack(spacing: 6) {
+                    TextField("NOME SQUADRA", text: $teamHome)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                        .autocapitalization(.allCharacters)
+                        .disableAutocorrection(true)
+                        .focused($isHomeFocused)
+                        .onChange(of: isHomeFocused) { focused in
+                            if focused {
+                                let upper = teamHome.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                                if upper == "CASA" || upper == "SQUADRA CASA" || upper == "SQUADRA A" {
+                                    teamHome = ""
+                                }
+                            }
+                        }
+                        .onChange(of: teamHome) { newVal in
+                            if newVal.count > 14 {
+                                teamHome = String(newVal.prefix(14))
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    
+                    if !teamHome.isEmpty {
+                        Button(action: { teamHome = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color(hex: "#64748b"))
+                        }
+                    }
+                }
             }
             
             Spacer()
@@ -439,18 +492,18 @@ struct SettingsView: View {
                             .cornerRadius(10)
                     } else {
                         VStack(spacing: 2) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(Color(hex: "#64748b"))
+                            Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                             Text("LOGO")
                                 .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(Color(hex: "#64748b"))
+                                .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                         }
                     }
                 }
             }
             .onChange(of: logoAwayPickerItem) { newItem in
-                if !StoreKitManager.shared.canUseFeature(.customLogos) {
+                if !storeManager.canUseFeature(.customLogos) {
                     showPremiumPaywall = true
                     logoAwayPickerItem = nil
                     return
@@ -465,19 +518,49 @@ struct SettingsView: View {
                 }
             }
             
-            // Team B Name Field
+            // Team B Name Field (Auto clear on tap + max 14 chars)
             VStack(alignment: .leading, spacing: 4) {
-                Text("SQUADRA B (OSPITE)")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: "#64748b"))
-                    .tracking(1.5)
+                HStack {
+                    Text("SQUADRA B (OSPITE)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                        .tracking(1.5)
+                    Spacer()
+                    Text("\(teamAway.count)/14")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
                 
-                TextField("NOME SQUADRA", text: $teamAway)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                    .autocapitalization(.allCharacters)
-                    .disableAutocorrection(true)
-                    .padding(.vertical, 2)
+                HStack(spacing: 6) {
+                    TextField("NOME SQUADRA", text: $teamAway)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                        .autocapitalization(.allCharacters)
+                        .disableAutocorrection(true)
+                        .focused($isAwayFocused)
+                        .onChange(of: isAwayFocused) { focused in
+                            if focused {
+                                let upper = teamAway.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                                if upper == "OSPITE" || upper == "SQUADRA OSPITE" || upper == "SQUADRA B" {
+                                    teamAway = ""
+                                }
+                            }
+                        }
+                        .onChange(of: teamAway) { newVal in
+                            if newVal.count > 14 {
+                                teamAway = String(newVal.prefix(14))
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    
+                    if !teamAway.isEmpty {
+                        Button(action: { teamAway = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color(hex: "#64748b"))
+                        }
+                    }
+                }
             }
             
             Spacer()
@@ -491,10 +574,23 @@ struct SettingsView: View {
     // MARK: - Card 4: Full Screen Sponsors (Max 4)
     private var cardFullScreenSponsors: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("FOTO SPONSOR (MAX 4)")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color(hex: "#06b6d4"))
-                .tracking(1.5)
+            HStack {
+                Text("FOTO SPONSOR (MAX 4)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(hex: "#06b6d4"))
+                    .tracking(1.5)
+                Spacer()
+                if !storeManager.canUseFeature(.sponsors) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                        Text("PREMIUM")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                    }
+                }
+            }
             
             HStack(spacing: 12) {
                 ForEach(0..<4, id: \.self) { idx in
@@ -544,9 +640,9 @@ struct SettingsView: View {
                             .frame(height: 46)
                             .cornerRadius(8)
                     } else {
-                        Image(systemName: "plus")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(Color(hex: "#64748b"))
+                        Image(systemName: !storeManager.canUseFeature(.sponsors) ? "lock.fill" : "plus")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(!storeManager.canUseFeature(.sponsors) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                     }
                 }
                 Text("\(index + 1)")
@@ -555,7 +651,7 @@ struct SettingsView: View {
             }
         }
         .onChange(of: sponsorPickerItems[index]) { newItem in
-            if !StoreKitManager.shared.canUseFeature(.sponsors) {
+            if !storeManager.canUseFeature(.sponsors) {
                 showPremiumPaywall = true
                 sponsorPickerItems[index] = nil
                 return
@@ -574,10 +670,23 @@ struct SettingsView: View {
     // MARK: - Card 5: Rotating Banners (Max 5)
     private var cardRotatingBanners: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("BANNER SPONSOR IN SOVRIMPRESSIONE (A ROTAZIONE)")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color(hex: "#06b6d4"))
-                .tracking(1.0)
+            HStack {
+                Text("BANNER SPONSOR IN SOVRIMPRESSIONE (A ROTAZIONE)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(hex: "#06b6d4"))
+                    .tracking(1.0)
+                Spacer()
+                if !storeManager.canUseFeature(.sponsors) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                        Text("PREMIUM")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                    }
+                }
+            }
             
             Text("Le immagini selezionate ruoteranno a turno in diretta durante tutto il match")
                 .font(.system(size: 12))
@@ -631,9 +740,9 @@ struct SettingsView: View {
                             .frame(height: 42)
                             .cornerRadius(6)
                     } else {
-                        Image(systemName: "plus")
+                        Image(systemName: !storeManager.canUseFeature(.sponsors) ? "lock.fill" : "plus")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(hex: "#64748b"))
+                            .foregroundColor(!storeManager.canUseFeature(.sponsors) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                     }
                 }
                 Text("\(index + 1)")
@@ -642,7 +751,7 @@ struct SettingsView: View {
             }
         }
         .onChange(of: bannerPickerItems[index]) { newItem in
-            if !StoreKitManager.shared.canUseFeature(.sponsors) {
+            if !storeManager.canUseFeature(.sponsors) {
                 showPremiumPaywall = true
                 bannerPickerItems[index] = nil
                 return
@@ -671,11 +780,21 @@ struct SettingsView: View {
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.5)
                 Spacer()
+                if !storeManager.canUseFeature(.instantReplay) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                        Text("PREMIUM")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                    }
+                }
                 if ReplayManager.isDeviceSupported {
                     Toggle("", isOn: Binding(
                         get: { replayEnabled },
                         set: { newVal in
-                            if newVal && !StoreKitManager.shared.canUseFeature(.instantReplay) {
+                            if newVal && !storeManager.canUseFeature(.instantReplay) {
                                 showPremiumPaywall = true
                                 replayEnabled = false
                             } else {
