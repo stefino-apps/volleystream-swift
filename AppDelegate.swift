@@ -1,5 +1,6 @@
 import UIKit
-import FirebaseCore
+import FirebaseDatabase
+import FirebaseAuth
 import GoogleSignIn
 import SwiftUI
 

@@ -46,8 +46,6 @@ targets:
           - "*.html"
     dependencies:
       - package: Firebase
-        product: FirebaseCore
-      - package: Firebase
         product: FirebaseDatabase
       - package: Firebase
         product: FirebaseAuth
