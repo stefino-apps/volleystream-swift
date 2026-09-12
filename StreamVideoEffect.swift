@@ -98,10 +98,14 @@ class StreamVideoEffect: VideoEffect {
             let uiImage = renderer.image { context in
                 if let sv = self.scoreboardView {
                     context.cgContext.saveGState()
-                    let scale: CGFloat = 2.2
-                    context.cgContext.translateBy(x: 50, y: 50)
-                    context.cgContext.scaleBy(x: scale, y: scale)
-                    sv.layer.render(in: context.cgContext)
+                    if state.isSetFinished || state.isMatchFinished {
+                        sv.draw(CGRect(x: 0, y: 0, width: 1920, height: 1080))
+                    } else {
+                        let scale: CGFloat = 2.2
+                        context.cgContext.translateBy(x: 50, y: 50)
+                        context.cgContext.scaleBy(x: scale, y: scale)
+                        sv.layer.render(in: context.cgContext)
+                    }
                     context.cgContext.restoreGState()
                 }
                 

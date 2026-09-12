@@ -7,43 +7,69 @@ class ScoreboardOverlayView: UIView {
     var homeLogo: UIImage?
     var awayLogo: UIImage?
     
-    // Alert state
-    var isAlertActive = false
-    var alertText = ""
-    var alertSubtext = ""
-    var alertIsMatchPoint = false
+    // Blinking Animation State (4.2s duration, 450ms ON / 250ms OFF matching Android)
+    private var displayLink: CADisplayLink?
+    private var alertStartTime: TimeInterval = 0
+    private var isBlinkingAlert = false
+    private var lastAlertScoreKey = ""
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         self.backgroundColor = .clear
         self.clipsToBounds = false
+        setupDisplayLink()
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         self.backgroundColor = .clear
         self.clipsToBounds = false
+        setupDisplayLink()
+    }
+    
+    deinit {
+        displayLink?.invalidate()
+    }
+    
+    private func setupDisplayLink() {
+        displayLink = CADisplayLink(target: self, selector: #selector(handleDisplayTick))
+        displayLink?.preferredFramesPerSecond = 30
+        displayLink?.add(to: .main, forMode: .common)
+    }
+    
+    @objc private func handleDisplayTick() {
+        if isBlinkingAlert || currentState.isSetFinished || currentState.isMatchFinished {
+            let elapsed = Date().timeIntervalSince1970 - alertStartTime
+            if elapsed > 4.2 && isBlinkingAlert {
+                isBlinkingAlert = false
+            }
+            setNeedsDisplay()
+        }
     }
     
     func updateFromState(_ state: RemoteMatchState) {
         self.currentState = state
         self.currentTheme = state.overlayTheme.isEmpty ? "neon" : state.overlayTheme
         
-        if let homeData = AppPreferences.shared.loadImage(name: "logoHome.png") {
+        if let homeData = AppPreferences.shared.loadImage(name: "logo_team_a.png") ?? AppPreferences.shared.loadImage(name: "logoHome.png") {
             self.homeLogo = UIImage(data: homeData)
         }
-        if let awayData = AppPreferences.shared.loadImage(name: "logoAway.png") {
+        if let awayData = AppPreferences.shared.loadImage(name: "logo_team_b.png") ?? AppPreferences.shared.loadImage(name: "logoAway.png") {
             self.awayLogo = UIImage(data: awayData)
         }
         
-        // Calcola se c'è un Set Point o Match Point
-        if let sp = getSetPointInfo(state: state) {
-            self.alertIsMatchPoint = sp.isMatchPoint
-            self.alertText = sp.isMatchPoint ? "MATCH POINT" : "SET POINT"
-            self.alertSubtext = sp.team == "A" ? state.teamA.uppercased() : state.teamB.uppercased()
+        // Controlla se siamo entrati in Set Point o Match Point
+        let currentKey = "\(state.sportType)-\(state.scoreA)-\(state.scoreB)-\(state.setsA)-\(state.setsB)-\(state.currentSet)"
+        if let _ = getSetPointInfo(state: state), !state.isSetFinished && !state.isMatchFinished {
+            if currentKey != lastAlertScoreKey {
+                lastAlertScoreKey = currentKey
+                alertStartTime = Date().timeIntervalSince1970
+                isBlinkingAlert = true
+            }
         } else {
-            self.alertText = ""
-            self.alertSubtext = ""
+            if state.isSetFinished || state.isMatchFinished {
+                lastAlertScoreKey = currentKey
+            }
         }
         
         setNeedsDisplay()
@@ -215,12 +241,18 @@ class ScoreboardOverlayView: UIView {
         let state = currentState
         let style = ThemeStyles(theme: currentTheme)
         
-        let x: CGFloat = 2
-        let y: CGFloat = 2
-        let boxW: CGFloat = min(196, bounds.width - 4)
-        let h: CGFloat = bounds.height - 4
+        // 1. Se il Set o la Partita è conclusa, disegna la grafica Fine Set con i parziali dei set precedenti
+        if state.isSetFinished || state.isMatchFinished {
+            drawEndGameGraphics(ctx: ctx, rect: rect, state: state)
+            return
+        }
         
-        // Render base box
+        // 2. Disegna il Tabellone Live in alto a sinistra
+        let x: CGFloat = (rect.width > 600) ? 20 : 2
+        let y: CGFloat = (rect.height > 400) ? 15 : 2
+        let boxW: CGFloat = 196
+        let h: CGFloat = 50
+        
         drawScoreboardBase(ctx: ctx, x: x, y: y, w: boxW, h: h, headerH: 14, infoText: getHeaderTitle(state: state), style: style)
         
         // Render Sport Content
@@ -244,8 +276,10 @@ class ScoreboardOverlayView: UIView {
             drawVolleyScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         }
         
-        // Render Attached SET POINT / MATCH POINT Badge on the right
-        if let sp = getSetPointInfo(state: state), !state.isSetFinished && !state.isMatchFinished {
+        let sp = getSetPointInfo(state: state)
+        
+        // 3. Render Attached SET POINT / MATCH POINT Badge on the right of the scoreboard
+        if let sp = sp {
             let badgeW: CGFloat = sp.isMatchPoint ? 78 : 70
             let badgeH: CGFloat = 17
             let badgeX = x + boxW - 2
@@ -253,9 +287,17 @@ class ScoreboardOverlayView: UIView {
             drawAttachedSetPointBadge(ctx: ctx, x: badgeX, y: badgeY, w: badgeW, h: badgeH, isMatchPoint: sp.isMatchPoint)
         }
         
-        // Render End Set / Match Finished Graphic Card below scoreboard
-        if state.isSetFinished || state.isMatchFinished {
-            drawEndSetCard(ctx: ctx, x: x, y: y + h + 3, w: boxW, state: state, style: style)
+        // 4. Render Animazione Lampeggiante Centrale SET POINT / MATCH POINT (4.2s con cadenza 450ms ON / 250ms OFF)
+        if let sp = sp, isBlinkingAlert {
+            let elapsed = Date().timeIntervalSince1970 - alertStartTime
+            if elapsed < 4.2 {
+                let show = ((Int(elapsed * 1000) % 700) < 450)
+                if show {
+                    drawSpecialAlerts(ctx: ctx, rect: rect, sp: sp, state: state)
+                }
+            } else {
+                isBlinkingAlert = false
+            }
         }
     }
     
@@ -704,70 +746,162 @@ class ScoreboardOverlayView: UIView {
         text.draw(in: textRect, withAttributes: attrs)
     }
     
-    // MARK: - End of Set / Match Finished Broadcast Graphic Card
+    // MARK: - Special Alerts: Blinking Central SET POINT / MATCH POINT
     
-    private func drawEndSetCard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
-        let cardH: CGFloat = 46.0
-        let cardRect = CGRect(x: x, y: y, width: w, height: cardH)
-        let path = UIBezierPath(roundedRect: cardRect, cornerRadius: 8.0)
+    private func drawSpecialAlerts(ctx: CGContext, rect: CGRect, sp: SetPointInfo, state: RemoteMatchState) {
+        let textLine1 = sp.isMatchPoint ? "MATCH POINT" : "SET POINT"
+        let teamName = (sp.team == "A") ? (state.teamA.isEmpty ? "CASA" : state.teamA) : (state.teamB.isEmpty ? "OSPITE" : state.teamB)
+        let textLine2 = teamName.uppercased()
         
-        ctx.saveGState()
-        // Dark translucent gradient background
-        UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.96).setFill()
-        path.fill()
+        let centerX = rect.width / 2.0
+        let centerY = rect.height / 2.0 - 15.0
         
-        // Neon cyan border
-        UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0).setStroke()
-        path.lineWidth = 1.2
-        path.stroke()
+        let font1 = UIFont.systemFont(ofSize: min(52.0, rect.width * 0.075), weight: .black)
+        let font2 = UIFont.systemFont(ofSize: min(28.0, rect.width * 0.042), weight: .bold)
         
-        // Header title
-        let headerTitle = state.isMatchFinished ? "RISULTATO FINALE" : "FINE SET \(state.currentSet)"
-        let headerRect = CGRect(x: x, y: y, width: w, height: 13)
-        let headerPath = UIBezierPath(roundedRect: headerRect, byRoundingCorners: [.topLeft, .topRight], cornerRadii: CGSize(width: 8, height: 8))
-        UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.9).setFill()
-        headerPath.fill()
-        
-        let headerFont = UIFont.systemFont(ofSize: 8.5, weight: .black)
         let pStyle = NSMutableParagraphStyle()
         pStyle.alignment = .center
-        headerTitle.draw(in: CGRect(x: x + 2, y: y + 1.0, width: w - 4, height: 12), withAttributes: [
-            .font: headerFont,
-            .foregroundColor: UIColor.black,
+        
+        let accentColor = sp.isMatchPoint ? UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 1.0) : UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+        
+        // Sfondo pillola broadcast semi-trasparente
+        let pillW = min(460.0, rect.width * 0.78)
+        let pillH: CGFloat = 110.0
+        let pillRect = CGRect(x: centerX - pillW / 2.0, y: centerY - 20.0, width: pillW, height: pillH)
+        let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 18.0)
+        
+        ctx.saveGState()
+        UIColor(red: 2/255, green: 6/255, blue: 23/255, alpha: 0.90).setFill()
+        pillPath.fill()
+        
+        accentColor.setStroke()
+        pillPath.lineWidth = 3.0
+        pillPath.stroke()
+        
+        // Riga 1: MATCH POINT / SET POINT
+        let line1Attrs: [NSAttributedString.Key: Any] = [
+            .font: font1,
+            .foregroundColor: accentColor,
             .paragraphStyle: pStyle
-        ])
+        ]
+        textLine1.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY - 10.0, width: pillW, height: 55.0), withAttributes: line1Attrs)
         
-        // Team A Row
-        let row1Y = y + 15
-        if let logo = homeLogo {
-            logo.draw(in: CGRect(x: x + 6, y: row1Y + 1, width: 10, height: 10))
-        }
-        let trimA = state.teamA.count > 10 ? String(state.teamA.prefix(10)) : state.teamA
-        trimA.uppercased().draw(at: CGPoint(x: x + (homeLogo != nil ? 18 : 6), y: row1Y), withAttributes: [
-            .font: UIFont.systemFont(ofSize: 9.5, weight: .bold),
-            .foregroundColor: UIColor.white
-        ])
-        let setsScoreA = "\(state.setsA)  (\(state.scoreA))"
-        setsScoreA.draw(at: CGPoint(x: x + w - 48, y: row1Y), withAttributes: [
-            .font: UIFont.systemFont(ofSize: 9.5, weight: .heavy),
-            .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
-        ])
+        // Riga 2: NOME SQUADRA
+        let line2Attrs: [NSAttributedString.Key: Any] = [
+            .font: font2,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: pStyle
+        ]
+        textLine2.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY + 46.0, width: pillW, height: 35.0), withAttributes: line2Attrs)
+        ctx.restoreGState()
+    }
+    
+    // MARK: - End Game Graphics: Fine Set / Risultato Finale con Parziali
+    
+    private func drawEndGameGraphics(ctx: CGContext, rect: CGRect, state: RemoteMatchState) {
+        ctx.saveGState()
         
-        // Team B Row
-        let row2Y = y + 28
-        if let logo = awayLogo {
-            logo.draw(in: CGRect(x: x + 6, y: row2Y + 1, width: 10, height: 10))
+        // 1. Sfondo scuro oscurante broadcast
+        UIColor(red: 2/255, green: 6/255, blue: 23/255, alpha: 0.92).setFill()
+        UIBezierPath(rect: rect).fill()
+        
+        let isMatchFin = state.isMatchFinished
+        let title = isMatchFin ? "RISULTATO FINALE" : "\(state.currentSet)° SET CONCLUSO"
+        let titleColor = isMatchFin ? UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0) : UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
+        
+        let pStyle = NSMutableParagraphStyle()
+        pStyle.alignment = .center
+        
+        // 2. Titolo in alto
+        let titleFont = UIFont.systemFont(ofSize: min(30.0, rect.height * 0.11), weight: .black)
+        let titleAttrs: [NSAttributedString.Key: Any] = [
+            .font: titleFont,
+            .foregroundColor: titleColor,
+            .paragraphStyle: pStyle
+        ]
+        let titleY = max(16.0, rect.height * 0.07)
+        title.uppercased().draw(in: CGRect(x: 20, y: titleY, width: rect.width - 40, height: 38), withAttributes: titleAttrs)
+        
+        // 3. Loghi Squadre
+        let logoSize = min(80.0, rect.height * 0.24)
+        let centerY = rect.height * 0.36
+        if let logoA = homeLogo {
+            logoA.draw(in: CGRect(x: rect.width * 0.12, y: centerY - logoSize / 2, width: logoSize, height: logoSize))
         }
-        let trimB = state.teamB.count > 10 ? String(state.teamB.prefix(10)) : state.teamB
-        trimB.uppercased().draw(at: CGPoint(x: x + (awayLogo != nil ? 18 : 6), y: row2Y), withAttributes: [
-            .font: UIFont.systemFont(ofSize: 9.5, weight: .bold),
-            .foregroundColor: UIColor.white
-        ])
-        let setsScoreB = "\(state.setsB)  (\(state.scoreB))"
-        setsScoreB.draw(at: CGPoint(x: x + w - 48, y: row2Y), withAttributes: [
-            .font: UIFont.systemFont(ofSize: 9.5, weight: .heavy),
-            .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
-        ])
+        if let logoB = awayLogo {
+            logoB.draw(in: CGRect(x: rect.width * 0.88 - logoSize, y: centerY - logoSize / 2, width: logoSize, height: logoSize))
+        }
+        
+        // 4. Punteggio Grande al centro
+        let scoreFont = UIFont.systemFont(ofSize: min(64.0, rect.height * 0.20), weight: .heavy)
+        let scoreAttrs: [NSAttributedString.Key: Any] = [
+            .font: scoreFont,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: pStyle
+        ]
+        let scoreStr = "\(state.scoreA)  -  \(state.scoreB)"
+        scoreStr.draw(in: CGRect(x: rect.width * 0.25, y: centerY - 35, width: rect.width * 0.5, height: 75), withAttributes: scoreAttrs)
+        
+        // 5. Nomi Squadre e Set Vinti
+        let nameFont = UIFont.systemFont(ofSize: min(16.0, rect.height * 0.055), weight: .bold)
+        let nameAttrs: [NSAttributedString.Key: Any] = [
+            .font: nameFont,
+            .foregroundColor: UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1.0),
+            .paragraphStyle: pStyle
+        ]
+        
+        let teamStrA = "\(state.teamA.isEmpty ? "CASA" : state.teamA) (\(state.setsA))"
+        let teamStrB = "\(state.teamB.isEmpty ? "OSPITE" : state.teamB) (\(state.setsB))"
+        
+        let namesY = centerY + logoSize / 2 + 6
+        teamStrA.uppercased().draw(in: CGRect(x: rect.width * 0.04, y: namesY, width: rect.width * 0.40, height: 24), withAttributes: nameAttrs)
+        teamStrB.uppercased().draw(in: CGRect(x: rect.width * 0.56, y: namesY, width: rect.width * 0.40, height: 24), withAttributes: nameAttrs)
+        
+        // 6. Schede Parziali dei Set Precedenti (in basso)
+        var allSets: [[Int]] = state.setScores
+        if allSets.isEmpty && (state.scoreA > 0 || state.scoreB > 0) {
+            allSets.append([state.scoreA, state.scoreB])
+        }
+        
+        if !allSets.isEmpty {
+            let numSets = allSets.count
+            let cardW = min(100.0, (rect.width - 40.0 - CGFloat(numSets - 1) * 10.0) / CGFloat(numSets))
+            let cardH: CGFloat = min(48.0, rect.height * 0.16)
+            let gap: CGFloat = 10.0
+            let totalW = CGFloat(numSets) * cardW + CGFloat(numSets - 1) * gap
+            var startX = (rect.width - totalW) / 2.0
+            let cardY = rect.height - cardH - max(12.0, rect.height * 0.05)
+            
+            for (idx, scorePair) in allSets.enumerated() {
+                let cardRect = CGRect(x: startX, y: cardY, width: cardW, height: cardH)
+                let cPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 8.0)
+                UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.95).setFill()
+                cPath.fill()
+                UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.8).setStroke()
+                cPath.lineWidth = 1.2
+                cPath.stroke()
+                
+                let setLabel = "\(idx + 1)° SET"
+                let lblFont = UIFont.systemFont(ofSize: 9.5, weight: .bold)
+                let lblAttrs: [NSAttributedString.Key: Any] = [
+                    .font: lblFont,
+                    .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0),
+                    .paragraphStyle: pStyle
+                ]
+                setLabel.draw(in: CGRect(x: startX, y: cardY + 3, width: cardW, height: 13), withAttributes: lblAttrs)
+                
+                let ptsStr = "\(scorePair[0]) - \(scorePair[1])"
+                let ptsFont = UIFont.systemFont(ofSize: 15.0, weight: .heavy)
+                let ptsAttrs: [NSAttributedString.Key: Any] = [
+                    .font: ptsFont,
+                    .foregroundColor: UIColor.white,
+                    .paragraphStyle: pStyle
+                ]
+                ptsStr.draw(in: CGRect(x: startX, y: cardY + 18, width: cardW, height: 22), withAttributes: ptsAttrs)
+                
+                startX += cardW + gap
+            }
+        }
         
         ctx.restoreGState()
     }

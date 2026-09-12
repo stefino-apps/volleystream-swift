@@ -243,7 +243,9 @@ class MainViewController: UIViewController {
     }
     
     private func setupScoreboardOverlay() {
-        scoreboardView = ScoreboardOverlayView(frame: CGRect(x: 20, y: 15, width: 280, height: 54))
+        scoreboardView = ScoreboardOverlayView(frame: view.bounds)
+        scoreboardView.isUserInteractionEnabled = false
+        scoreboardView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(scoreboardView)
         StreamManager.shared.videoEffect.scoreboardView = self.scoreboardView
     }
@@ -967,7 +969,7 @@ class MainViewController: UIViewController {
             lfView.frame = view.bounds
             lfView.layer.cornerRadius = 0
             scoreboardView.transform = .identity
-            scoreboardView.frame = CGRect(x: safeLeft, y: safeTop, width: 280, height: 54)
+            scoreboardView.frame = view.bounds
             scoreboardView.isHidden = false
             gridLayer?.isHidden = true
             
@@ -1572,17 +1574,26 @@ class MainViewController: UIViewController {
                 localState.setsB += 1
             }
             
+            localState.isSetFinished = true
+            
             if localState.setsA >= setsToWin || localState.setsB >= setsToWin {
                 localState.isMatchFinished = true
-                localState.isSetFinished = true
+                showToast(message: "🏆 Match Terminato!")
             } else {
-                localState.currentSet += 1
-                localState.scoreA = 0
-                localState.scoreB = 0
-                localState.timeoutA = 0
-                localState.timeoutB = 0
-                localState.isFifthSet = (!isBeach && localState.currentSet == 5)
-                localState.isSetFinished = false
+                showToast(message: "🎉 Set Concluso! Grafica parziali attiva...")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
+                    guard let self = self else { return }
+                    if self.localState.isSetFinished && !self.localState.isMatchFinished {
+                        self.localState.currentSet += 1
+                        self.localState.scoreA = 0
+                        self.localState.scoreB = 0
+                        self.localState.timeoutA = 0
+                        self.localState.timeoutB = 0
+                        self.localState.isFifthSet = (!isBeach && self.localState.currentSet == 5)
+                        self.localState.isSetFinished = false
+                        self.updateLocalState()
+                    }
+                }
             }
         }
     }
@@ -1665,26 +1676,44 @@ class MainViewController: UIViewController {
     
     private func checkTennisSetWin() {
         let setsToWin = localState.tennisSetsToWin
+        var setWonA = false
+        var setWonB = false
         if (localState.tennisGamesA >= 6 && (localState.tennisGamesA - localState.tennisGamesB) >= 2) || (localState.tennisGamesA == 7 && localState.tennisGamesB == 6) {
-            localState.setScores.append([localState.tennisGamesA, localState.tennisGamesB])
-            localState.setsA += 1
-            localState.tennisGamesA = 0
-            localState.tennisGamesB = 0
-            localState.currentSet += 1
-            if localState.setsA >= setsToWin {
-                localState.isMatchFinished = true
-            }
+            setWonA = true
         } else if (localState.tennisGamesB >= 6 && (localState.tennisGamesB - localState.tennisGamesA) >= 2) || (localState.tennisGamesB == 7 && localState.tennisGamesA == 6) {
-            localState.setScores.append([localState.tennisGamesA, localState.tennisGamesB])
-            localState.setsB += 1
-            localState.tennisGamesA = 0
-            localState.tennisGamesB = 0
-            localState.currentSet += 1
-            if localState.setsB >= setsToWin {
-                localState.isMatchFinished = true
-            }
+            setWonB = true
         } else if localState.tennisGamesA == 6 && localState.tennisGamesB == 6 {
             localState.isTiebreak = true
+        }
+        
+        if setWonA || setWonB {
+            localState.setScores.append([localState.tennisGamesA, localState.tennisGamesB])
+            if setWonA {
+                localState.setsA += 1
+            } else {
+                localState.setsB += 1
+            }
+            localState.isSetFinished = true
+            
+            if localState.setsA >= setsToWin || localState.setsB >= setsToWin {
+                localState.isMatchFinished = true
+                showToast(message: "🏆 Match Terminato!")
+            } else {
+                showToast(message: "🎉 Set Concluso! Grafica parziali attiva...")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
+                    guard let self = self else { return }
+                    if self.localState.isSetFinished && !self.localState.isMatchFinished {
+                        self.localState.tennisGamesA = 0
+                        self.localState.tennisGamesB = 0
+                        self.localState.tennisPointsA = 0
+                        self.localState.tennisPointsB = 0
+                        self.localState.isTiebreak = false
+                        self.localState.currentSet += 1
+                        self.localState.isSetFinished = false
+                        self.updateLocalState()
+                    }
+                }
+            }
         }
     }
     
