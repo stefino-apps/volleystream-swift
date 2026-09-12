@@ -171,11 +171,26 @@ class MainViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         
+        self.localState = RemoteMatchState()
         self.localState.sportType = AppPreferences.shared.selectedSport
         self.localState.overlayTheme = AppPreferences.shared.selectedTheme
         self.localState.teamA = AppPreferences.shared.teamHome
         self.localState.teamB = AppPreferences.shared.teamAway
         self.localState.isPuntoDeOro = UserDefaults.standard.bool(forKey: "punto_de_oro")
+        self.localState.scoreA = 0
+        self.localState.scoreB = 0
+        self.localState.setsA = 0
+        self.localState.setsB = 0
+        self.localState.setScores = []
+        self.localState.currentSet = 1
+        self.localState.timeoutA = 0
+        self.localState.timeoutB = 0
+        self.localState.isSetFinished = false
+        self.localState.isMatchFinished = false
+        self.localState.servingTeam = ""
+        self.localState.foulsA = 0
+        self.localState.foulsB = 0
+        self.isSetTransitionInProgress = false
         
         if self.localState.sportType.lowercased() == "darts" {
             let startScore = UserDefaults.standard.integer(forKey: "darts_initial_score")
@@ -187,6 +202,7 @@ class MainViewController: UIViewController {
         
         setupCameraView()
         setupScoreboardOverlay()
+        scoreboardView?.resetAlerts()
         setupControls()
         setupGridLayer()
         updateLocalState()

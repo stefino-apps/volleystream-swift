@@ -48,17 +48,28 @@ class FirebaseManager {
             
             print("Firebase HOST: Creating session \(id) with owner \(hostUid)")
             self.stopListening()
-            self.ref.child("sessions/\(id)/owner").setValue(hostUid)
-            self.ref.child("sessions/\(id)/state").setValue(initialState.dictionary)
+            self.processedCommandKeys.removeAll()
             
-            // Pulisci comandi pendenti/vecchi nel database prima di ascoltare nuovi comandi
-            self.ref.child("sessions/\(id)/commands").removeValue()
-            self.ref.child("sessions/\(id)/command").removeValue()
-            self.ref.child("sessions/\(id)/action").removeValue()
+            let sessionRef = self.ref.child("sessions/\(id)")
+            sessionRef.child("owner").setValue(hostUid)
+            sessionRef.child("state").setValue(initialState.dictionary)
             
-            // L'Host ascolta SOLO i comandi in arrivo dai client (telecomandi)
-            self.listenForCommands()
-            completion(true)
+            // Pulisci completamente i nodi di comando prima di attivare i listener per evitare replay di match precedenti
+            let dispatchGroup = DispatchGroup()
+            
+            dispatchGroup.enter()
+            sessionRef.child("commands").removeValue { _, _ in dispatchGroup.leave() }
+            
+            dispatchGroup.enter()
+            sessionRef.child("command").removeValue { _, _ in dispatchGroup.leave() }
+            
+            dispatchGroup.enter()
+            sessionRef.child("action").removeValue { _, _ in dispatchGroup.leave() }
+            
+            dispatchGroup.notify(queue: .main) {
+                self.listenForCommands()
+                completion(true)
+            }
         }
     }
     

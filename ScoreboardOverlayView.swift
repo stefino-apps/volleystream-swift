@@ -48,6 +48,17 @@ class ScoreboardOverlayView: UIView {
         displayLink?.add(to: .main, forMode: .common)
     }
     
+    func resetAlerts() {
+        self.isBlinkingAlert = false
+        self.isBlinkingTimeout = false
+        self.timeoutTeamName = ""
+        self.lastSetPointTeamTriggered = nil
+        self.lastSetPointSetIndex = -1
+        displayLink?.isPaused = true
+        setNeedsDisplay()
+        onOverlayNeedsUpdate?()
+    }
+    
     func triggerTimeoutAlert(teamName: String) {
         self.isBlinkingAlert = false
         self.timeoutTeamName = teamName
