@@ -7,30 +7,49 @@ import UIKit
 class ReplayManager {
     static let shared = ReplayManager()
     
+    // Verifica supporto hardware: richiede almeno 3.5 GB di RAM (es. iPhone 11 e successivi)
+    static var isDeviceSupported: Bool {
+        let ramGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024.0 * 1024.0 * 1024.0)
+        return ramGB >= 3.5
+    }
+    
     private var frameBuffer: [CIImage] = []
     var replayDuration: Int = 5
     var replaySpeed: Double = 0.5
-    private var maxFrames: Int { return replayDuration * 60 }
+    private var maxFrames: Int { return replayDuration * 30 }
     private var isRecording = true
     private var isPlaying = false
     private var playbackIndex = 0
+    private var lastRecordedTime: TimeInterval = 0
     
-    private let queue = DispatchQueue(label: "com.volleyscout.replayQueue")
+    private let queue = DispatchQueue(label: "com.volleyscout.replayQueue", qos: .userInteractive)
+    private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     
     private init() {}
     
     func recordFrame(_ image: CIImage) {
-        queue.async {
-            guard self.isRecording else { return }
+        guard isRecording, AppPreferences.shared.isReplayEnabled, ReplayManager.isDeviceSupported else { return }
+        
+        let now = CACurrentMediaTime()
+        // Limita il campionamento a max 30 fps per non sovraccaricare la GPU/CPU
+        guard (now - lastRecordedTime) >= 0.032 else { return }
+        lastRecordedTime = now
+        
+        let extent = image.extent
+        guard extent.width > 0 && extent.height > 0 else { return }
+        
+        queue.async { [weak self] in
+            guard let self = self, self.isRecording else { return }
             
-            // Per evitare che i buffer vengano sovrascritti dalla telecamera
-            // forziamo un render contestuale se necessario, o ci fidiamo del CVPixelBuffer se gestito da AVFoundation.
-            // Spesso e' necessario clonare il CVPixelBuffer o applicare un filtro. 
-            // In questa demo salviamo il CIImage.
-            self.frameBuffer.append(image)
-            
-            if self.frameBuffer.count > self.maxFrames {
-                self.frameBuffer.removeFirst()
+            // Creando un CGImage scolleghiamo i pixel dal CVPixelBuffer nativo della fotocamera,
+            // evitando la saturazione del buffer pool di AVFoundation e il conseguente freeze della telecamera.
+            if let cgImg = self.ciContext.createCGImage(image, from: extent) {
+                let detachedImage = CIImage(cgImage: cgImg)
+                self.frameBuffer.append(detachedImage)
+                
+                if self.frameBuffer.count > self.maxFrames {
+                    self.frameBuffer.removeFirst()
+                }
             }
         }
     }

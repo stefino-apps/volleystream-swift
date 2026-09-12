@@ -872,12 +872,15 @@ class MainViewController: UIViewController {
             shareRemoteButton.isHidden = false
             currentRightX -= (btnSize + btnGap)
             
+            let isReplayActive = AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported
             replayButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
             replayButton.isHidden = false
+            replayButton.alpha = isReplayActive ? 1.0 : 0.35
             currentRightX -= (btnSize + btnGap)
             
             highlightButton.frame = CGRect(x: currentRightX, y: safeTop, width: btnSize, height: btnSize)
             highlightButton.isHidden = false
+            highlightButton.alpha = isReplayActive ? 1.0 : 0.35
             
             // Zoom Buttons
             let zoomW: CGFloat = isPortrait ? 28 : 36
@@ -1505,6 +1508,10 @@ class MainViewController: UIViewController {
     }
     
     @objc func triggerReplay() {
+        guard AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported else {
+            showToast(message: "⚠️ Replay non abilitato o non supportato")
+            return
+        }
         ReplayManager.shared.startPlayback()
         localState.isReplaying = true
         FirebaseManager.shared.updateMatchState(localState)
@@ -1512,6 +1519,10 @@ class MainViewController: UIViewController {
     }
     
     @objc func triggerHighlight() {
+        guard AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported else {
+            showToast(message: "⚠️ Replay non abilitato o non supportato")
+            return
+        }
         let origBg = highlightButton.backgroundColor
         highlightButton.backgroundColor = UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)
         highlightButton.setTitleColor(.black, for: .normal)

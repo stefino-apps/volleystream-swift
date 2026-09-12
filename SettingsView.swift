@@ -647,8 +647,26 @@ struct SettingsView: View {
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.5)
                 Spacer()
-                Toggle("", isOn: $replayEnabled)
-                    .labelsHidden()
+                if ReplayManager.isDeviceSupported {
+                    Toggle("", isOn: $replayEnabled)
+                        .labelsHidden()
+                } else {
+                    Toggle("", isOn: .constant(false))
+                        .labelsHidden()
+                        .disabled(true)
+                }
+            }
+            
+            if !ReplayManager.isDeviceSupported {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.yellow)
+                    Text("Replay non supportato su questo dispositivo (Richiesti min. 4 GB RAM)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(hex: "#EF4444"))
+                }
+                .padding(.vertical, 2)
             }
             
             Text("instant_replay_desc".localized)
@@ -670,7 +688,7 @@ struct SettingsView: View {
             }
             .padding(.top, 4)
             
-            if replayEnabled {
+            if replayEnabled && ReplayManager.isDeviceSupported {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("replay_duration_label".localized)
                         .font(.system(size: 10, weight: .bold))
@@ -827,12 +845,18 @@ struct SettingsView: View {
         }
     }
     
-    // MARK: - Actions & Persistence
     private func loadAllState() {
         selectedSport = AppPreferences.shared.selectedSport
         selectedTheme = AppPreferences.shared.selectedTheme
         teamHome = AppPreferences.shared.teamHome
         teamAway = AppPreferences.shared.teamAway
+        
+        if ReplayManager.isDeviceSupported {
+            replayEnabled = AppPreferences.shared.isReplayEnabled
+        } else {
+            replayEnabled = false
+            AppPreferences.shared.isReplayEnabled = false
+        }
         
         if let d = AppPreferences.shared.loadImage(name: "logo_team_a.png") { logoHomeImage = UIImage(data: d) }
         if let d = AppPreferences.shared.loadImage(name: "logo_team_b.png") { logoAwayImage = UIImage(data: d) }
@@ -858,7 +882,7 @@ struct SettingsView: View {
         AppPreferences.shared.selectedTheme = selectedTheme
         AppPreferences.shared.teamHome = teamHome.uppercased()
         AppPreferences.shared.teamAway = teamAway.uppercased()
-        AppPreferences.shared.isReplayEnabled = replayEnabled
+        AppPreferences.shared.isReplayEnabled = ReplayManager.isDeviceSupported ? replayEnabled : false
         UserDefaults.standard.set(scrollText, forKey: "scrolling_text_content")
         UserDefaults.standard.set(scrollTextColorHex, forKey: "scrolling_text_color")
     }
