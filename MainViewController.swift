@@ -199,8 +199,7 @@ class MainViewController: UIViewController {
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.localState = state
-                self.scoreboardView.updateFromState(state)
-                StreamManager.shared.videoEffect.currentState = state
+                self.updateLocalState(saveHistory: false)
                 if state.isReplaying {
                     ReplayManager.shared.startPlayback()
                 }
@@ -1936,43 +1935,65 @@ class MainViewController: UIViewController {
         print("MainViewController received remote command: \(command)")
         let isDarts = (self.localState.sportType.lowercased() == "darts")
         
-        switch command {
-        case "POINT_A", "TENNIS_POINT_A":
+        let cmd = command.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        switch cmd {
+        case "POINT_A", "TENNIS_POINT_A", "SCORE_A", "INC_A", "INC_SCORE_A", "+1_A", "ADD_A", "PUNTO_A", "A_PLUS", "A_POINT":
             if isDarts {
                 checkDartsLeg(isHome: true, subtract: 60)
             } else {
                 incScoreA()
             }
-        case "POINT_B", "TENNIS_POINT_B":
+        case "POINT_B", "TENNIS_POINT_B", "SCORE_B", "INC_B", "INC_SCORE_B", "+1_B", "ADD_B", "PUNTO_B", "B_PLUS", "B_POINT":
             if isDarts {
                 checkDartsLeg(isHome: false, subtract: 60)
             } else {
                 incScoreB()
             }
-        case "MINUS_A", "TENNIS_MINUS_A":
+        case "MINUS_A", "TENNIS_MINUS_A", "DEC_A", "DEC_SCORE_A", "-1_A", "SUB_A", "MENO_A", "A_MINUS":
             if isDarts {
                 checkDartsLeg(isHome: true, subtract: -60)
             } else {
                 decScoreA()
             }
-        case "MINUS_B", "TENNIS_MINUS_B":
+        case "MINUS_B", "TENNIS_MINUS_B", "DEC_B", "DEC_SCORE_B", "-1_B", "SUB_B", "MENO_B", "B_MINUS":
             if isDarts {
                 checkDartsLeg(isHome: false, subtract: -60)
             } else {
                 decScoreB()
             }
-        case "PLUS_2_A":
+        case "PLUS_2_A", "+2_A", "SCORE_A_2", "A_PLUS_2":
             if isDarts { checkDartsLeg(isHome: true, subtract: 20) }
             else { incScoreA2() }
-        case "PLUS_3_A":
+        case "PLUS_3_A", "+3_A", "SCORE_A_3", "A_PLUS_3":
             if isDarts { checkDartsLeg(isHome: true, subtract: 100) }
             else { incScoreA3() }
-        case "PLUS_2_B":
+        case "PLUS_2_B", "+2_B", "SCORE_B_2", "B_PLUS_2":
             if isDarts { checkDartsLeg(isHome: false, subtract: 20) }
             else { incScoreB2() }
-        case "PLUS_3_B":
+        case "PLUS_3_B", "+3_B", "SCORE_B_3", "B_PLUS_3":
             if isDarts { checkDartsLeg(isHome: false, subtract: 100) }
             else { incScoreB3() }
+        case "TIMEOUT_A", "TO_A", "TIME_OUT_A", "TOA", "TIMEOUTA":
+            toA()
+        case "TIMEOUT_B", "TO_B", "TIME_OUT_B", "TOB", "TIMEOUTB":
+            toB()
+        case "SET_PLUS", "INC_SET", "NEXT_SET", "END_PERIOD", "+1_SET":
+            incSetAction()
+        case "SET_MINUS", "DEC_SET", "-1_SET":
+            decSetAction()
+        case "SERVE_A", "SRV_A", "SERVEA":
+            localState.servingTeam = (localState.servingTeam == "A") ? "" : "A"
+            updateLocalState()
+        case "SERVE_B", "SRV_B", "SERVEB":
+            localState.servingTeam = (localState.servingTeam == "B") ? "" : "B"
+            updateLocalState()
+        case "RESET", "RESET_MATCH", "CLEAR", "CR":
+            localState.scoreA = 0
+            localState.scoreB = 0
+            localState.timeoutA = 0
+            localState.timeoutB = 0
+            updateLocalState()
         case "DARTS_SUB_20_A":
             checkDartsLeg(isHome: true, subtract: 20)
         case "DARTS_SUB_60_A":
@@ -1988,46 +2009,40 @@ class MainViewController: UIViewController {
         case "DARTS_LEG_A":
             localState.dartsLegsA += 1
             resetDartsScores()
-            refreshMatchState()
+            updateLocalState()
         case "DARTS_LEG_B":
             localState.dartsLegsB += 1
             resetDartsScores()
-            refreshMatchState()
+            updateLocalState()
         case "DARTS_BUST":
             showToast(message: "🎯 BUST!")
             localState.dartsActivePlayer = (localState.dartsActivePlayer == "A") ? "B" : "A"
-            refreshMatchState()
+            updateLocalState()
         case "DARTS_RESET_LEG":
             resetDartsScores()
-            refreshMatchState()
-        case "TIMEOUT_A":
-            toA()
-        case "TIMEOUT_B":
-            toB()
+            updateLocalState()
         case "FOUL_A":
             localState.foulsA += 1
-            refreshMatchState()
+            updateLocalState()
         case "FOUL_B":
             localState.foulsB += 1
-            refreshMatchState()
+            updateLocalState()
         case "TENNIS_GAME_A":
             localState.tennisGamesA += 1
             localState.tennisPointsA = 0
             localState.tennisPointsB = 0
-            refreshMatchState()
+            updateLocalState()
         case "TENNIS_GAME_B":
             localState.tennisGamesB += 1
             localState.tennisPointsA = 0
             localState.tennisPointsB = 0
-            refreshMatchState()
-        case "NEXT_SET", "END_PERIOD":
-            endQuarter()
+            updateLocalState()
         case "SOCCER_RED_A":
             localState.redCardsA = (localState.redCardsA > 0) ? 0 : 1
-            refreshMatchState()
+            updateLocalState()
         case "SOCCER_RED_B":
             localState.redCardsB = (localState.redCardsB > 0) ? 0 : 1
-            refreshMatchState()
+            updateLocalState()
         case "SOCCER_TIMER_TOGGLE":
             localState.timerRunning.toggle()
             refreshMatchState()

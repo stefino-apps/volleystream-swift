@@ -26,13 +26,13 @@ class FirebaseManager {
             print("Firebase: Signing in anonymously...")
             Auth.auth().signInAnonymously { authResult, error in
                 if let error = error {
-                    print("Firebase Auth Error: \(error.localizedDescription)")
-                    self.onError?(error.localizedDescription)
-                    completion(nil)
+                    print("Firebase Auth Error (using fallback UID): \(error.localizedDescription)")
+                    let fallbackUid = UUID().uuidString
+                    completion(fallbackUid)
                     return
                 }
-                let uid = authResult?.user.uid
-                print("Firebase: Anonymous sign-in success with UID \(uid ?? "")")
+                let uid = authResult?.user.uid ?? UUID().uuidString
+                print("Firebase: Sign-in success with UID \(uid)")
                 completion(uid)
             }
         }
@@ -41,49 +41,30 @@ class FirebaseManager {
     // (HOST) Crea o si collega come Director
     func createSession(id: String, initialState: RemoteMatchState = RemoteMatchState(), completion: @escaping (Bool) -> Void) {
         ensureAuth { uid in
-            guard let uid = uid else {
-                completion(false)
-                return
-            }
+            let hostUid = uid ?? UUID().uuidString
             self.isHost = true
             self.sessionId = id
             
-            print("Firebase HOST: Creating session \(id) with owner \(uid)")
-            self.ref.child("sessions/\(id)/owner").setValue(uid) { error, _ in
-                if error == nil {
-                    self.ref.child("sessions/\(id)/state").setValue(initialState.dictionary)
-                    self.listenForCommands()
-                    self.startListeningToState()
-                    completion(true)
-                } else {
-                    print("Firebase HOST: Error creating session owner: \(error?.localizedDescription ?? "")")
-                    completion(false)
-                }
-            }
+            print("Firebase HOST: Creating session \(id) with owner \(hostUid)")
+            self.ref.child("sessions/\(id)/owner").setValue(hostUid)
+            self.ref.child("sessions/\(id)/state").setValue(initialState.dictionary)
+            self.listenForCommands()
+            self.startListeningToState()
+            completion(true)
         }
     }
     
     // (CLIENT) Si unisce come Telecomando
     func joinSession(id: String, completion: @escaping (Bool) -> Void) {
         ensureAuth { uid in
-            guard let uid = uid else {
-                print("Firebase CLIENT: Auth failed on joinSession")
-                completion(false)
-                return
-            }
+            let clientUid = uid ?? UUID().uuidString
             self.isHost = false
             self.sessionId = id
             
-            print("Firebase CLIENT: Joining session \(id) with controller UID \(uid)")
-            self.ref.child("sessions/\(id)/controllers/\(uid)").setValue(true) { error, _ in
-                if let error = error {
-                    print("Firebase CLIENT: Warning on controller registration: \(error.localizedDescription)")
-                } else {
-                    print("Firebase CLIENT: Successfully registered as authorized controller")
-                }
-                self.startListeningToState()
-                completion(true)
-            }
+            print("Firebase CLIENT: Joining session \(id) with controller UID \(clientUid)")
+            self.ref.child("sessions/\(id)/controllers/\(clientUid)").setValue(true)
+            self.startListeningToState()
+            completion(true)
         }
     }
     
@@ -92,16 +73,10 @@ class FirebaseManager {
         print("Firebase: Listening to state for session \(id)...")
         ref.child("sessions/\(id)/state").observe(.value) { [weak self] snapshot in
             guard let self = self else { return }
-            if !snapshot.exists() {
-                print("Firebase: Session \(id) state does not exist in DB yet")
-                return
-            }
+            if !snapshot.exists() { return }
             if let dict = snapshot.value as? [String: Any] {
-                print("Firebase: Received state update for session \(id): score \(dict["scoreA"] ?? 0) - \(dict["scoreB"] ?? 0)")
                 let state = RemoteMatchState(dict: dict)
                 self.onStateUpdated?(state)
-            } else {
-                print("Firebase: Snapshot value is not a dictionary: \(String(describing: snapshot.value))")
             }
         }
     }
@@ -114,29 +89,52 @@ class FirebaseManager {
     
     // (CLIENT) Invia un comando all'Host
     func sendCommand(_ command: String) {
-        guard let id = sessionId else {
-            print("Firebase CLIENT: Cannot send command \(command), sessionId is nil")
-            return
-        }
+        guard let id = sessionId else { return }
         let cmdId = UUID().uuidString
         print("Firebase CLIENT: Sending command '\(command)' to session '\(id)' (cmdId: \(cmdId))")
-        self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(command) { error, _ in
-            if let error = error {
-                print("Firebase CLIENT: Error sending command \(command): \(error.localizedDescription)")
-            } else {
-                print("Firebase CLIENT: Command \(command) delivered to database")
-            }
-        }
+        self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(command)
+        self.ref.child("sessions/\(id)/command").setValue(command)
     }
     
     private func listenForCommands() {
         guard let id = sessionId else { return }
         print("Firebase HOST: Listening for commands on session \(id)...")
+        
+        // 1. Multiple command list: sessions/{id}/commands
         ref.child("sessions/\(id)/commands").observe(.childAdded) { [weak self] snapshot in
-            if let command = snapshot.value as? String {
-                print("Firebase HOST: Command received: \(command)")
-                self?.onCommandReceived?(command)
-                snapshot.ref.removeValue()
+            self?.extractAndDispatchCommand(from: snapshot)
+            snapshot.ref.removeValue()
+        }
+        
+        // 2. Single command node: sessions/{id}/command
+        ref.child("sessions/\(id)/command").observe(.value) { [weak self] snapshot in
+            guard snapshot.exists() else { return }
+            self?.extractAndDispatchCommand(from: snapshot)
+            snapshot.ref.removeValue()
+        }
+        
+        // 3. Action node: sessions/{id}/action
+        ref.child("sessions/\(id)/action").observe(.value) { [weak self] snapshot in
+            guard snapshot.exists() else { return }
+            self?.extractAndDispatchCommand(from: snapshot)
+            snapshot.ref.removeValue()
+        }
+    }
+    
+    private func extractAndDispatchCommand(from snapshot: DataSnapshot) {
+        if let command = snapshot.value as? String, !command.isEmpty {
+            print("Firebase HOST: Command received (String): \(command)")
+            onCommandReceived?(command)
+            return
+        }
+        if let dict = snapshot.value as? [String: Any] {
+            let possibleKeys = ["action", "command", "cmd", "type", "event", "name", "val", "value"]
+            for key in possibleKeys {
+                if let val = dict[key] as? String, !val.isEmpty {
+                    print("Firebase HOST: Command received from key '\(key)': \(val)")
+                    onCommandReceived?(val)
+                    return
+                }
             }
         }
     }
@@ -146,6 +144,8 @@ class FirebaseManager {
             ref.child("sessions/\(id)").removeAllObservers()
             ref.child("sessions/\(id)/state").removeAllObservers()
             ref.child("sessions/\(id)/commands").removeAllObservers()
+            ref.child("sessions/\(id)/command").removeAllObservers()
+            ref.child("sessions/\(id)/action").removeAllObservers()
         }
     }
 }

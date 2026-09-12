@@ -11,7 +11,8 @@ class ScoreboardOverlayView: UIView {
     private var displayLink: CADisplayLink?
     var alertStartTime: TimeInterval = 0
     var isBlinkingAlert = false
-    private var lastAlertScoreKey = ""
+    private var lastSetPointTeamTriggered: String? = nil
+    private var lastSetPointSetIndex: Int = -1
     
     // Timeout Alert State (4.0s duration, 450ms ON / 250ms OFF matching Android)
     var isBlinkingTimeout = false
@@ -95,17 +96,25 @@ class ScoreboardOverlayView: UIView {
             self.awayLogo = UIImage(data: awayData)
         }
         
+        // Reset tracking se il set cambia o se il set/match è terminato
+        if state.currentSet != lastSetPointSetIndex || state.isSetFinished || state.isMatchFinished {
+            lastSetPointTeamTriggered = nil
+            lastSetPointSetIndex = state.currentSet
+        }
+        
         // Controlla se siamo entrati in Set Point o Match Point
-        let currentKey = "\(state.sportType)-\(state.scoreA)-\(state.scoreB)-\(state.setsA)-\(state.setsB)-\(state.currentSet)"
-        if let _ = getSetPointInfo(state: state), !state.isSetFinished && !state.isMatchFinished {
-            if currentKey != lastAlertScoreKey {
-                lastAlertScoreKey = currentKey
+        if let sp = getSetPointInfo(state: state), !state.isSetFinished && !state.isMatchFinished {
+            // Lampeggia solo la PRIMA volta che questa squadra entra in Set Point nel set corrente
+            if lastSetPointTeamTriggered != sp.team {
+                lastSetPointTeamTriggered = sp.team
+                lastSetPointSetIndex = state.currentSet
                 alertStartTime = Date().timeIntervalSince1970
                 isBlinkingAlert = true
             }
         } else {
-            if state.isSetFinished || state.isMatchFinished {
-                lastAlertScoreKey = currentKey
+            // Se nessuna squadra è a Set Point (es. parità ai vantaggi 24-24), resetta per il prossimo punto di vantaggio
+            if !state.isSetFinished && !state.isMatchFinished {
+                lastSetPointTeamTriggered = nil
             }
         }
         
