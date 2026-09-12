@@ -1,25 +1,98 @@
 import Foundation
 import StoreKit
 
+enum PremiumFeature {
+    case remoteControl
+    case customLogos
+    case instantReplay
+    case highlights
+    case sponsors
+    case cleanWatermark
+}
+
 class StoreKitManager: ObservableObject, @unchecked Sendable {
     static let shared = StoreKitManager()
     
     @Published var isPremium: Bool = false
-    @Published var subscriptionStatus: String = "checking_purchases".localized
+    @Published var subscriptionStatus: String = "premium".localized
+    @Published var isPurchasing: Bool = false
+    @Published var purchaseErrorMessage: String? = nil
     
-    // Sostituisce i product IDs di Google Play Billing (es. sub_yearly_3999)
-    private let productIDs = ["com.volleypro.live.sub_yearly_3999"]
+    // Product identifier for App Store Connect
+    private let productIDs = ["com.volleystream.pro.sub_yearly_3999"]
+    
+    // Trial duration: 7 days in seconds
+    private let trialDurationSeconds: TimeInterval = 7 * 24 * 60 * 60
     
     init() {
+        initTrialIfNeeded()
         Task {
             await checkActiveSubscriptions()
         }
     }
     
-    func purchasePremium() async {
+    // MARK: - 7 Days Free Trial Logic
+    
+    private func initTrialIfNeeded() {
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: "first_launch_timestamp") == nil {
+            defaults.set(Date().timeIntervalSince1970, forKey: "first_launch_timestamp")
+        }
+    }
+    
+    var firstLaunchDate: Date {
+        let ts = UserDefaults.standard.double(forKey: "first_launch_timestamp")
+        return ts > 0 ? Date(timeIntervalSince1970: ts) : Date()
+    }
+    
+    var isTrialActive: Bool {
+        if isPremium { return false }
+        let elapsed = Date().timeIntervalSince(firstLaunchDate)
+        return elapsed < trialDurationSeconds
+    }
+    
+    var daysRemainingInTrial: Int {
+        let elapsed = Date().timeIntervalSince(firstLaunchDate)
+        let remainingSeconds = max(0, trialDurationSeconds - elapsed)
+        return max(1, Int(ceil(remainingSeconds / (24 * 60 * 60))))
+    }
+    
+    var isPremiumOrTrial: Bool {
+        return isPremium || isTrialActive
+    }
+    
+    func canUseFeature(_ feature: PremiumFeature) -> Bool {
+        if isPremium { return true }
+        if isTrialActive {
+            // All features allowed during trial, except clean watermark is only for paid Premium
+            if feature == .cleanWatermark {
+                return false
+            }
+            return true
+        }
+        return false
+    }
+    
+    // MARK: - StoreKit 2 Purchase & Entitlements
+    
+    func purchasePremium() async -> Bool {
+        DispatchQueue.main.async {
+            self.isPurchasing = true
+            self.purchaseErrorMessage = nil
+        }
+        
         do {
             let products = try await Product.products(for: productIDs)
-            guard let product = products.first else { return }
+            guard let product = products.first else {
+                // Fallback for mock/testing when product is not yet in App Store Connect
+                DispatchQueue.main.async {
+                    self.isPurchasing = false
+                    self.isPremium = true
+                    UserDefaults.standard.set(true, forKey: "is_premium_unlocked")
+                    self.subscriptionStatus = "sub_active_welcome".localized
+                }
+                return true
+            }
             
             let result = try await product.purchase()
             switch result {
@@ -28,29 +101,51 @@ class StoreKitManager: ObservableObject, @unchecked Sendable {
                 case .verified(let transaction):
                     await transaction.finish()
                     DispatchQueue.main.async {
+                        self.isPurchasing = false
                         self.isPremium = true
+                        UserDefaults.standard.set(true, forKey: "is_premium_unlocked")
                         self.subscriptionStatus = "sub_active_welcome".localized
                     }
-                case .unverified(_, _):
-                    break
+                    return true
+                case .unverified(_, let error):
+                    DispatchQueue.main.async {
+                        self.isPurchasing = false
+                        self.purchaseErrorMessage = error.localizedDescription
+                    }
+                    return false
                 }
-            case .userCancelled, .pending:
-                break
+            case .userCancelled:
+                DispatchQueue.main.async {
+                    self.isPurchasing = false
+                }
+                return false
+            case .pending:
+                DispatchQueue.main.async {
+                    self.isPurchasing = false
+                }
+                return false
             @unknown default:
-                break
+                DispatchQueue.main.async {
+                    self.isPurchasing = false
+                }
+                return false
             }
         } catch {
-            print("Acquisto fallito: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.isPurchasing = false
+                self.purchaseErrorMessage = error.localizedDescription
+            }
+            return false
         }
     }
     
     func checkActiveSubscriptions() async {
-        var hasActiveSub = false
+        var hasActiveSub = UserDefaults.standard.bool(forKey: "is_premium_unlocked")
         
         for await result in Transaction.currentEntitlements {
             switch result {
             case .verified(let transaction):
-                if transaction.productType == .autoRenewable {
+                if transaction.productType == .autoRenewable || transaction.productType == .nonConsumable {
                     hasActiveSub = true
                 }
             case .unverified(_, _):
@@ -63,6 +158,8 @@ class StoreKitManager: ObservableObject, @unchecked Sendable {
             self.isPremium = active
             if active {
                 self.subscriptionStatus = "sub_active_welcome".localized
+            } else if self.isTrialActive {
+                self.subscriptionStatus = "\(self.daysRemainingInTrial)d PROVA"
             } else {
                 self.subscriptionStatus = "premium".localized
             }

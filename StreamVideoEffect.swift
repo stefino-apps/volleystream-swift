@@ -105,6 +105,35 @@ class StreamVideoEffect: VideoEffect {
                     context.cgContext.restoreGState()
                 }
                 
+                // Watermark promozionale durante prova gratuita / versione free:
+                // Appare ogni 5 minuti (minuto % 5 == 0) e dura 1 minuto in alto accanto al tabellone
+                if !StoreKitManager.shared.isPremium {
+                    let minute = Calendar.current.component(.minute, from: Date())
+                    if minute % 5 == 0 {
+                        let watermarkText = "VOLLEYSTREAM PRO"
+                        let font = UIFont.systemFont(ofSize: 22, weight: .black)
+                        
+                        // Sfondo pillola semi-trasparente elegante
+                        let pillRect = CGRect(x: 510, y: 56, width: 280, height: 42)
+                        let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 8)
+                        UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.85).setFill()
+                        pillPath.fill()
+                        UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.9).setStroke()
+                        pillPath.lineWidth = 1.5
+                        pillPath.stroke()
+                        
+                        let paragraph = NSMutableParagraphStyle()
+                        paragraph.alignment = .center
+                        let attrs: [NSAttributedString.Key: Any] = [
+                            .font: font,
+                            .foregroundColor: UIColor.white,
+                            .paragraphStyle: paragraph
+                        ]
+                        let textRect = CGRect(x: 512, y: 64, width: 276, height: 28)
+                        watermarkText.draw(in: textRect, withAttributes: attrs)
+                    }
+                }
+                
                 if let mv = self.marqueeView {
                     mv.layer.render(in: context.cgContext)
                 }

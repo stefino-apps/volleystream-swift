@@ -1728,6 +1728,10 @@ class MainViewController: UIViewController {
     }
     
     @objc func toggleSponsor() {
+        guard StoreKitManager.shared.canUseFeature(.sponsors) else {
+            showToast(message: "⭐ Funzionalità Sponsor disponibile con Premium")
+            return
+        }
         localState.fullScreenSponsor.toggle()
         updateLocalState()
     }
@@ -1748,6 +1752,10 @@ class MainViewController: UIViewController {
     }
     
     @objc func triggerReplay() {
+        guard StoreKitManager.shared.canUseFeature(.instantReplay) else {
+            showToast(message: "⭐ Instant Replay disponibile con Premium")
+            return
+        }
         guard AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported else {
             showToast(message: "⚠️ Replay non abilitato o non supportato")
             return
@@ -1759,6 +1767,10 @@ class MainViewController: UIViewController {
     }
     
     @objc func triggerHighlight() {
+        guard StoreKitManager.shared.canUseFeature(.highlights) else {
+            showToast(message: "⭐ Highlights disponibile con Premium")
+            return
+        }
         guard AppPreferences.shared.isReplayEnabled && ReplayManager.isDeviceSupported else {
             showToast(message: "⚠️ Replay non abilitato o non supportato")
             return
@@ -1805,6 +1817,10 @@ class MainViewController: UIViewController {
     }
     
     @objc func shareRemote() {
+        guard StoreKitManager.shared.canUseFeature(.remoteControl) else {
+            showToast(message: "⭐ Controllo Remoto disponibile con Premium")
+            return
+        }
         let sessionId = UserDefaults.standard.string(forKey: "remote_session_id") ?? "REGIA_01"
         let customLink = "volleypro://remote?code=\(sessionId)"
         let httpsLink = "https://volleystreampro.com/remote?code=\(sessionId)"

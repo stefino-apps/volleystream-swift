@@ -252,6 +252,11 @@ class ScoreboardOverlayView: UIView {
             let badgeY = (sp.team == "A") ? y + 15 : y + 29
             drawAttachedSetPointBadge(ctx: ctx, x: badgeX, y: badgeY, w: badgeW, h: badgeH, isMatchPoint: sp.isMatchPoint)
         }
+        
+        // Render End Set / Match Finished Graphic Card below scoreboard
+        if state.isSetFinished || state.isMatchFinished {
+            drawEndSetCard(ctx: ctx, x: x, y: y + h + 3, w: boxW, state: state, style: style)
+        }
     }
     
     // MARK: - Header Titles
@@ -363,25 +368,27 @@ class ScoreboardOverlayView: UIView {
     }
     
     private func drawTeamRow(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, tos: Int, maxTos: Int, isSrv: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
-        var curX = x
-        if let logo = logo {
-            logo.draw(in: CGRect(x: curX, y: y + 2, width: 11, height: 11))
-            curX += 14
-        }
-        
+        // 1. Dedicated fixed slot on the left for serve ball
         if isSrv {
-            drawVolleyBall(ctx: ctx, cx: curX + 4, cy: y + 6.5, r: 4.0)
-            curX += 10
+            drawVolleyBall(ctx: ctx, cx: x + 5, cy: y + 6.5, r: 3.5)
         }
         
+        // 2. Dedicated fixed slot for Team Logo
+        let logoX = x + 12
+        if let logo = logo {
+            logo.draw(in: CGRect(x: logoX, y: y + 1.5, width: 11, height: 11))
+        }
+        
+        // 3. Team name always starts at the EXACT same fixed position (never shifts)
+        let nameX = (logo != nil) ? (logoX + 14) : (x + 12)
         let nameFont = UIFont.systemFont(ofSize: 10, weight: .bold)
         let nameAttrs: [NSAttributedString.Key: Any] = [.font: nameFont, .foregroundColor: UIColor.white]
         let trimName = name.count > 10 ? String(name.prefix(10)) : name
-        trimName.uppercased().draw(at: CGPoint(x: curX, y: y + 0.5), withAttributes: nameAttrs)
+        trimName.uppercased().draw(at: CGPoint(x: nameX, y: y + 0.5), withAttributes: nameAttrs)
         
-        // Timeouts dashes positioned directly UNDER team name
+        // Timeouts dashes positioned directly UNDER team name at fixed position
         for i in 0..<maxTos {
-            let toRect = CGRect(x: curX + CGFloat(i) * 7.5, y: y + 11.5, width: 5.5, height: 2.2)
+            let toRect = CGRect(x: nameX + CGFloat(i) * 7.5, y: y + 11.5, width: 5.5, height: 2.2)
             let toColor = (i < tos) ? style.timeoutActiveColor : style.timeoutInactiveColor
             toColor.setFill()
             UIBezierPath(roundedRect: toRect, cornerRadius: 0.6).fill()
@@ -695,5 +702,73 @@ class ScoreboardOverlayView: UIView {
         
         let textRect = CGRect(x: x + 2, y: y + 3.5, width: w - 4, height: h - 5)
         text.draw(in: textRect, withAttributes: attrs)
+    }
+    
+    // MARK: - End of Set / Match Finished Broadcast Graphic Card
+    
+    private func drawEndSetCard(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
+        let cardH: CGFloat = 46.0
+        let cardRect = CGRect(x: x, y: y, width: w, height: cardH)
+        let path = UIBezierPath(roundedRect: cardRect, cornerRadius: 8.0)
+        
+        ctx.saveGState()
+        // Dark translucent gradient background
+        UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.96).setFill()
+        path.fill()
+        
+        // Neon cyan border
+        UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0).setStroke()
+        path.lineWidth = 1.2
+        path.stroke()
+        
+        // Header title
+        let headerTitle = state.isMatchFinished ? "RISULTATO FINALE" : "FINE SET \(state.currentSet)"
+        let headerRect = CGRect(x: x, y: y, width: w, height: 13)
+        let headerPath = UIBezierPath(roundedRect: headerRect, byRoundingCorners: [.topLeft, .topRight], cornerRadii: CGSize(width: 8, height: 8))
+        UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.9).setFill()
+        headerPath.fill()
+        
+        let headerFont = UIFont.systemFont(ofSize: 8.5, weight: .black)
+        let pStyle = NSMutableParagraphStyle()
+        pStyle.alignment = .center
+        headerTitle.draw(in: CGRect(x: x + 2, y: y + 1.0, width: w - 4, height: 12), withAttributes: [
+            .font: headerFont,
+            .foregroundColor: UIColor.black,
+            .paragraphStyle: pStyle
+        ])
+        
+        // Team A Row
+        let row1Y = y + 15
+        if let logo = homeLogo {
+            logo.draw(in: CGRect(x: x + 6, y: row1Y + 1, width: 10, height: 10))
+        }
+        let trimA = state.teamA.count > 10 ? String(state.teamA.prefix(10)) : state.teamA
+        trimA.uppercased().draw(at: CGPoint(x: x + (homeLogo != nil ? 18 : 6), y: row1Y), withAttributes: [
+            .font: UIFont.systemFont(ofSize: 9.5, weight: .bold),
+            .foregroundColor: UIColor.white
+        ])
+        let setsScoreA = "\(state.setsA)  (\(state.scoreA))"
+        setsScoreA.draw(at: CGPoint(x: x + w - 48, y: row1Y), withAttributes: [
+            .font: UIFont.systemFont(ofSize: 9.5, weight: .heavy),
+            .foregroundColor: UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 1.0)
+        ])
+        
+        // Team B Row
+        let row2Y = y + 28
+        if let logo = awayLogo {
+            logo.draw(in: CGRect(x: x + 6, y: row2Y + 1, width: 10, height: 10))
+        }
+        let trimB = state.teamB.count > 10 ? String(state.teamB.prefix(10)) : state.teamB
+        trimB.uppercased().draw(at: CGPoint(x: x + (awayLogo != nil ? 18 : 6), y: row2Y), withAttributes: [
+            .font: UIFont.systemFont(ofSize: 9.5, weight: .bold),
+            .foregroundColor: UIColor.white
+        ])
+        let setsScoreB = "\(state.setsB)  (\(state.scoreB))"
+        setsScoreB.draw(at: CGPoint(x: x + w - 48, y: row2Y), withAttributes: [
+            .font: UIFont.systemFont(ofSize: 9.5, weight: .heavy),
+            .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
+        ])
+        
+        ctx.restoreGState()
     }
 }

@@ -7,10 +7,14 @@ struct WelcomeView: View {
     @State private var navigateToSetup = false
     @State private var showLangPicker = false
     @State private var showMenu = false
+    @State private var showPremiumPaywall = false
     @State private var selectedBadgeInfo: String? = nil
     @State private var navigateToRemote = false
     @State private var showDeleteAccountAlert = false
     @State private var activeLegalDoc: LegalDocType? = nil
+    @State private var isShowingSplash = true
+    @State private var splashScale: CGFloat = 0.35
+    @State private var splashOpacity: Double = 0.0
     @AppStorage("app_lang") private var appLang = "it"
     
     let languages = [
@@ -109,19 +113,29 @@ struct WelcomeView: View {
                             HStack {
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 4) {
-                                    Text("free_trial".localized)
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(Color(hex: "#22c55e"))
+                                    if storeManager.isPremium {
+                                        Text("PREMIUM ATTIVO")
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundColor(Color(hex: "#22c55e"))
+                                    } else if storeManager.isTrialActive {
+                                        Text("\(storeManager.daysRemainingInTrial) GIORNI PROVA")
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundColor(Color(hex: "#22c55e"))
+                                    } else {
+                                        Text("VERSIONE FREE")
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundColor(Color(hex: "#EF4444"))
+                                    }
                                     
-                                    Button(action: {}) {
+                                    Button(action: { showPremiumPaywall = true }) {
                                         Text("PREMIUM")
-                                            .font(.system(size: 10, weight: .bold))
+                                            .font(.system(size: 11, weight: .heavy))
                                             .foregroundColor(Color(hex: "#06b6d4"))
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 4)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 5)
                                             .background(Color(hex: "#0f172a"))
                                             .cornerRadius(12)
-                                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#06b6d4"), lineWidth: 1))
+                                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#06b6d4"), lineWidth: 1.5))
                                     }
                                 }
                             }
@@ -243,8 +257,56 @@ struct WelcomeView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
                 }
+                
+                // Animated Splash Screen Overlay
+                if isShowingSplash {
+                    Color.black.edgesIgnoringSafeArea(.all)
+                    
+                    VStack(spacing: 24) {
+                        if let img = UIImage(named: "app_logo.jpg") ?? UIImage(contentsOfFile: Bundle.main.path(forResource: "app_logo", ofType: "jpg") ?? "") {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 280, height: 280)
+                                .cornerRadius(24)
+                                .shadow(color: Color(hex: "#06b6d4").opacity(0.8), radius: 20)
+                        } else {
+                            Image(systemName: "video.badge.waveform.fill")
+                                .font(.system(size: 90))
+                                .foregroundColor(Color(hex: "#38BDF8"))
+                        }
+                        
+                        Text("VOLLEYSTREAM PRO")
+                            .font(.system(size: 30, weight: .heavy))
+                            .italic()
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(hex: "#38BDF8"), Color(hex: "#FACC15"), Color(hex: "#C084FC")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                    }
+                    .scaleEffect(splashScale)
+                    .opacity(splashOpacity)
+                    .onAppear {
+                        withAnimation(.spring(response: 0.7, dampingFraction: 0.7, blendDuration: 0)) {
+                            splashScale = 1.0
+                            splashOpacity = 1.0
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                isShowingSplash = false
+                            }
+                        }
+                    }
+                    .transition(.opacity)
+                }
             }
             .navigationBarHidden(true)
+            .sheet(isPresented: $showPremiumPaywall) {
+                PremiumPaywallSheet()
+            }
             .sheet(item: $activeLegalDoc) { doc in
                 LegalDocSheetView(doc: doc)
             }
@@ -295,6 +357,167 @@ struct WelcomeView: View {
         let subject = "VolleyStream Pro - Support"
         if let url = URL(string: "mailto:\(email)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             UIApplication.shared.open(url)
+        }
+    }
+}
+
+// MARK: - Premium Paywall Sheet (Purchase Modal)
+
+struct PremiumPaywallSheet: View {
+    @ObservedObject var storeManager = StoreKitManager.shared
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        ZStack {
+            Color(hex: "#020617").edgesIgnoringSafeArea(.all)
+            
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Close button
+                    HStack {
+                        Spacer()
+                        Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(Color(hex: "#64748b"))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    
+                    // Crown & Title
+                    VStack(spacing: 8) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 52))
+                            .foregroundColor(Color(hex: "#FACC15"))
+                            .shadow(color: Color(hex: "#FACC15").opacity(0.8), radius: 14)
+                        
+                        Text("VOLLEYSTREAM PRO")
+                            .font(.system(size: 26, weight: .heavy))
+                            .italic()
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(hex: "#38BDF8"), Color(hex: "#FACC15")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                        
+                        Text("Sblocca tutte le funzionalità professionali")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(hex: "#94a3b8"))
+                    }
+                    
+                    // Features List
+                    VStack(alignment: .leading, spacing: 16) {
+                        PremiumFeatureRow(icon: "iphone.radiowaves.left.and.right", title: "Controllo Remoto (R.C.) senza limiti", subtitle: "Gestisci i punti dal secondo smartphone")
+                        PremiumFeatureRow(icon: "photo.badge.checkmark", title: "Loghi e Sponsor Personalizzati", subtitle: "Mostra sponsor e loghi ufficiali delle squadre")
+                        PremiumFeatureRow(icon: "arrow.counterclockwise.circle.fill", title: "Instant Replay & Highlights", subtitle: "Rivedi i punti salienti ed esporta video")
+                        PremiumFeatureRow(icon: "tv.fill", title: "Nessun Watermark Promozionale", subtitle: "Nessuna scritta promozionale su YouTube")
+                        PremiumFeatureRow(icon: "video.fill", title: "Streaming HD 1080p @ 60 FPS", subtitle: "Massima qualità e fluidità broadcast")
+                    }
+                    .padding(20)
+                    .background(Color(hex: "#0f172a"))
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(hex: "#1e293b"), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // Pricing info
+                    VStack(spacing: 6) {
+                        Text("7 GIORNI DI PROVA GRATUITA INCLUSI")
+                            .font(.system(size: 14, weight: .heavy))
+                            .foregroundColor(Color(hex: "#22c55e"))
+                        
+                        Text("Poi solo €39,99 / anno (€3,33/mese). Annulla in qualsiasi momento.")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "#cbd5e1"))
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    if let err = storeManager.purchaseErrorMessage {
+                        Text(err)
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                    }
+                    
+                    // Purchase Button
+                    Button(action: {
+                        Task {
+                            let success = await storeManager.purchasePremium()
+                            if success {
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            if storeManager.isPurchasing {
+                                ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .black))
+                            }
+                            Text(storeManager.isPremium ? "ABBONAMENTO ATTIVO" : "PROVA GRATIS PER 7 GIORNI")
+                                .font(.system(size: 16, weight: .heavy))
+                                .foregroundColor(.black)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "#FACC15"), Color(hex: "#EAB308")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(14)
+                        .shadow(color: Color(hex: "#FACC15").opacity(0.4), radius: 8)
+                    }
+                    .disabled(storeManager.isPurchasing || storeManager.isPremium)
+                    .padding(.horizontal, 20)
+                    
+                    // Restore Button
+                    Button(action: {
+                        Task {
+                            await storeManager.restorePurchases()
+                        }
+                    }) {
+                        Text("Ripristina Acquisti")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(hex: "#06b6d4"))
+                            .underline()
+                    }
+                    .padding(.top, 4)
+                    .padding(.bottom, 24)
+                }
+            }
+        }
+    }
+}
+
+struct PremiumFeatureRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(Color(hex: "#00FFCC"))
+                .frame(width: 28)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "#94a3b8"))
+            }
         }
     }
 }

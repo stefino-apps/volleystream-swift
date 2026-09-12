@@ -39,7 +39,7 @@ struct RemoteMatchState: Codable {
     var showSponsor: Bool = false
     var currentSponsorIdx: Int = -1
     var showScrollText: Bool = false
-    var scrollMessage: String = "NOTIZIE: La partita procede con regolarità e le squadre sono in campo."
+    var scrollMessage: String = ""
     var fullScreenSponsor: Bool = false
     var servingTeam: String = ""
     var dataUsageGB: Double = 0.0
@@ -197,7 +197,12 @@ struct RemoteMatchState: Codable {
         if let val = dict["showSponsor"] as? Bool { self.showSponsor = val }
         if let val = dict["currentSponsorIdx"] as? Int { self.currentSponsorIdx = val }
         if let val = dict["showScrollText"] as? Bool { self.showScrollText = val }
+        if let val = dict["scrollMessage"] as? String { self.scrollMessage = val }
         if let val = dict["servingTeam"] as? String { self.servingTeam = val }
+        if let val = dict["setScores"] as? [[Int]] { self.setScores = val }
+        if let val = dict["isFifthSet"] as? Bool { self.isFifthSet = val }
+        if let val = dict["isSetFinished"] as? Bool { self.isSetFinished = val }
+        if let val = dict["isMatchFinished"] as? Bool { self.isMatchFinished = val }
         
         if let val = dict["dataUsageGB"] as? Double { self.dataUsageGB = val }
         else if let val = dict["dataUsageGB"] as? Int { self.dataUsageGB = Double(val) }

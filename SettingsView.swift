@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State private var teamHome = AppPreferences.shared.teamHome
     @State private var teamAway = AppPreferences.shared.teamAway
     
-    @State private var scrollText = "NOTIZIE: LA PARTITA PROCEDE CON REGOLARITÀ"
+    @State private var scrollText = ""
     @State private var scrollTextColorHex = "#FFFFFF"
     
     @AppStorage("punto_de_oro") private var puntoDeOro: Bool = false
@@ -25,6 +25,7 @@ struct SettingsView: View {
     
     @State private var replayEnabled = AppPreferences.shared.isReplayEnabled
     @State private var navigateToLiveSetup = false
+    @State private var showPremiumPaywall = false
     @State private var showSaveSlotAlert = false
     @State private var showLoadSlotAlert = false
     @State private var showReplayTestAlert = false
@@ -200,6 +201,9 @@ struct SettingsView: View {
                 message: Text(replayTestMessage),
                 dismissButton: .default(Text("OK"))
             )
+        }
+        .sheet(isPresented: $showPremiumPaywall) {
+            PremiumPaywallSheet()
         }
     }
     
@@ -378,6 +382,11 @@ struct SettingsView: View {
                 }
             }
             .onChange(of: logoHomePickerItem) { newItem in
+                if !StoreKitManager.shared.canUseFeature(.customLogos) {
+                    showPremiumPaywall = true
+                    logoHomePickerItem = nil
+                    return
+                }
                 Task {
                     if let data = try? await newItem?.loadTransferable(type: Data.self),
                        let uiImg = UIImage(data: data) {
@@ -441,6 +450,11 @@ struct SettingsView: View {
                 }
             }
             .onChange(of: logoAwayPickerItem) { newItem in
+                if !StoreKitManager.shared.canUseFeature(.customLogos) {
+                    showPremiumPaywall = true
+                    logoAwayPickerItem = nil
+                    return
+                }
                 Task {
                     if let data = try? await newItem?.loadTransferable(type: Data.self),
                        let uiImg = UIImage(data: data) {
@@ -541,6 +555,11 @@ struct SettingsView: View {
             }
         }
         .onChange(of: sponsorPickerItems[index]) { newItem in
+            if !StoreKitManager.shared.canUseFeature(.sponsors) {
+                showPremiumPaywall = true
+                sponsorPickerItems[index] = nil
+                return
+            }
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImg = UIImage(data: data) {
@@ -623,6 +642,11 @@ struct SettingsView: View {
             }
         }
         .onChange(of: bannerPickerItems[index]) { newItem in
+            if !StoreKitManager.shared.canUseFeature(.sponsors) {
+                showPremiumPaywall = true
+                bannerPickerItems[index] = nil
+                return
+            }
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImg = UIImage(data: data) {
@@ -648,8 +672,18 @@ struct SettingsView: View {
                     .tracking(1.5)
                 Spacer()
                 if ReplayManager.isDeviceSupported {
-                    Toggle("", isOn: $replayEnabled)
-                        .labelsHidden()
+                    Toggle("", isOn: Binding(
+                        get: { replayEnabled },
+                        set: { newVal in
+                            if newVal && !StoreKitManager.shared.canUseFeature(.instantReplay) {
+                                showPremiumPaywall = true
+                                replayEnabled = false
+                            } else {
+                                replayEnabled = newVal
+                            }
+                        }
+                    ))
+                    .labelsHidden()
                 } else {
                     Toggle("", isOn: .constant(false))
                         .labelsHidden()
