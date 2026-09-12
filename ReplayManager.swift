@@ -118,8 +118,6 @@ class ReplayManager {
     // MARK: - Registrazione Frame Live (Zero CPU lag via Metal CVPixelBuffer)
     
     func recordFrame(_ image: CIImage) {
-        guard isRecording else { return }
-        
         let now = CACurrentMediaTime()
         // Campiona a ~30 fps
         guard (now - lastRecordedTime) >= 0.030 else { return }
@@ -129,7 +127,7 @@ class ReplayManager {
         guard extent.width > 0 && extent.height > 0 else { return }
         
         queue.async { [weak self] in
-            guard let self = self, self.isRecording, let pool = self.pixelBufferPool else { return }
+            guard let self = self, let pool = self.pixelBufferPool else { return }
             
             // Scala a 960x540 direttamente in GPU Metal
             let scaleX = 960.0 / extent.width
@@ -159,8 +157,7 @@ class ReplayManager {
     func startReplay() {
         queue.async {
             guard !self.frameBuffer.isEmpty else { return }
-            self.playbackBuffer = self.frameBuffer
-            self.isRecording = false
+            self.playbackBuffer = Array(self.frameBuffer)
             self.isPlaying = true
             self.isStingerPlaying = true
             self.isOutroStinger = false

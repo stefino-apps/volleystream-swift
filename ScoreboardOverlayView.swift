@@ -346,7 +346,7 @@ class ScoreboardOverlayView: UIView {
         // 2. Disegna il Tabellone Live in alto a sinistra (Ampio, fisso e ben leggibile)
         let x: CGFloat = (rect.width > 600) ? 20 : 2
         let y: CGFloat = (rect.height > 400) ? 15 : 2
-        let boxW: CGFloat = 275.0
+        let boxW: CGFloat = 228.0
         let h: CGFloat = 58.0
         let headerH: CGFloat = 16.0
         
@@ -570,14 +570,14 @@ class ScoreboardOverlayView: UIView {
         
         // 4. Previous Sets Columns - COMPLETELY FIXED POSITION right next to team names (never moves)
         if !setScores.isEmpty {
-            let colWidth: CGFloat = 22.0
-            let startSetX = x + 125.0
+            let colWidth: CGFloat = 18.0
+            let startSetX = x + 106.0
             let redColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
             
             for (idx, myScore) in setScores.enumerated() {
                 let oppScore = (idx < opponentSetScores.count) ? opponentSetScores[idx] : 0
                 let isWon = myScore > oppScore
-                let setFont = UIFont.systemFont(ofSize: 11.5, weight: .bold)
+                let setFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
                 let setAttrs: [NSAttributedString.Key: Any] = [
                     .font: setFont,
                     .foregroundColor: isWon ? redColor : UIColor.white
@@ -590,7 +590,7 @@ class ScoreboardOverlayView: UIView {
         }
         
         // 5. Current Set Score (Rightmost dedicated slot)
-        let scoreFont = UIFont.systemFont(ofSize: 18.0, weight: .heavy)
+        let scoreFont = UIFont.systemFont(ofSize: 16.5, weight: .heavy)
         let scoreAttrs: [NSAttributedString.Key: Any] = [.font: scoreFont, .foregroundColor: color]
         let scoreStr = "\(pts)"
         let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)

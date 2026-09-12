@@ -1218,12 +1218,16 @@ class MainViewController: UIViewController {
             highlightButton.isHidden = false
             highlightButton.alpha = 1.0
             
-            // Zoom Buttons
-            let zoomW: CGFloat = isPortrait ? 28 : 36
-            let zoomH: CGFloat = isPortrait ? 26 : 32
+            // Zoom Buttons (Distanziati e più comodi da premere)
+            let zoomW: CGFloat = isPortrait ? 32 : 40
+            let zoomH: CGFloat = isPortrait ? 30 : 36
             let zoomX = w - safeRight - zoomW
-            zoomInButton.frame = CGRect(x: zoomX, y: safeTop + btnSize + 10, width: zoomW, height: zoomH)
-            zoomOutButton.frame = CGRect(x: zoomX, y: safeTop + btnSize + 10 + zoomH + 4, width: zoomW, height: zoomH)
+            let zoomSpacing: CGFloat = isPortrait ? 12 : 16
+            let zoomStartY = safeTop + btnSize + 16
+            zoomInButton.frame = CGRect(x: zoomX, y: zoomStartY, width: zoomW, height: zoomH)
+            zoomInButton.layer.cornerRadius = 10
+            zoomOutButton.frame = CGRect(x: zoomX, y: zoomStartY + zoomH + zoomSpacing, width: zoomW, height: zoomH)
+            zoomOutButton.layer.cornerRadius = 10
             zoomInButton.isHidden = false
             zoomOutButton.isHidden = false
             
@@ -2172,17 +2176,31 @@ class MainViewController: UIViewController {
     private func showDoNotDisturbAlert(onConfirm: @escaping () -> Void) {
         let alert = UIAlertController(
             title: "🔕 MODALITÀ NON DISTURBARE",
-            message: "Prima di avviare la diretta, ti consigliamo vivamente di attivare la modalità 'Non Disturbare' o 'Full Immersion' nel Centro di Controllo di iOS.\n\nIn questo modo eviterai che chiamate in arrivo o notifiche interrompano la trasmissione e facciano cadere la connessione.",
+            message: "Prima di avviare la diretta, ti consigliamo vivamente di attivare la modalità 'Non Disturbare' o 'Full Immersion' per evitare che chiamate o notifiche in arrivo interrompano la trasmissione e facciano cadere la connessione.\n\nPuoi aprire direttamente le impostazioni del telefono premendo il pulsante qui sotto.",
             preferredStyle: .alert
         )
         
-        alert.addAction(UIAlertAction(title: "AVVIA DIRETTA", style: .default) { _ in
+        alert.addAction(UIAlertAction(title: "⚙️ APRI NON DISTURBARE", style: .default) { [weak self] _ in
+            self?.openDoNotDisturbSettings()
+        })
+        
+        alert.addAction(UIAlertAction(title: "🔴 AVVIA DIRETTA", style: .default) { _ in
             onConfirm()
         })
         
         alert.addAction(UIAlertAction(title: "ANNULLA", style: .cancel, handler: nil))
         
         present(alert, animated: true, completion: nil)
+    }
+    
+    private func openDoNotDisturbSettings() {
+        if let dndUrl = URL(string: "App-Prefs:root=DO_NOT_DISTURB"), UIApplication.shared.canOpenURL(dndUrl) {
+            UIApplication.shared.open(dndUrl, options: [:], completionHandler: nil)
+        } else if let prefsUrl = URL(string: "prefs:root=DO_NOT_DISTURB"), UIApplication.shared.canOpenURL(prefsUrl) {
+            UIApplication.shared.open(prefsUrl, options: [:], completionHandler: nil)
+        } else if let settingsUrl = URL(string: UIApplication.openSettingsURLString), UIApplication.shared.canOpenURL(settingsUrl) {
+            UIApplication.shared.open(settingsUrl, options: [:], completionHandler: nil)
+        }
     }
     
     private func executeStartLive() {

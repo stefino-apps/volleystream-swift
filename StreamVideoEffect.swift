@@ -133,10 +133,10 @@ class StreamVideoEffect: VideoEffect {
                 if state.isSetFinished || state.isMatchFinished {
                     sv.draw(CGRect(x: 0, y: 0, width: 1920, height: 1080))
                 } else {
-                    let scale: CGFloat = 2.8
-                    context.cgContext.translateBy(x: 50, y: 45)
+                    let scale: CGFloat = 2.6
+                    context.cgContext.translateBy(x: 35, y: 35)
                     context.cgContext.scaleBy(x: scale, y: scale)
-                    sv.draw(CGRect(x: 0, y: 0, width: 240, height: 58))
+                    sv.draw(CGRect(x: 0, y: 0, width: 228, height: 58))
                 }
                 context.cgContext.restoreGState()
                 
