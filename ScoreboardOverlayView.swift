@@ -321,7 +321,9 @@ class ScoreboardOverlayView: UIView {
         // 2. Disegna il Tabellone Live in alto a sinistra (Ampio e ben leggibile)
         let x: CGFloat = (rect.width > 600) ? 20 : 2
         let y: CGFloat = (rect.height > 400) ? 15 : 2
-        let boxW: CGFloat = 240.0
+        let numSets = state.setScores.count
+        let extraW = CGFloat(numSets) * 20.0
+        let boxW: CGFloat = 240.0 + extraW
         let h: CGFloat = 58.0
         let headerH: CGFloat = 16.0
         
@@ -426,12 +428,6 @@ class ScoreboardOverlayView: UIView {
             baseTitle = "VOLLEY | SET \(state.currentSet) \(tieBreak)"
         }
         
-        // Riporta sempre i parziali dei set precedenti se presenti
-        if !state.setScores.isEmpty {
-            let parziali = state.setScores.map { "\($0[0])-\($0[1])" }.joined(separator: " ")
-            baseTitle += "  [\(parziali)]"
-        }
-        
         return baseTitle.uppercased()
     }
     
@@ -500,14 +496,14 @@ class ScoreboardOverlayView: UIView {
         
         // Row Home (Team A)
         let nameA = state.setsA > 0 ? "\(state.teamA) (\(state.setsA))" : state.teamA
-        drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: nameA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
+        drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: nameA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8, setScores: state.setScores.map { $0[0] }, opponentSetScores: state.setScores.map { $0[1] })
         
         // Row Away (Team B)
         let nameB = state.setsB > 0 ? "\(state.teamB) (\(state.setsB))" : state.teamB
-        drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: nameB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
+        drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: nameB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8, setScores: state.setScores.map { $0[1] }, opponentSetScores: state.setScores.map { $0[0] })
     }
     
-    private func drawTeamRow(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, tos: Int, maxTos: Int, isSrv: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
+    private func drawTeamRow(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, tos: Int, maxTos: Int, isSrv: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat, setScores: [Int] = [], opponentSetScores: [Int] = []) {
         // 1. Dedicated fixed slot on the left for serve ball
         if isSrv {
             drawVolleyBall(ctx: ctx, cx: x + 6, cy: y + 8.0, r: 4.0)
@@ -523,7 +519,8 @@ class ScoreboardOverlayView: UIView {
         let nameX = (logo != nil) ? (logoX + 16) : (x + 14)
         let nameFont = UIFont.systemFont(ofSize: 11.5, weight: .bold)
         let nameAttrs: [NSAttributedString.Key: Any] = [.font: nameFont, .foregroundColor: UIColor.white]
-        let trimName = name.count > 12 ? String(name.prefix(12)) : name
+        let maxLen = setScores.isEmpty ? 12 : 9
+        let trimName = name.count > maxLen ? String(name.prefix(maxLen)) : name
         trimName.uppercased().draw(at: CGPoint(x: nameX, y: y + 0.5), withAttributes: nameAttrs)
         
         // Timeouts dashes positioned directly UNDER team name at fixed position
@@ -534,12 +531,35 @@ class ScoreboardOverlayView: UIView {
             UIBezierPath(roundedRect: toRect, cornerRadius: 0.8).fill()
         }
         
+        // 4. Current Set Score (Rightmost)
         let scoreFont = UIFont.systemFont(ofSize: 18.0, weight: .heavy)
         let scoreAttrs: [NSAttributedString.Key: Any] = [.font: scoreFont, .foregroundColor: color]
         let scoreStr = "\(pts)"
         let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)
         let scoreX = x + w - scoreSize.width - 4
         scoreStr.draw(at: CGPoint(x: scoreX, y: y), withAttributes: scoreAttrs)
+        
+        // 5. Previous Sets Columns next to Team Name (like Android)
+        if !setScores.isEmpty {
+            let numSets = setScores.count
+            let colWidth: CGFloat = 20.0
+            let startSetX = scoreX - 6.0 - (CGFloat(numSets) * colWidth)
+            let redColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+            
+            for (idx, myScore) in setScores.enumerated() {
+                let oppScore = (idx < opponentSetScores.count) ? opponentSetScores[idx] : 0
+                let isWon = myScore > oppScore
+                let setFont = UIFont.systemFont(ofSize: 11.5, weight: .bold)
+                let setAttrs: [NSAttributedString.Key: Any] = [
+                    .font: setFont,
+                    .foregroundColor: isWon ? redColor : UIColor.white
+                ]
+                let str = "\(myScore)"
+                let strSize = (str as NSString).size(withAttributes: setAttrs)
+                let colX = startSetX + CGFloat(idx) * colWidth + (colWidth - strSize.width) / 2.0
+                str.draw(at: CGPoint(x: colX, y: y + 1.5), withAttributes: setAttrs)
+            }
+        }
     }
     
     // MARK: - 3D Volleyball Serve Icon
@@ -960,38 +980,38 @@ class ScoreboardOverlayView: UIView {
         let pStyle = NSMutableParagraphStyle()
         pStyle.alignment = .center
         
-        // 2. Titolo in alto
-        let titleFont = UIFont.systemFont(ofSize: min(30.0, rect.height * 0.11), weight: .black)
+        // 2. Titolo in alto (Grande e vistoso)
+        let titleFont = UIFont.systemFont(ofSize: min(64.0, rect.height * 0.08), weight: .black)
         let titleAttrs: [NSAttributedString.Key: Any] = [
             .font: titleFont,
             .foregroundColor: titleColor,
             .paragraphStyle: pStyle
         ]
-        let titleY = max(16.0, rect.height * 0.07)
-        title.uppercased().draw(in: CGRect(x: 20, y: titleY, width: rect.width - 40, height: 38), withAttributes: titleAttrs)
+        let titleY = max(24.0, rect.height * 0.06)
+        title.uppercased().draw(in: CGRect(x: 20, y: titleY, width: rect.width - 40, height: 75), withAttributes: titleAttrs)
         
-        // 3. Loghi Squadre
-        let logoSize = min(80.0, rect.height * 0.24)
-        let centerY = rect.height * 0.36
+        // 3. Loghi Squadre (Ingranditi)
+        let logoSize = min(180.0, rect.height * 0.22)
+        let centerY = rect.height * 0.40
         if let logoA = homeLogo {
-            logoA.draw(in: CGRect(x: rect.width * 0.12, y: centerY - logoSize / 2, width: logoSize, height: logoSize))
+            logoA.draw(in: CGRect(x: rect.width * 0.10, y: centerY - logoSize / 2, width: logoSize, height: logoSize))
         }
         if let logoB = awayLogo {
-            logoB.draw(in: CGRect(x: rect.width * 0.88 - logoSize, y: centerY - logoSize / 2, width: logoSize, height: logoSize))
+            logoB.draw(in: CGRect(x: rect.width * 0.90 - logoSize, y: centerY - logoSize / 2, width: logoSize, height: logoSize))
         }
         
         // 4. Punteggio Grande al centro
-        let scoreFont = UIFont.systemFont(ofSize: min(64.0, rect.height * 0.20), weight: .heavy)
+        let scoreFont = UIFont.systemFont(ofSize: min(130.0, rect.height * 0.16), weight: .heavy)
         let scoreAttrs: [NSAttributedString.Key: Any] = [
             .font: scoreFont,
             .foregroundColor: UIColor.white,
             .paragraphStyle: pStyle
         ]
         let scoreStr = "\(state.scoreA)  -  \(state.scoreB)"
-        scoreStr.draw(in: CGRect(x: rect.width * 0.25, y: centerY - 35, width: rect.width * 0.5, height: 75), withAttributes: scoreAttrs)
+        scoreStr.draw(in: CGRect(x: rect.width * 0.20, y: centerY - 65, width: rect.width * 0.60, height: 130), withAttributes: scoreAttrs)
         
-        // 5. Nomi Squadre e Set Vinti
-        let nameFont = UIFont.systemFont(ofSize: min(16.0, rect.height * 0.055), weight: .bold)
+        // 5. Nomi Squadre e Set Vinti (Ingranditi e ben spaziati)
+        let nameFont = UIFont.systemFont(ofSize: min(34.0, rect.height * 0.048), weight: .bold)
         let nameAttrs: [NSAttributedString.Key: Any] = [
             .font: nameFont,
             .foregroundColor: UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1.0),
@@ -1001,11 +1021,11 @@ class ScoreboardOverlayView: UIView {
         let teamStrA = "\(state.teamA.isEmpty ? "CASA" : state.teamA) (\(state.setsA))"
         let teamStrB = "\(state.teamB.isEmpty ? "OSPITE" : state.teamB) (\(state.setsB))"
         
-        let namesY = centerY + logoSize / 2 + 6
-        teamStrA.uppercased().draw(in: CGRect(x: rect.width * 0.04, y: namesY, width: rect.width * 0.40, height: 24), withAttributes: nameAttrs)
-        teamStrB.uppercased().draw(in: CGRect(x: rect.width * 0.56, y: namesY, width: rect.width * 0.40, height: 24), withAttributes: nameAttrs)
+        let namesY = centerY + logoSize / 2 + 16
+        teamStrA.uppercased().draw(in: CGRect(x: rect.width * 0.02, y: namesY, width: rect.width * 0.44, height: 48), withAttributes: nameAttrs)
+        teamStrB.uppercased().draw(in: CGRect(x: rect.width * 0.54, y: namesY, width: rect.width * 0.44, height: 48), withAttributes: nameAttrs)
         
-        // 6. Schede Parziali dei Set Precedenti (in basso)
+        // 6. Schede Parziali dei Set Precedenti (Ingrandite in basso)
         var allSets: [[Int]] = state.setScores
         if allSets.isEmpty && (state.scoreA > 0 || state.scoreB > 0) {
             allSets.append([state.scoreA, state.scoreB])
@@ -1013,39 +1033,39 @@ class ScoreboardOverlayView: UIView {
         
         if !allSets.isEmpty {
             let numSets = allSets.count
-            let cardW = min(100.0, (rect.width - 40.0 - CGFloat(numSets - 1) * 10.0) / CGFloat(numSets))
-            let cardH: CGFloat = min(48.0, rect.height * 0.16)
-            let gap: CGFloat = 10.0
+            let cardW = min(170.0, (rect.width - 80.0 - CGFloat(numSets - 1) * 16.0) / CGFloat(numSets))
+            let cardH: CGFloat = min(90.0, rect.height * 0.12)
+            let gap: CGFloat = 16.0
             let totalW = CGFloat(numSets) * cardW + CGFloat(numSets - 1) * gap
             var startX = (rect.width - totalW) / 2.0
-            let cardY = rect.height - cardH - max(12.0, rect.height * 0.05)
+            let cardY = rect.height - cardH - max(28.0, rect.height * 0.07)
             
             for (idx, scorePair) in allSets.enumerated() {
                 let cardRect = CGRect(x: startX, y: cardY, width: cardW, height: cardH)
-                let cPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 8.0)
+                let cPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 12.0)
                 UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.95).setFill()
                 cPath.fill()
-                UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.8).setStroke()
-                cPath.lineWidth = 1.2
+                UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.9).setStroke()
+                cPath.lineWidth = 2.0
                 cPath.stroke()
                 
                 let setLabel = "\(idx + 1)° SET"
-                let lblFont = UIFont.systemFont(ofSize: 9.5, weight: .bold)
+                let lblFont = UIFont.systemFont(ofSize: 18.0, weight: .bold)
                 let lblAttrs: [NSAttributedString.Key: Any] = [
                     .font: lblFont,
                     .foregroundColor: UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0),
                     .paragraphStyle: pStyle
                 ]
-                setLabel.draw(in: CGRect(x: startX, y: cardY + 3, width: cardW, height: 13), withAttributes: lblAttrs)
+                setLabel.draw(in: CGRect(x: startX, y: cardY + 8, width: cardW, height: 24), withAttributes: lblAttrs)
                 
                 let ptsStr = "\(scorePair[0]) - \(scorePair[1])"
-                let ptsFont = UIFont.systemFont(ofSize: 15.0, weight: .heavy)
+                let ptsFont = UIFont.systemFont(ofSize: 32.0, weight: .heavy)
                 let ptsAttrs: [NSAttributedString.Key: Any] = [
                     .font: ptsFont,
                     .foregroundColor: UIColor.white,
                     .paragraphStyle: pStyle
                 ]
-                ptsStr.draw(in: CGRect(x: startX, y: cardY + 18, width: cardW, height: 22), withAttributes: ptsAttrs)
+                ptsStr.draw(in: CGRect(x: startX, y: cardY + 36, width: cardW, height: 44), withAttributes: ptsAttrs)
                 
                 startX += cardW + gap
             }
