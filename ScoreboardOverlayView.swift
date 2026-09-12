@@ -19,6 +19,10 @@ class ScoreboardOverlayView: UIView {
     var timeoutTeamName = ""
     var timeoutStartTime: TimeInterval = 0
     
+    // Triple Alert State (3.5s duration, matching Android OverlayRenderer)
+    var isBlinkingTriple = false
+    var tripleStartTime: TimeInterval = 0
+    
     var onOverlayNeedsUpdate: (() -> Void)?
     
     override init(frame: CGRect) {
@@ -51,6 +55,7 @@ class ScoreboardOverlayView: UIView {
     func resetAlerts() {
         self.isBlinkingAlert = false
         self.isBlinkingTimeout = false
+        self.isBlinkingTriple = false
         self.timeoutTeamName = ""
         self.lastSetPointTeamTriggered = nil
         self.lastSetPointSetIndex = -1
@@ -61,9 +66,20 @@ class ScoreboardOverlayView: UIView {
     
     func triggerTimeoutAlert(teamName: String) {
         self.isBlinkingAlert = false
+        self.isBlinkingTriple = false
         self.timeoutTeamName = teamName
         self.timeoutStartTime = Date().timeIntervalSince1970
         self.isBlinkingTimeout = true
+        displayLink?.isPaused = false
+        setNeedsDisplay()
+        onOverlayNeedsUpdate?()
+    }
+    
+    func triggerTripleAlert() {
+        self.isBlinkingAlert = false
+        self.isBlinkingTimeout = false
+        self.tripleStartTime = Date().timeIntervalSince1970
+        self.isBlinkingTriple = true
         displayLink?.isPaused = false
         setNeedsDisplay()
         onOverlayNeedsUpdate?()
@@ -90,6 +106,15 @@ class ScoreboardOverlayView: UIView {
             let elapsed = now - timeoutStartTime
             if elapsed >= 4.0 {
                 isBlinkingTimeout = false
+            } else {
+                alertActive = true
+            }
+        }
+        
+        if isBlinkingTriple {
+            let elapsed = now - tripleStartTime
+            if elapsed >= 3.5 {
+                isBlinkingTriple = false
             } else {
                 alertActive = true
             }
@@ -318,12 +343,10 @@ class ScoreboardOverlayView: UIView {
             return
         }
         
-        // 2. Disegna il Tabellone Live in alto a sinistra (Ampio e ben leggibile)
+        // 2. Disegna il Tabellone Live in alto a sinistra (Ampio, fisso e ben leggibile)
         let x: CGFloat = (rect.width > 600) ? 20 : 2
         let y: CGFloat = (rect.height > 400) ? 15 : 2
-        let numSets = state.setScores.count
-        let extraW = CGFloat(numSets) * 20.0
-        let boxW: CGFloat = 240.0 + extraW
+        let boxW: CGFloat = 275.0
         let h: CGFloat = 58.0
         let headerH: CGFloat = 16.0
         
@@ -384,6 +407,18 @@ class ScoreboardOverlayView: UIView {
                     }
                 } else {
                     isBlinkingTimeout = false
+                }
+            }
+            
+            if isBlinkingTriple {
+                let elapsed = Date().timeIntervalSince1970 - tripleStartTime
+                if elapsed < 3.5 {
+                    let show = ((Int(elapsed * 1000) % 600) < 400)
+                    if show {
+                        drawTripleAlert(ctx: ctx, rect: rect)
+                    }
+                } else {
+                    isBlinkingTriple = false
                 }
             }
         }
@@ -494,12 +529,15 @@ class ScoreboardOverlayView: UIView {
         let srvA = hasStarted && state.servingTeam == "A"
         let srvB = hasStarted && state.servingTeam == "B"
         
+        let trimTeamA = state.teamA.count > 14 ? String(state.teamA.prefix(14)) : state.teamA
+        let trimTeamB = state.teamB.count > 14 ? String(state.teamB.prefix(14)) : state.teamB
+        
         // Row Home (Team A)
-        let nameA = state.setsA > 0 ? "\(state.teamA) (\(state.setsA))" : state.teamA
+        let nameA = state.setsA > 0 ? "\(trimTeamA) (\(state.setsA))" : trimTeamA
         drawTeamRow(ctx: ctx, x: x + 4, y: row1Y, name: nameA, pts: state.scoreA, tos: state.timeoutA, maxTos: maxTos, isSrv: srvA, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8, setScores: state.setScores.map { $0[0] }, opponentSetScores: state.setScores.map { $0[1] })
         
         // Row Away (Team B)
-        let nameB = state.setsB > 0 ? "\(state.teamB) (\(state.setsB))" : state.teamB
+        let nameB = state.setsB > 0 ? "\(trimTeamB) (\(state.setsB))" : trimTeamB
         drawTeamRow(ctx: ctx, x: x + 4, y: row2Y, name: nameB, pts: state.scoreB, tos: state.timeoutB, maxTos: maxTos, isSrv: srvB, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8, setScores: state.setScores.map { $0[1] }, opponentSetScores: state.setScores.map { $0[0] })
     }
     
@@ -519,8 +557,7 @@ class ScoreboardOverlayView: UIView {
         let nameX = (logo != nil) ? (logoX + 16) : (x + 14)
         let nameFont = UIFont.systemFont(ofSize: 11.5, weight: .bold)
         let nameAttrs: [NSAttributedString.Key: Any] = [.font: nameFont, .foregroundColor: UIColor.white]
-        let maxLen = setScores.isEmpty ? 12 : 9
-        let trimName = name.count > maxLen ? String(name.prefix(maxLen)) : name
+        let trimName = name.count > 14 ? String(name.prefix(14)) : name
         trimName.uppercased().draw(at: CGPoint(x: nameX, y: y + 0.5), withAttributes: nameAttrs)
         
         // Timeouts dashes positioned directly UNDER team name at fixed position
@@ -531,19 +568,10 @@ class ScoreboardOverlayView: UIView {
             UIBezierPath(roundedRect: toRect, cornerRadius: 0.8).fill()
         }
         
-        // 4. Current Set Score (Rightmost)
-        let scoreFont = UIFont.systemFont(ofSize: 18.0, weight: .heavy)
-        let scoreAttrs: [NSAttributedString.Key: Any] = [.font: scoreFont, .foregroundColor: color]
-        let scoreStr = "\(pts)"
-        let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)
-        let scoreX = x + w - scoreSize.width - 4
-        scoreStr.draw(at: CGPoint(x: scoreX, y: y), withAttributes: scoreAttrs)
-        
-        // 5. Previous Sets Columns next to Team Name (like Android)
+        // 4. Previous Sets Columns - COMPLETELY FIXED POSITION right next to team names (never moves)
         if !setScores.isEmpty {
-            let numSets = setScores.count
-            let colWidth: CGFloat = 20.0
-            let startSetX = scoreX - 6.0 - (CGFloat(numSets) * colWidth)
+            let colWidth: CGFloat = 22.0
+            let startSetX = x + 125.0
             let redColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
             
             for (idx, myScore) in setScores.enumerated() {
@@ -560,6 +588,14 @@ class ScoreboardOverlayView: UIView {
                 str.draw(at: CGPoint(x: colX, y: y + 1.5), withAttributes: setAttrs)
             }
         }
+        
+        // 5. Current Set Score (Rightmost dedicated slot)
+        let scoreFont = UIFont.systemFont(ofSize: 18.0, weight: .heavy)
+        let scoreAttrs: [NSAttributedString.Key: Any] = [.font: scoreFont, .foregroundColor: color]
+        let scoreStr = "\(pts)"
+        let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)
+        let scoreX = x + w - scoreSize.width - 4
+        scoreStr.draw(at: CGPoint(x: scoreX, y: y), withAttributes: scoreAttrs)
     }
     
     // MARK: - 3D Volleyball Serve Icon
@@ -607,7 +643,7 @@ class ScoreboardOverlayView: UIView {
         }
         
         let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
-        let trimName = name.count > 8 ? String(name.prefix(8)) : name
+        let trimName = name.count > 14 ? String(name.prefix(14)) : name
         trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: [.font: nameFont, .foregroundColor: UIColor.white])
         
         let toX = x + (w * 0.42)
@@ -650,7 +686,7 @@ class ScoreboardOverlayView: UIView {
         }
         
         let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
-        let trimName = name.count > 10 ? String(name.prefix(10)) : name
+        let trimName = name.count > 14 ? String(name.prefix(14)) : name
         trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: [.font: nameFont, .foregroundColor: UIColor.white])
         
         if redCards > 0 {
@@ -691,7 +727,7 @@ class ScoreboardOverlayView: UIView {
         }
         
         let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
-        let trimName = name.count > 8 ? String(name.prefix(8)) : name
+        let trimName = name.count > 14 ? String(name.prefix(14)) : name
         trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: [.font: nameFont, .foregroundColor: UIColor.white])
         
         let sgStr = "S:\(sets) G:\(games)"
@@ -724,8 +760,8 @@ class ScoreboardOverlayView: UIView {
         let row1Y = y + headerH + (rowH - 13) / 2
         let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        let trimA = state.teamA.count > 8 ? String(state.teamA.prefix(8)) : state.teamA
-        let trimB = state.teamB.count > 8 ? String(state.teamB.prefix(8)) : state.teamB
+        let trimA = state.teamA.count > 14 ? String(state.teamA.prefix(14)) : state.teamA
+        let trimB = state.teamB.count > 14 ? String(state.teamB.prefix(14)) : state.teamB
         
         let isA = state.dartsActivePlayer == "A"
         let isB = state.dartsActivePlayer == "B"
@@ -758,8 +794,8 @@ class ScoreboardOverlayView: UIView {
         let row1Y = y + headerH + (rowH - 13) / 2
         let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        let trimA = state.teamA.count > 8 ? String(state.teamA.prefix(8)) : state.teamA
-        let trimB = state.teamB.count > 8 ? String(state.teamB.prefix(8)) : state.teamB
+        let trimA = state.teamA.count > 14 ? String(state.teamA.prefix(14)) : state.teamA
+        let trimB = state.teamB.count > 14 ? String(state.teamB.prefix(14)) : state.teamB
         
         trimA.uppercased().draw(at: CGPoint(x: x + 4, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
         trimB.uppercased().draw(at: CGPoint(x: x + 4, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
@@ -786,8 +822,8 @@ class ScoreboardOverlayView: UIView {
         let oversA = "\(state.cricketBallsA / 6).\(state.cricketBallsA % 6)"
         let oversB = "\(state.cricketBallsB / 6).\(state.cricketBallsB % 6)"
         
-        let trimA = state.teamA.count > 8 ? String(state.teamA.prefix(8)) : state.teamA
-        let trimB = state.teamB.count > 8 ? String(state.teamB.prefix(8)) : state.teamB
+        let trimA = state.teamA.count > 14 ? String(state.teamA.prefix(14)) : state.teamA
+        let trimB = state.teamB.count > 14 ? String(state.teamB.prefix(14)) : state.teamB
         
         trimA.uppercased().draw(at: CGPoint(x: x + 4, y: row1Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
         trimB.uppercased().draw(at: CGPoint(x: x + 4, y: row2Y), withAttributes: [.font: UIFont.systemFont(ofSize: 10, weight: .bold), .foregroundColor: UIColor.white])
@@ -961,6 +997,39 @@ class ScoreboardOverlayView: UIView {
             .paragraphStyle: pStyle
         ]
         textLine2.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY + 46.0, width: pillW, height: 35.0), withAttributes: line2Attrs)
+        ctx.restoreGState()
+    }
+    
+    // MARK: - Special Alerts: Blinking Central TRIPLA (3 POINTS) (1:1 con Android OverlayRenderer)
+    
+    func drawTripleAlert(ctx: CGContext, rect: CGRect) {
+        let text = "🎯 TRIPLA!"
+        let centerX = rect.width / 2.0
+        let centerY = rect.height / 2.0 - 15.0
+        
+        let font = UIFont.systemFont(ofSize: min(65.0, rect.width * 0.09), weight: .black)
+        let pStyle = NSMutableParagraphStyle()
+        pStyle.alignment = .center
+        
+        let pillW = min(420.0, rect.width * 0.70)
+        let pillH: CGFloat = 85.0
+        let pillRect = CGRect(x: centerX - pillW / 2.0, y: centerY - 10.0, width: pillW, height: pillH)
+        let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 18.0)
+        
+        ctx.saveGState()
+        UIColor(red: 2/255, green: 6/255, blue: 23/255, alpha: 0.92).setFill()
+        pillPath.fill()
+        
+        UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0).setStroke()
+        pillPath.lineWidth = 3.5
+        pillPath.stroke()
+        
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0),
+            .paragraphStyle: pStyle
+        ]
+        text.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY + 2.0, width: pillW, height: 65.0), withAttributes: attrs)
         ctx.restoreGState()
     }
     

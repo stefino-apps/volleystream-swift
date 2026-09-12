@@ -19,13 +19,25 @@ class AppPreferences {
     }
     
     var teamHome: String {
-        get { defaults.string(forKey: keyTeamHome) ?? "CASA" }
-        set { defaults.set(newValue, forKey: keyTeamHome) }
+        get {
+            let str = defaults.string(forKey: keyTeamHome) ?? "CASA"
+            return str.count > 14 ? String(str.prefix(14)) : str
+        }
+        set {
+            let trimmed = newValue.count > 14 ? String(newValue.prefix(14)) : newValue
+            defaults.set(trimmed, forKey: keyTeamHome)
+        }
     }
     
     var teamAway: String {
-        get { defaults.string(forKey: keyTeamAway) ?? "OSPITE" }
-        set { defaults.set(newValue, forKey: keyTeamAway) }
+        get {
+            let str = defaults.string(forKey: keyTeamAway) ?? "OSPITE"
+            return str.count > 14 ? String(str.prefix(14)) : str
+        }
+        set {
+            let trimmed = newValue.count > 14 ? String(newValue.prefix(14)) : newValue
+            defaults.set(trimmed, forKey: keyTeamAway)
+        }
     }
     
     var videoResolution: Int {

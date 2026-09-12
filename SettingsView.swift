@@ -191,7 +191,7 @@ struct SettingsView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
-            AppDelegate.setOrientationLock(.allButUpsideDown, rotateTo: .portrait)
+            AppDelegate.setOrientationLock(.portrait, rotateTo: .portrait)
             loadAllState()
         }
         .onDisappear(perform: saveAllPreferences)

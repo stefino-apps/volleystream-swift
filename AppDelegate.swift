@@ -10,8 +10,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
     
-    // Default: allow portrait and landscape for menus, locked to landscape in Regia
-    static var orientationLock = UIInterfaceOrientationMask.allButUpsideDown
+    // Default: forzato in modalità verticale (portrait), sbloccato solo in Regia in orizzontale (landscape)
+    static var orientationLock = UIInterfaceOrientationMask.portrait
 
     func application(_ application: UIApplication, 
                      supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {

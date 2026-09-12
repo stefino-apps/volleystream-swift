@@ -165,7 +165,7 @@ struct LiveSetupView: View {
             youtubeRequirementsSheet
         }
         .onAppear {
-            AppDelegate.setOrientationLock(.allButUpsideDown, rotateTo: .portrait)
+            AppDelegate.setOrientationLock(.portrait, rotateTo: .portrait)
             if YouTubeManager.shared.accessToken != nil {
                 isYouTubeLoggedIn = true
                 channelName = YouTubeManager.shared.displayName ?? YouTubeManager.shared.userEmail ?? "Canale Connesso"
