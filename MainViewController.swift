@@ -1738,6 +1738,7 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreA() {
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
         let sport = localState.sportType.lowercased()
         if sport == "darts" {
             checkDartsLeg(isHome: true, subtract: 60)
@@ -1755,6 +1756,7 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreA2() {
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
         let sport = localState.sportType.lowercased()
         if sport == "darts" {
             checkDartsLeg(isHome: true, subtract: 20)
@@ -1765,6 +1767,7 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreA3() {
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
         let sport = localState.sportType.lowercased()
         if sport == "darts" {
             checkDartsLeg(isHome: true, subtract: 100)
@@ -1828,6 +1831,7 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreB() {
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
         let sport = localState.sportType.lowercased()
         if sport == "darts" {
             checkDartsLeg(isHome: false, subtract: 60)
@@ -1845,6 +1849,7 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreB2() {
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
         let sport = localState.sportType.lowercased()
         if sport == "darts" {
             checkDartsLeg(isHome: false, subtract: 20)
@@ -1855,6 +1860,7 @@ class MainViewController: UIViewController {
     }
     
     @objc func incScoreB3() {
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
         let sport = localState.sportType.lowercased()
         if sport == "darts" {
             checkDartsLeg(isHome: false, subtract: 100)
@@ -2141,6 +2147,8 @@ class MainViewController: UIViewController {
             localState.timeoutA = 0
             localState.timeoutB = 0
             localState.isFifthSet = (localState.currentSet == 5)
+            localState.isSetFinished = false
+            isSetTransitionInProgress = false
         }
         updateLocalState()
     }
