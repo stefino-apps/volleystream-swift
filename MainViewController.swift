@@ -2766,8 +2766,16 @@ class MainViewController: UIViewController {
             updateLocalState()
         case "TOGGLE_MUTE", "MUTE", "UNMUTE":
             toggleMute()
-        case "TOGGLE_STREAMING", "START_STREAM", "STOP_STREAM":
-            startLive()
+        case "TOGGLE_STREAMING":
+            if startStreamButton.title(for: .normal)?.contains("GO") == true || !localState.isStreaming {
+                executeStartLive()
+            } else {
+                executeStopLive()
+            }
+        case "START_STREAM":
+            executeStartLive()
+        case "STOP_STREAM":
+            executeStopLive()
         case "HIGHLIGHT":
             triggerHighlight()
         case "INSTANT_REPLAY", "TRIGGER_REPLAY":
