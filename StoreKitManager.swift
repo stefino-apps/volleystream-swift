@@ -31,16 +31,64 @@ class StoreKitManager: ObservableObject, @unchecked Sendable {
         }
     }
     
-    // MARK: - 7 Days Free Trial Logic
+    // MARK: - 7 Days Free Trial Logic (Protected via iOS Keychain against reinstall resets)
     
-    private func initTrialIfNeeded() {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: "first_launch_timestamp") == nil {
-            defaults.set(Date().timeIntervalSince1970, forKey: "first_launch_timestamp")
+    private let keychainService = "com.volleystream.pro.trial"
+    private let keychainAccount = "first_launch_timestamp"
+    
+    private func saveToKeychain(key: String, value: String) {
+        if let data = value.data(using: .utf8) {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: keychainService,
+                kSecAttrAccount as String: key,
+                kSecValueData as String: data,
+                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            ]
+            SecItemDelete(query as CFDictionary)
+            SecItemAdd(query as CFDictionary, nil)
         }
     }
     
+    private func readFromKeychain(key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var dataTypeRef: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        if status == errSecSuccess, let data = dataTypeRef as? Data {
+            return String(data: data, encoding: .utf8)
+        }
+        return nil
+    }
+    
+    private func initTrialIfNeeded() {
+        // 1. Prova a leggere dal Keychain (persiste anche se l'app viene disinstallata)
+        if let tsString = readFromKeychain(key: keychainAccount), let _ = Double(tsString) {
+            return
+        }
+        
+        // 2. Se non esiste nel Keychain, controlla UserDefaults come fallback
+        let defaults = UserDefaults.standard
+        if let ts = defaults.object(forKey: "first_launch_timestamp") as? Double, ts > 0 {
+            saveToKeychain(key: keychainAccount, value: String(ts))
+            return
+        }
+        
+        // 3. Primo avvio in assoluto: genera timestamp e salva sia in Keychain che in UserDefaults
+        let nowTs = Date().timeIntervalSince1970
+        saveToKeychain(key: keychainAccount, value: String(nowTs))
+        defaults.set(nowTs, forKey: "first_launch_timestamp")
+    }
+    
     var firstLaunchDate: Date {
+        if let tsString = readFromKeychain(key: keychainAccount), let ts = Double(tsString), ts > 0 {
+            return Date(timeIntervalSince1970: ts)
+        }
         let ts = UserDefaults.standard.double(forKey: "first_launch_timestamp")
         return ts > 0 ? Date(timeIntervalSince1970: ts) : Date()
     }
@@ -84,14 +132,11 @@ class StoreKitManager: ObservableObject, @unchecked Sendable {
         do {
             let products = try await Product.products(for: productIDs)
             guard let product = products.first else {
-                // Fallback for mock/testing when product is not yet in App Store Connect
                 DispatchQueue.main.async {
                     self.isPurchasing = false
-                    self.isPremium = true
-                    UserDefaults.standard.set(true, forKey: "is_premium_unlocked")
-                    self.subscriptionStatus = "sub_active_welcome".localized
+                    self.purchaseErrorMessage = "Prodotto non disponibile al momento. Riprova più tardi."
                 }
-                return true
+                return false
             }
             
             let result = try await product.purchase()
@@ -122,6 +167,7 @@ class StoreKitManager: ObservableObject, @unchecked Sendable {
             case .pending:
                 DispatchQueue.main.async {
                     self.isPurchasing = false
+                    self.purchaseErrorMessage = "Transazione in attesa di approvazione."
                 }
                 return false
             @unknown default:
