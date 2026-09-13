@@ -145,16 +145,19 @@ class ReplayManager {
         queue.async { [weak self] in
             guard let self = self, let pool = self.pixelBufferPool else { return }
             
-            // Scala a 960x540 direttamente in GPU Metal
+            // Normalizza origine e scala a 960x540 direttamente in GPU Metal
+            let normalized = image.transformed(by: CGAffineTransform(translationX: -extent.origin.x, y: -extent.origin.y))
             let scaleX = 960.0 / extent.width
             let scaleY = 540.0 / extent.height
-            let scaledImage = image.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+            let scaledImage = normalized.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
             
             var pixelBuffer: CVPixelBuffer?
             let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
             
             if status == kCVReturnSuccess, let buffer = pixelBuffer {
-                self.ciContext.render(scaledImage, to: buffer)
+                let bounds = CGRect(x: 0, y: 0, width: 960, height: 540)
+                let colorSpace = CGColorSpaceCreateDeviceRGB()
+                self.ciContext.render(scaledImage, to: buffer, bounds: bounds, colorSpace: colorSpace)
                 self.frameBuffer.append(buffer)
                 
                 if self.frameBuffer.count > self.maxFrames {
@@ -381,7 +384,8 @@ class ReplayManager {
             let sourcePixelBufferAttributes: [String: Any] = [
                 kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
                 kCVPixelBufferWidthKey as String: 1920,
-                kCVPixelBufferHeightKey as String: 1080
+                kCVPixelBufferHeightKey as String: 1080,
+                kCVPixelBufferIOSurfacePropertiesKey as String: [:]
             ]
             let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: videoInput, sourcePixelBufferAttributes: sourcePixelBufferAttributes)
             
@@ -394,22 +398,46 @@ class ReplayManager {
             
             let fps: Int64 = 30
             var frameIndex: Int64 = 0
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            let targetBounds = CGRect(x: 0, y: 0, width: 1920, height: 1080)
             
             for buffer in frames {
-                while !videoInput.isReadyForMoreMediaData {
+                var waitCount = 0
+                while !videoInput.isReadyForMoreMediaData && waitCount < 100 {
                     Thread.sleep(forTimeInterval: 0.005)
+                    waitCount += 1
                 }
                 
+                var targetBuffer: CVPixelBuffer?
                 if let pool = adaptor.pixelBufferPool {
-                    var targetBuffer: CVPixelBuffer?
                     CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &targetBuffer)
-                    if let tb = targetBuffer {
-                        let srcImg = CIImage(cvPixelBuffer: buffer).transformed(by: CGAffineTransform(scaleX: 2.0, y: 2.0))
-                        self.exportCiContext.render(srcImg, to: tb)
-                        let presentTime = CMTimeMake(value: frameIndex, timescale: Int32(fps))
-                        adaptor.append(tb, withPresentationTime: presentTime)
-                        frameIndex += 1
-                    }
+                }
+                
+                if targetBuffer == nil {
+                    let attrs: [CFString: Any] = [
+                        kCVPixelBufferCGImageCompatibilityKey: true,
+                        kCVPixelBufferCGBitmapContextCompatibilityKey: true,
+                        kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]
+                    ]
+                    CVPixelBufferCreate(
+                        kCFAllocatorDefault,
+                        1920,
+                        1080,
+                        kCVPixelFormatType_32BGRA,
+                        attrs as CFDictionary,
+                        &targetBuffer
+                    )
+                }
+                
+                if let tb = targetBuffer {
+                    let srcImg = CIImage(cvPixelBuffer: buffer)
+                    let scaleX = 1920.0 / srcImg.extent.width
+                    let scaleY = 1080.0 / srcImg.extent.height
+                    let upscaled = srcImg.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+                    self.exportCiContext.render(upscaled, to: tb, bounds: targetBounds, colorSpace: colorSpace)
+                    let presentTime = CMTimeMake(value: frameIndex, timescale: Int32(fps))
+                    adaptor.append(tb, withPresentationTime: presentTime)
+                    frameIndex += 1
                 }
             }
             

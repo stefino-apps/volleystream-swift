@@ -247,16 +247,13 @@ class StreamVideoEffect: VideoEffect {
         }
         if let cgImg = uiImage.cgImage {
             let ci = CIImage(cgImage: cgImg)
-            let transform = CGAffineTransform(translationX: 1920.0 - 40.0 - dw, y: 1080.0 - 40.0 - dh)
+            let transform = CGAffineTransform(translationX: 1920.0 - 80.0 - dw, y: 1080.0 - 110.0 - dh)
             return ci.transformed(by: transform)
         }
         return nil
     }
     
     override func execute(_ image: CIImage, info: CMSampleBuffer?) -> CIImage {
-        // Registra frame nel buffer circolare per Replay e Highlights
-        ReplayManager.shared.recordFrame(image)
-        
         var outputImage = image
         
         let currentlyReplaying = ReplayManager.shared.isReplaying
@@ -308,6 +305,11 @@ class StreamVideoEffect: VideoEffect {
             }
         }
         
+        // Registra frame compositato completo nel buffer circolare per Replay e Highlights
+        if !currentlyReplaying && !isStinger {
+            ReplayManager.shared.recordFrame(outputImage)
+        }
+        
         let isRecording = LocalVideoRecorder.shared.isRecordingState
         if isRecording {
             if let sampleBuffer = info {
@@ -345,8 +347,9 @@ class StreamVideoEffect: VideoEffect {
                 if state.isSetFinished || state.isMatchFinished {
                     sv.draw(CGRect(x: 0, y: 0, width: 1920, height: 1080))
                 } else {
-                    let scale: CGFloat = 2.6
-                    context.cgContext.translateBy(x: 35, y: 35)
+                    let scale: CGFloat = 2.45
+                    // Margini TV Broadcast Title-Safe: Y=110px protegge dal crop su iPhone 14/15/16 (aspect fill 19.5:9), X=80px protegge dalla Dynamic Island
+                    context.cgContext.translateBy(x: 80, y: 110)
                     context.cgContext.scaleBy(x: scale, y: scale)
                     sv.draw(CGRect(x: 0, y: 0, width: 228, height: 58))
                 }
