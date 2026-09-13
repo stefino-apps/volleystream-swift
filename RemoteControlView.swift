@@ -264,110 +264,92 @@ struct RemoteControlView: View {
         }
     }
     
-    // MARK: - Top Status Bar
+    // MARK: - Top Status Bar (1:1 with Android Photo 2)
     var topBarView: some View {
-        HStack(spacing: 6) {
-            // Session Badge & Connection Dot
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(Color(red: 0/255, green: 245/255, blue: 155/255))
-                    .frame(width: 8, height: 8)
-                Text("#\(sessionCode)")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(12)
-            
-            Spacer()
-            
-            // REP Instant Replay Button
-            Button(action: {
-                triggerHaptic()
-                FirebaseManager.shared.sendCommand("TRIGGER_REPLAY")
-            }) {
-                HStack(spacing: 3) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 11, weight: .bold))
-                    Text("REP")
-                        .font(.system(size: 11, weight: .heavy))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(red: 37/255, green: 99/255, blue: 235/255))
-                .cornerRadius(10)
-            }
-            
-            // HL Highlight Button
-            Button(action: {
-                triggerHaptic()
-                FirebaseManager.shared.sendCommand("HIGHLIGHT")
-            }) {
-                HStack(spacing: 3) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 11, weight: .bold))
-                    Text("HL")
-                        .font(.system(size: 11, weight: .heavy))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(red: 147/255, green: 51/255, blue: 234/255))
-                .cornerRadius(10)
-            }
-            
-            // UNDO Button
-            Button(action: {
-                triggerHaptic()
-                FirebaseManager.shared.sendCommand("UNDO")
-            }) {
-                HStack(spacing: 3) {
-                    Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("UNDO")
-                        .font(.system(size: 10, weight: .heavy))
-                }
-                .foregroundColor(Color(red: 0/255, green: 229/255, blue: 255/255))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.15))
-                .cornerRadius(10)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(red: 0/255, green: 229/255, blue: 255/255).opacity(0.4), lineWidth: 1))
-            }
-            
-            // GO LIVE / Disconnect Button
-            Button(action: {
-                triggerHaptic()
-                FirebaseManager.shared.sendCommand("START_STREAM")
-            }) {
-                HStack(spacing: 3) {
+        VStack(spacing: 8) {
+            // 1. Header: Connection + Streaming Status
+            HStack(alignment: .center) {
+                // Connection indicator
+                HStack(spacing: 6) {
                     Circle()
-                        .fill(Color.white)
-                        .frame(width: 5, height: 5)
-                    Text("LIVE")
-                        .font(.system(size: 10, weight: .heavy))
+                        .fill(Color(hex: "#10b981"))
+                        .frame(width: 8, height: 8)
+                    Text("Connesso: #\(sessionCode)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: "#cbd5e1"))
                 }
-                .foregroundColor(.white)
+                
+                Spacer()
+                
+                // Status Pill (LIVE / STANDBY + Battery)
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(matchState.isStreaming ? Color.red : Color.gray)
+                        .frame(width: 7, height: 7)
+                    Text(matchState.isStreaming ? "LIVE" : "STANDBY")
+                        .font(.system(size: 11, weight: .heavy))
+                        .foregroundColor(matchState.isStreaming ? Color.red : Color(hex: "#06B6D4"))
+                    
+                    if matchState.batteryLevel > 0 {
+                        Text("🔋 \(matchState.batteryLevel)%")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(Color(hex: "#06B6D4"))
+                    }
+                    
+                    Button(action: {
+                        FirebaseManager.shared.stopListening()
+                        isConnected = false
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 15))
+                            .foregroundColor(.gray)
+                    }
+                }
                 .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(red: 239/255, green: 68/255, blue: 68/255))
+                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.06))
                 .cornerRadius(10)
             }
+            .padding(.horizontal, 2)
             
-            // Close / Disconnect
-            Button(action: {
-                FirebaseManager.shared.stopListening()
-                isConnected = false
-            }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.gray)
-                    .padding(5)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Circle())
+            // 2. Command Row: GO LIVE / STOP LIVE + ANNULLA (UNDO)
+            HStack(spacing: 10) {
+                Button(action: {
+                    triggerHaptic()
+                    FirebaseManager.shared.sendCommand(matchState.isStreaming ? "STOP_STREAM" : "START_STREAM")
+                }) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 8, height: 8)
+                        Text(matchState.isStreaming ? "STOP LIVE" : "GO LIVE")
+                            .font(.system(size: 14, weight: .black))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 42)
+                    .background(matchState.isStreaming ? Color(hex: "#991B1B") : Color(hex: "#DC2626"))
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red, lineWidth: 1.5))
+                }
+                
+                Button(action: {
+                    triggerHaptic()
+                    FirebaseManager.shared.sendCommand("UNDO")
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.uturn.backward")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("ANNULLA")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 42)
+                    .background(Color(hex: "#1E293B"))
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.3), lineWidth: 1))
+                }
             }
         }
     }

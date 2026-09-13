@@ -229,32 +229,25 @@ class StreamVideoEffect: VideoEffect {
         let index = Int(Date().timeIntervalSince1970 / 12.0) % count
         let banner = cachedBannerUIImages[index]
         
+        let maxW: CGFloat = 360.0
+        let maxH: CGFloat = 110.0
+        let bSize = banner.size
+        guard bSize.width > 0 && bSize.height > 0 else { return nil }
+        
+        let aspect = min(maxW / bSize.width, maxH / bSize.height)
+        let dw = max(1.0, bSize.width * aspect)
+        let dh = max(1.0, bSize.height * aspect)
+        
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0
         format.opaque = false
-        let boxW: CGFloat = 340.0
-        let boxH: CGFloat = 96.0
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: boxW, height: boxH), format: format)
-        let uiImage = renderer.image { context in
-            let rect = CGRect(x: 0, y: 0, width: boxW, height: boxH)
-            let path = UIBezierPath(roundedRect: rect, cornerRadius: 14)
-            UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.92).setFill()
-            path.fill()
-            UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.85).setStroke()
-            path.lineWidth = 2.0
-            path.stroke()
-            
-            let bSize = banner.size
-            let aspect = min((boxW - 20) / bSize.width, (boxH - 16) / bSize.height)
-            let dw = bSize.width * aspect
-            let dh = bSize.height * aspect
-            let dx = (boxW - dw) / 2.0
-            let dy = (boxH - dh) / 2.0
-            banner.draw(in: CGRect(x: dx, y: dy, width: dw, height: dh))
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: dw, height: dh), format: format)
+        let uiImage = renderer.image { _ in
+            banner.draw(in: CGRect(x: 0, y: 0, width: dw, height: dh))
         }
         if let cgImg = uiImage.cgImage {
             let ci = CIImage(cgImage: cgImg)
-            let transform = CGAffineTransform(translationX: 1920.0 - 40.0 - boxW, y: 1080.0 - 40.0 - boxH)
+            let transform = CGAffineTransform(translationX: 1920.0 - 40.0 - dw, y: 1080.0 - 40.0 - dh)
             return ci.transformed(by: transform)
         }
         return nil

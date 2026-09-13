@@ -475,12 +475,13 @@ class ScoreboardOverlayView: UIView {
         case "beach_volley", "beach volley":
             if state.scoreA > 0 && (state.scoreA + state.scoreB) % 7 == 0 {
                 baseTitle = "🏖️ CAMBIO CAMPO"
+            } else if state.isFifthSet {
+                baseTitle = "TIE-BREAK"
             } else {
-                baseTitle = "BEACH VOLLEY | SET \(state.currentSet)"
+                baseTitle = ""
             }
         default:
-            let tieBreak = state.isFifthSet ? "• TIE-BREAK" : ""
-            baseTitle = "VOLLEY | SET \(state.currentSet) \(tieBreak)"
+            baseTitle = state.isFifthSet ? "TIE-BREAK" : ""
         }
         
         return baseTitle.uppercased()
@@ -633,7 +634,7 @@ class ScoreboardOverlayView: UIView {
         let sport = state.sportType.lowercased()
         guard sport == "volley" || sport == "beach_volley" || sport == "beach volley" || sport == "tennis" || sport == "padel" else { return }
         
-        let pillW: CGFloat = 114.0
+        let pillW: CGFloat = 66.0
         let pillH: CGFloat = 15.0
         let pillX = x + (w - pillW) / 2.0
         let pillY = y + h - 1.0
@@ -656,10 +657,10 @@ class ScoreboardOverlayView: UIView {
         borderPath.lineWidth = 1.2
         borderPath.stroke()
         
-        let font = UIFont.systemFont(ofSize: 8.5, weight: .heavy)
+        let font = UIFont.systemFont(ofSize: 9.0, weight: .heavy)
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
-        let text = "SET \(state.currentSet) (\(state.setsA)-\(state.setsB))"
+        let text = "SET \(state.currentSet)"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0),
