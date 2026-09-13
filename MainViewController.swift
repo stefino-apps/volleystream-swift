@@ -237,6 +237,7 @@ class MainViewController: UIViewController {
         
         let sessionCode = "VS-" + String(UUID().uuidString.prefix(6)).uppercased()
         UserDefaults.standard.set(sessionCode, forKey: "remote_session_id")
+        self.localState.isReplayEnabled = true
         
         FirebaseManager.shared.createSession(id: sessionCode, initialState: self.localState) { success in
             print("Firebase Host Session Created: \(sessionCode) (success: \(success))")
@@ -1581,6 +1582,7 @@ class MainViewController: UIViewController {
         localState.isStreaming = streamingActive
         localState.streamingStatus = streamingActive ? "LIVE" : "OFFLINE"
         localState.isMuted = isAudioMuted
+        localState.isReplayEnabled = true
         
         if saveHistory {
             stateHistory.append(localState)
