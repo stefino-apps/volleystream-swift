@@ -143,7 +143,7 @@ class ReplayManager {
         guard extent.width > 0 && extent.height > 0 else { return }
         
         queue.async { [weak self] in
-            guard let self = self, let pool = self.pixelBufferPool else { return }
+            guard let self = self else { return }
             
             // Normalizza origine e scala a 960x540 direttamente in GPU Metal
             let normalized = image.transformed(by: CGAffineTransform(translationX: -extent.origin.x, y: -extent.origin.y))
@@ -152,7 +152,19 @@ class ReplayManager {
             let scaledImage = normalized.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
             
             var pixelBuffer: CVPixelBuffer?
-            let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
+            let attrs: [CFString: Any] = [
+                kCVPixelBufferCGImageCompatibilityKey: true,
+                kCVPixelBufferCGBitmapContextCompatibilityKey: true,
+                kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]
+            ]
+            let status = CVPixelBufferCreate(
+                kCFAllocatorDefault,
+                960,
+                540,
+                kCVPixelFormatType_32BGRA,
+                attrs as CFDictionary,
+                &pixelBuffer
+            )
             
             if status == kCVReturnSuccess, let buffer = pixelBuffer {
                 let bounds = CGRect(x: 0, y: 0, width: 960, height: 540)
