@@ -229,8 +229,8 @@ class StreamVideoEffect: VideoEffect {
         let index = Int(Date().timeIntervalSince1970 / 12.0) % count
         let banner = cachedBannerUIImages[index]
         
-        let maxW: CGFloat = 360.0
-        let maxH: CGFloat = 110.0
+        let maxW: CGFloat = 480.0
+        let maxH: CGFloat = 180.0
         let bSize = banner.size
         guard bSize.width > 0 && bSize.height > 0 else { return nil }
         
