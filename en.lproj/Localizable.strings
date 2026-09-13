@@ -7,7 +7,9 @@
 "badge_tv_graphics" = "TV GRAPHICS & SPONSORS";
 "badge_premium" = "CONNECTION SPEED TEST";
 "badge_remote_control" = "REMOTE SCORE CONTROL";
-"btn_remote_mode" = "SET UP REMOTE";
+"btn_remote_mode" = "REMOTE CONTROL";
+"highlights_title" = "HIGHLIGHTS";
+"highlights_desc" = "Automatically save highlight clips to Gallery";
 "btn_next" = "NEXT";
 "btn_back" = "BACK";
 "free_trial" = "7 DAYS FREE TRIAL!!";

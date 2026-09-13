@@ -232,20 +232,20 @@ class StreamVideoEffect: VideoEffect {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0
         format.opaque = false
-        let boxW: CGFloat = 220.0
-        let boxH: CGFloat = 60.0
+        let boxW: CGFloat = 340.0
+        let boxH: CGFloat = 96.0
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: boxW, height: boxH), format: format)
         let uiImage = renderer.image { context in
             let rect = CGRect(x: 0, y: 0, width: boxW, height: boxH)
-            let path = UIBezierPath(roundedRect: rect, cornerRadius: 10)
-            UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.90).setFill()
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: 14)
+            UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.92).setFill()
             path.fill()
-            UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.8).setStroke()
-            path.lineWidth = 1.5
+            UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.85).setStroke()
+            path.lineWidth = 2.0
             path.stroke()
             
             let bSize = banner.size
-            let aspect = min((boxW - 16) / bSize.width, (boxH - 12) / bSize.height)
+            let aspect = min((boxW - 20) / bSize.width, (boxH - 16) / bSize.height)
             let dw = bSize.width * aspect
             let dh = bSize.height * aspect
             let dx = (boxW - dw) / 2.0
@@ -254,7 +254,7 @@ class StreamVideoEffect: VideoEffect {
         }
         if let cgImg = uiImage.cgImage {
             let ci = CIImage(cgImage: cgImg)
-            let transform = CGAffineTransform(translationX: 1920.0 - 35.0 - boxW, y: 1080.0 - 35.0 - boxH)
+            let transform = CGAffineTransform(translationX: 1920.0 - 40.0 - boxW, y: 1080.0 - 40.0 - boxH)
             return ci.transformed(by: transform)
         }
         return nil

@@ -45,18 +45,19 @@ class FirebaseManager {
     
     // (HOST) Crea o si collega come Director
     func createSession(id: String, initialState: RemoteMatchState = RemoteMatchState(), completion: @escaping (Bool) -> Void) {
+        let cleanId = id.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().replacingOccurrences(of: "#", with: "")
         ensureAuth { [weak self] uid in
             guard let self = self else { return }
             let hostUid = uid ?? UUID().uuidString
             self.isHost = true
-            self.sessionId = id
+            self.sessionId = cleanId
             self.sessionStartTime = Date().timeIntervalSince1970
             
-            print("Firebase HOST: Creating session \(id) with owner \(hostUid) at timestamp \(self.sessionStartTime)")
+            print("Firebase HOST: Creating session \(cleanId) with owner \(hostUid) at timestamp \(self.sessionStartTime)")
             self.stopListening()
             self.processedCommandKeys.removeAll()
             
-            let sessionRef = self.ref.child("sessions/\(id)")
+            let sessionRef = self.ref.child("sessions/\(cleanId)")
             
             // Pulisci completamente la sessione prima di scrivere per evitare replay di match precedenti
             sessionRef.removeValue { _, _ in
@@ -71,15 +72,16 @@ class FirebaseManager {
     
     // (CLIENT) Si unisce come Telecomando
     func joinSession(id: String, completion: @escaping (Bool) -> Void) {
+        let cleanId = id.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().replacingOccurrences(of: "#", with: "")
         ensureAuth { [weak self] uid in
             guard let self = self else { return }
             let clientUid = uid ?? UUID().uuidString
             self.isHost = false
-            self.sessionId = id
+            self.sessionId = cleanId
             
-            print("Firebase CLIENT: Joining session \(id) with controller UID \(clientUid)")
+            print("Firebase CLIENT: Joining session \(cleanId) with controller UID \(clientUid)")
             self.stopListening()
-            self.ref.child("sessions/\(id)/controllers/\(clientUid)").setValue(true)
+            self.ref.child("sessions/\(cleanId)/controllers/\(clientUid)").setValue(true)
             self.startListeningToState()
             completion(true)
         }
@@ -117,15 +119,15 @@ class FirebaseManager {
     func sendCommand(_ command: String) {
         guard let id = sessionId else { return }
         let cmdId = UUID().uuidString
-        let timestamp = Date().timeIntervalSince1970
-        print("Firebase CLIENT: Sending command '\(command)' to session '\(id)' (cmdId: \(cmdId))")
-        let payload: [String: Any] = [
-            "command": command,
-            "action": command,
-            "timestamp": timestamp
-        ]
-        self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(payload)
-        self.ref.child("sessions/\(id)/command").setValue(command)
+        let clean = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return }
+        print("Firebase CLIENT: Sending command '\(clean)' to session '\(id)' (cmdId: \(cmdId))")
+        
+        // 1. Android expects plain String at sessions/$sessionId/commands/$cmdId
+        self.ref.child("sessions/\(id)/commands/\(cmdId)").setValue(clean)
+        // 2. Also set command and action for Web remote and legacy listeners
+        self.ref.child("sessions/\(id)/command").setValue(clean)
+        self.ref.child("sessions/\(id)/action").setValue(clean)
     }
     
     private func listenForCommands() {
@@ -151,6 +153,14 @@ class FirebaseManager {
         
         // 2. Ascolta su command singolo (per telecomando Web)
         ref.child("sessions/\(id)/command").observe(.value) { [weak self] snapshot in
+            guard let self = self else { return }
+            guard let val = snapshot.value as? String, !val.isEmpty else { return }
+            self.dispatchCommandIfNew(val)
+            snapshot.ref.removeValue()
+        }
+        
+        // 3. Ascolta su action singolo
+        ref.child("sessions/\(id)/action").observe(.value) { [weak self] snapshot in
             guard let self = self else { return }
             guard let val = snapshot.value as? String, !val.isEmpty else { return }
             self.dispatchCommandIfNew(val)

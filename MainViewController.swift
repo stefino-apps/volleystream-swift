@@ -2497,15 +2497,7 @@ class MainViewController: UIViewController {
         \(androidLinkStr)
         """
         
-        var activityItems: [Any] = [msg]
-        if let iosUrl = URL(string: iosLinkStr) {
-            activityItems.append(iosUrl)
-        }
-        if let androidUrl = URL(string: androidLinkStr) {
-            activityItems.append(androidUrl)
-        }
-        
-        let activity = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+        let activity = UIActivityViewController(activityItems: [msg], applicationActivities: nil)
         if let popover = activity.popoverPresentationController {
             popover.sourceView = shareRemoteButton
         }
@@ -2729,23 +2721,43 @@ class MainViewController: UIViewController {
             localState.timerRunning = false
             updateSoccerTimerButton()
             updateLocalState(saveHistory: false)
-        case "TOGGLE_SPONSOR":
+        case "TOGGLE_SPONSOR", "SPONSOR", "SPONSORS", "S":
             toggleSponsor()
         case "SPONSOR_1":
-            localState.currentSponsorIdx = 0
-            localState.showSponsor = true
+            if localState.showSponsor && localState.currentSponsorIdx == 0 {
+                localState.showSponsor = false
+                localState.fullScreenSponsor = false
+            } else {
+                localState.currentSponsorIdx = 0
+                localState.showSponsor = true
+            }
             updateLocalState()
         case "SPONSOR_2":
-            localState.currentSponsorIdx = 1
-            localState.showSponsor = true
+            if localState.showSponsor && localState.currentSponsorIdx == 1 {
+                localState.showSponsor = false
+                localState.fullScreenSponsor = false
+            } else {
+                localState.currentSponsorIdx = 1
+                localState.showSponsor = true
+            }
             updateLocalState()
         case "SPONSOR_3":
-            localState.currentSponsorIdx = 2
-            localState.showSponsor = true
+            if localState.showSponsor && localState.currentSponsorIdx == 2 {
+                localState.showSponsor = false
+                localState.fullScreenSponsor = false
+            } else {
+                localState.currentSponsorIdx = 2
+                localState.showSponsor = true
+            }
             updateLocalState()
         case "SPONSOR_4":
-            localState.currentSponsorIdx = 3
-            localState.showSponsor = true
+            if localState.showSponsor && localState.currentSponsorIdx == 3 {
+                localState.showSponsor = false
+                localState.fullScreenSponsor = false
+            } else {
+                localState.currentSponsorIdx = 3
+                localState.showSponsor = true
+            }
             updateLocalState()
         case "TOGGLE_TEXT":
             localState.showScrollText.toggle()

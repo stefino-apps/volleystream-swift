@@ -7,7 +7,9 @@
 "badge_tv_graphics" = "GRAFICA TELEVISIVA & SPONSOR";
 "badge_premium" = "TEST VELOCITÀ CONNESSIONE";
 "badge_remote_control" = "CONTROLLO PUNTEGGIO DA REMOTO";
-"btn_remote_mode" = "IMPOSTA TELECOMANDO";
+"btn_remote_mode" = "CONTROLLO REMOTO";
+"highlights_title" = "HIGHLIGHTS";
+"highlights_desc" = "Salva automaticamente clip degli ultimi secondi in Galleria";
 "btn_next" = "AVANTI";
 "btn_back" = "INDIETRO";
 "free_trial" = "7 GIORNI DI PROVA GRATUITA!!";

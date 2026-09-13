@@ -445,7 +445,7 @@ struct RemoteControlView: View {
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color(red: 15/255, green: 23/255, blue: 42/255).opacity(0.85))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.12), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(red: 250/255, green: 204/255, blue: 21/255), lineWidth: 1.5))
         )
     }
     
@@ -1036,7 +1036,11 @@ struct RemoteControlView: View {
                     let isSelected = matchState.showSponsor && (matchState.currentSponsorIdx == index - 1)
                     Button(action: {
                         triggerHaptic()
-                        FirebaseManager.shared.sendCommand("SPONSOR_\(index)")
+                        if isSelected {
+                            FirebaseManager.shared.sendCommand("TOGGLE_SPONSOR")
+                        } else {
+                            FirebaseManager.shared.sendCommand("SPONSOR_\(index)")
+                        }
                     }) {
                         Text("S\(index)")
                             .font(.system(size: 12, weight: .heavy))
@@ -1054,8 +1058,11 @@ struct RemoteControlView: View {
             }
         }
         .padding(8)
-        .background(Color.white.opacity(0.04))
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(red: 15/255, green: 23/255, blue: 42/255).opacity(0.85))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(red: 250/255, green: 204/255, blue: 21/255), lineWidth: 1.5))
+        )
     }
     
     // MARK: - Helper Methods

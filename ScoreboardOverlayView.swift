@@ -373,6 +373,9 @@ class ScoreboardOverlayView: UIView {
             drawVolleyScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
         }
         
+        // Render Attached Bottom Set Indicator Pill
+        drawBottomSetIndicator(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
+        
         let sp = getSetPointInfo(state: state)
         
         // 3. Render Attached SOCCER / HANDBALL Timer on the right of the scoreboard
@@ -570,12 +573,21 @@ class ScoreboardOverlayView: UIView {
             logo.draw(in: CGRect(x: logoX, y: y + 2.0, width: 13, height: 13))
         }
         
-        // 3. Team name always starts at the EXACT same fixed position (never shifts)
+        // 3. Team name always starts at the EXACT same fixed position (never shifts) and is strictly constrained
         let nameX = (logo != nil) ? (logoX + 16) : (x + 14)
-        let nameFont = UIFont.systemFont(ofSize: 11.5, weight: .bold)
-        let nameAttrs: [NSAttributedString.Key: Any] = [.font: nameFont, .foregroundColor: UIColor.white]
-        let trimName = name.count > 14 ? String(name.prefix(14)) : name
-        trimName.uppercased().draw(at: CGPoint(x: nameX, y: y + 0.5), withAttributes: nameAttrs)
+        let availableNameW: CGFloat = (!setScores.isEmpty) ? max(30.0, (x + 104.0 - nameX - 4.0)) : max(40.0, (x + w - 48.0 - nameX))
+        let nameRect = CGRect(x: nameX, y: y + 0.5, width: availableNameW, height: 14)
+        
+        let nameParagraph = NSMutableParagraphStyle()
+        nameParagraph.lineBreakMode = .byTruncatingTail
+        nameParagraph.allowsDefaultTighteningForTruncation = true
+        let nameFont = UIFont.systemFont(ofSize: 11.0, weight: .bold)
+        let nameAttrs: [NSAttributedString.Key: Any] = [
+            .font: nameFont,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: nameParagraph
+        ]
+        (name.uppercased() as NSString).draw(in: nameRect, withAttributes: nameAttrs)
         
         // Timeouts dashes positioned directly UNDER team name at fixed position
         for i in 0..<maxTos {
@@ -613,6 +625,47 @@ class ScoreboardOverlayView: UIView {
         let scoreSize = (scoreStr as NSString).size(withAttributes: scoreAttrs)
         let scoreX = x + w - scoreSize.width - 4
         scoreStr.draw(at: CGPoint(x: scoreX, y: y), withAttributes: scoreAttrs)
+    }
+    
+    // MARK: - Attached Bottom Set Indicator Pill
+    
+    private func drawBottomSetIndicator(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, state: RemoteMatchState, style: ThemeStyles) {
+        let sport = state.sportType.lowercased()
+        guard sport == "volley" || sport == "beach_volley" || sport == "beach volley" || sport == "tennis" || sport == "padel" else { return }
+        
+        let pillW: CGFloat = 114.0
+        let pillH: CGFloat = 15.0
+        let pillX = x + (w - pillW) / 2.0
+        let pillY = y + h - 1.0
+        
+        let pillRect = CGRect(x: pillX, y: pillY, width: pillW, height: pillH)
+        let pillPath = UIBezierPath(roundedRect: pillRect, byRoundingCorners: [.bottomLeft, .bottomRight], cornerRadii: CGSize(width: 6, height: 6))
+        
+        UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.95).setFill()
+        pillPath.fill()
+        
+        let borderPath = UIBezierPath()
+        borderPath.move(to: CGPoint(x: pillX, y: pillY))
+        borderPath.addLine(to: CGPoint(x: pillX, y: pillY + pillH - 6))
+        borderPath.addArc(withCenter: CGPoint(x: pillX + 6, y: pillY + pillH - 6), radius: 6, startAngle: .pi, endAngle: .pi / 2, clockwise: false)
+        borderPath.addLine(to: CGPoint(x: pillX + pillW - 6, y: pillY + pillH))
+        borderPath.addArc(withCenter: CGPoint(x: pillX + pillW - 6, y: pillY + pillH - 6), radius: 6, startAngle: .pi / 2, endAngle: 0, clockwise: false)
+        borderPath.addLine(to: CGPoint(x: pillX + pillW, y: pillY))
+        
+        style.boxBorderColor.setStroke()
+        borderPath.lineWidth = 1.2
+        borderPath.stroke()
+        
+        let font = UIFont.systemFont(ofSize: 8.5, weight: .heavy)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let text = "SET \(state.currentSet) (\(state.setsA)-\(state.setsB))"
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0),
+            .paragraphStyle: paragraph
+        ]
+        text.draw(in: CGRect(x: pillX, y: pillY + 1.5, width: pillW, height: pillH), withAttributes: attrs)
     }
     
     // MARK: - 3D Volleyball Serve Icon
