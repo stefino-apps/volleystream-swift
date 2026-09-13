@@ -294,30 +294,29 @@ struct WelcomeView: View {
                                     HStack(spacing: 8) {
                                         if !storeManager.isPremiumOrTrial {
                                             Image(systemName: "lock.fill")
-                                                .font(.system(size: 18, weight: .bold))
+                                                .font(.system(size: 14, weight: .bold))
                                                 .foregroundColor(Color(hex: "#FACC15"))
                                         }
                                         Text("btn_remote_mode".localized)
-                                            .font(.system(size: 16, weight: .heavy))
+                                            .font(.system(size: 14, weight: .bold))
                                             .foregroundColor(.white)
                                         if !storeManager.isPremiumOrTrial {
                                             Image(systemName: "lock.fill")
-                                                .font(.system(size: 18, weight: .bold))
+                                                .font(.system(size: 14, weight: .bold))
                                                 .foregroundColor(Color(hex: "#FACC15"))
                                         }
                                     }
                                     .frame(maxWidth: .infinity)
-                                    .frame(minHeight: 58)
-                                    .padding(.vertical, 16)
+                                    .frame(height: 48)
                                     .background(Color(hex: "#EF4444"))
-                                    .cornerRadius(10)
+                                    .cornerRadius(8)
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.white, lineWidth: 2.5)
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.white, lineWidth: 2)
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                .padding(.top, 14)
+                                .padding(.top, 10)
                                 
                                 NavigationLink(destination: RemoteControlView(), isActive: $navigateToRemote) {
                                     EmptyView()
