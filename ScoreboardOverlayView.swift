@@ -296,10 +296,9 @@ class ScoreboardOverlayView: UIView {
         if sport == "darts" || sport == "basket" || sport == "soccer" || sport == "handball" || sport == "cricket" || sport == "billiards" || sport == "biliardo" {
             return nil
         }
-        
-        var isSetPointA = false
-        var isSetPointB = false
-        var isMatchPoint = false
+        if state.isSetFinished || state.isMatchFinished {
+            return nil
+        }
         
         if sport == "tennis" || sport == "padel" {
             let isWinningGameWinsSetA = (state.tennisGamesA == 5 && state.tennisGamesB <= 4) || (state.tennisGamesA == 6 && state.tennisGamesB == 5) || state.isTiebreak
@@ -317,31 +316,44 @@ class ScoreboardOverlayView: UIView {
                 isGamePointB = (state.tennisPointsB >= 3 && state.tennisPointsB > state.tennisPointsA)
             }
             
-            isSetPointA = isWinningGameWinsSetA && isGamePointA
-            
+            let isSetPointA = isWinningGameWinsSetA && isGamePointA
             let isWinningGameWinsSetB = (state.tennisGamesB == 5 && state.tennisGamesA <= 4) || (state.tennisGamesB == 6 && state.tennisGamesA == 5) || state.isTiebreak
-            isSetPointB = isWinningGameWinsSetB && isGamePointB
+            let isSetPointB = isWinningGameWinsSetB && isGamePointB
             
             let setsToWin = (state.tennisSetsToWin > 0) ? state.tennisSetsToWin : 2
-            let winningSetA = state.setsA == setsToWin - 1
-            let winningSetB = state.setsB == setsToWin - 1
-            if isSetPointA && winningSetA { isMatchPoint = true }
-            if isSetPointB && winningSetB { isMatchPoint = true }
+            let setsNeeded = setsToWin - 1
+            if isSetPointA {
+                return SetPointInfo(team: "A", isMatchPoint: (state.setsA >= setsNeeded))
+            }
+            if isSetPointB {
+                return SetPointInfo(team: "B", isMatchPoint: (state.setsB >= setsNeeded))
+            }
+            return nil
         } else {
             let isBeach = (sport == "beach_volley" || sport == "beach volley")
             let setsToWin = isBeach ? ((state.beachSetsToWin > 0) ? state.beachSetsToWin : 2) : 3
             let isTiebreakSet = isBeach ? (state.currentSet == (setsToWin == 2 ? 3 : 5)) : state.isFifthSet
-            let target = isTiebreakSet ? 14 : (isBeach ? 20 : 24)
+            let winScore = isTiebreakSet ? 15 : (isBeach ? 21 : 25)
+            let target = winScore - 1 // 20 in beach volley set 1/2, 14 in tiebreak, 24 in standard volley
             let setsNeeded = setsToWin - 1
             
-            isSetPointA = state.scoreA >= target && state.scoreA > state.scoreB
-            isSetPointB = state.scoreB >= target && state.scoreB > state.scoreA
-            isMatchPoint = (isSetPointA && state.setsA == setsNeeded) || (isSetPointB && state.setsB == setsNeeded)
+            // If the set is already completed/won, do not show set/match point alert
+            if (state.scoreA >= winScore && (state.scoreA - state.scoreB) >= 2) ||
+               (state.scoreB >= winScore && (state.scoreB - state.scoreA) >= 2) {
+                return nil
+            }
+            
+            let isSetPointA = state.scoreA >= target && state.scoreA > state.scoreB
+            let isSetPointB = state.scoreB >= target && state.scoreB > state.scoreA
+            
+            if isSetPointA {
+                return SetPointInfo(team: "A", isMatchPoint: (state.setsA >= setsNeeded))
+            }
+            if isSetPointB {
+                return SetPointInfo(team: "B", isMatchPoint: (state.setsB >= setsNeeded))
+            }
+            return nil
         }
-        
-        if isSetPointA { return SetPointInfo(team: "A", isMatchPoint: isMatchPoint) }
-        if isSetPointB { return SetPointInfo(team: "B", isMatchPoint: isMatchPoint) }
-        return nil
     }
 
     // MARK: - Drawing Engine (1:1 with Android OverlayRenderer)

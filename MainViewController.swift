@@ -214,9 +214,11 @@ class MainViewController: UIViewController {
             self.localState.scrollMessage = savedScroll
         }
         
-        if self.localState.sportType.lowercased() == "soccer" {
+        let sportInit = self.localState.sportType.lowercased()
+        if sportInit == "soccer" || sportInit == "handball" || sportInit == "pallamano" {
+            let defaultDur = (sportInit == "soccer") ? 45 : 30
             let savedHalfDur = UserDefaults.standard.integer(forKey: "soccer_half_duration")
-            self.localState.soccerHalfDuration = (savedHalfDur > 0) ? savedHalfDur : 45
+            self.localState.soccerHalfDuration = (savedHalfDur > 0) ? savedHalfDur : defaultDur
             self.localState.timerSeconds = 0
             self.localState.timerRunning = false
             self.localState.currentSet = 1
@@ -279,16 +281,19 @@ class MainViewController: UIViewController {
             }
         }
         
-        // Timer cronometro 1-secondo per Soccer e Handball
+        // Timer cronometro 1-secondo per Soccer e Handball (su RunLoop .common per non bloccarsi coi tocchi a schermo)
         matchTimer?.invalidate()
-        matchTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        let t = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             if self.localState.timerRunning {
                 self.localState.timerSeconds += 1
                 self.updateSoccerTimerButton()
+                self.scoreboardView?.updateState(self.localState)
                 StreamManager.shared.videoEffect.triggerOverlayUpdate(state: self.localState)
             }
         }
+        RunLoop.main.add(t, forMode: .common)
+        self.matchTimer = t
     }
     
     override func viewDidLayoutSubviews() {
@@ -2011,6 +2016,8 @@ class MainViewController: UIViewController {
         
         if let winTeam = winner {
             isSetTransitionInProgress = true
+            scoreboardView?.resetAlerts()
+            StreamManager.shared.videoEffect.scoreboardView?.resetAlerts()
             let finalScoreA = localState.scoreA
             let finalScoreB = localState.scoreB
             localState.setScores.append([finalScoreA, finalScoreB])
@@ -2143,6 +2150,8 @@ class MainViewController: UIViewController {
         
         if setWonA || setWonB {
             isSetTransitionInProgress = true
+            scoreboardView?.resetAlerts()
+            StreamManager.shared.videoEffect.scoreboardView?.resetAlerts()
             let finalGamesA = localState.tennisGamesA
             let finalGamesB = localState.tennisGamesB
             localState.setScores.append([finalGamesA, finalGamesB])
@@ -2280,6 +2289,8 @@ class MainViewController: UIViewController {
         }
         
         updateSoccerTimerButton()
+        scoreboardView?.updateState(self.localState)
+        StreamManager.shared.videoEffect.triggerOverlayUpdate(state: self.localState)
         updateLocalState(saveHistory: false)
     }
     

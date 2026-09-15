@@ -17,7 +17,6 @@ struct WelcomeView: View {
     @State private var showLangPicker = false
     @State private var showMenu = false
     @State private var showPremiumPaywall = false
-    @State private var showInteractiveTutorial = false
     @State private var selectedBadgeData: BadgePopupData? = nil
     @State private var navigateToRemote = false
     @State private var showDeleteAccountAlert = false
@@ -65,7 +64,7 @@ struct WelcomeView: View {
                 Color(red: 2/255, green: 6/255, blue: 23/255).edgesIgnoringSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // Top Bar: Menu (Left), Tutorial (Center-Right), Language (Right)
+                    // Top Bar: Menu (Left), Language (Right)
                     HStack(spacing: 8) {
                         Button(action: { showMenu = true }) {
                             Image(systemName: "line.horizontal.3")
@@ -92,25 +91,6 @@ struct WelcomeView: View {
                         }
                         
                         Spacer()
-                        
-                        // Interactive Tutorial Walkthrough Button
-                        Button(action: { showInteractiveTutorial = true }) {
-                            HStack(spacing: 5) {
-                                Image(systemName: "graduationcap.fill")
-                                    .font(.system(size: 13, weight: .bold))
-                                Text("tutorial_welcome_btn".localized)
-                                    .font(.system(size: 11, weight: .heavy))
-                            }
-                            .foregroundColor(Color(hex: "#06b6d4"))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color(hex: "#06b6d4").opacity(0.12))
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color(hex: "#06b6d4").opacity(0.4), lineWidth: 1)
-                            )
-                        }
                         
                         // Language Button
                         Button(action: { showLangPicker = true }) {
@@ -460,9 +440,6 @@ struct WelcomeView: View {
             .navigationBarHidden(true)
             .sheet(isPresented: $showPremiumPaywall) {
                 PremiumPaywallSheet()
-            }
-            .fullScreenCover(isPresented: $showInteractiveTutorial) {
-                TutorialOverlayView(isPresented: $showInteractiveTutorial)
             }
             .sheet(item: $activeLegalDoc) { doc in
                 LegalDocSheetView(doc: doc)
