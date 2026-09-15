@@ -377,14 +377,15 @@ class ScoreboardOverlayView: UIView {
         // 2. Disegna il Tabellone Live in alto a sinistra (Ampio, fisso e ben leggibile)
         let x: CGFloat = (rect.width > 600) ? 20 : 2
         let y: CGFloat = (rect.height > 400) ? 15 : 2
-        let boxW: CGFloat = 228.0
+        let sport = state.sportType.lowercased()
+        let numTennisPastSets = (sport == "tennis" || sport == "padel") ? state.setScores.count : 0
+        let boxW: CGFloat = 228.0 + CGFloat(numTennisPastSets) * 16.0
         let h: CGFloat = 58.0
         let headerH: CGFloat = 16.0
         
         drawScoreboardBase(ctx: ctx, x: x, y: y, w: boxW, h: h, headerH: headerH, infoText: getHeaderTitle(state: state), style: style)
         
         // Render Sport Content
-        let sport = state.sportType.lowercased()
         switch sport {
         case "basket":
             drawBasketScoreboard(ctx: ctx, x: x, y: y, w: boxW, h: h, state: state, style: style)
@@ -901,24 +902,21 @@ class ScoreboardOverlayView: UIView {
         let row1Y = y + headerH + (rowH - 13) / 2
         let row2Y = y + headerH + rowH + (rowH - 13) / 2
         
-        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.tennisPointsA, games: state.tennisGamesA, sets: state.setsA, isTiebreak: state.isTiebreak, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
-        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.tennisPointsB, games: state.tennisGamesB, sets: state.setsB, isTiebreak: state.isTiebreak, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
+        let setsA = state.setScores.map { $0.count > 0 ? $0[0] : 0 }
+        let setsB = state.setScores.map { $0.count > 1 ? $0[1] : 0 }
+        
+        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row1Y, name: state.teamA, pts: state.tennisPointsA, games: state.tennisGamesA, sets: state.setsA, setScores: setsA, oppSetScores: setsB, isTiebreak: state.isTiebreak, isMatchFinished: state.isMatchFinished, color: style.scoreColorA, logo: homeLogo, style: style, w: w - 8)
+        drawTeamRowTennis(ctx: ctx, x: x + 4, y: row2Y, name: state.teamB, pts: state.tennisPointsB, games: state.tennisGamesB, sets: state.setsB, setScores: setsB, oppSetScores: setsA, isTiebreak: state.isTiebreak, isMatchFinished: state.isMatchFinished, color: style.scoreColorB, logo: awayLogo, style: style, w: w - 8)
     }
     
-    private func drawTeamRowTennis(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, games: Int, sets: Int, isTiebreak: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
+    private func drawTeamRowTennis(ctx: CGContext, x: CGFloat, y: CGFloat, name: String, pts: Int, games: Int, sets: Int, setScores: [Int], oppSetScores: [Int], isTiebreak: Bool, isMatchFinished: Bool, color: UIColor, logo: UIImage?, style: ThemeStyles, w: CGFloat) {
         var curX = x
         if let logo = logo {
             logo.draw(in: CGRect(x: curX, y: y + 1, width: 12, height: 12))
             curX += 15
         }
         
-        let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
-        let trimName = name.count > 14 ? String(name.prefix(14)) : name
-        trimName.uppercased().draw(at: CGPoint(x: curX, y: y), withAttributes: [.font: nameFont, .foregroundColor: UIColor.white])
-        
-        let sgStr = "S:\(sets) G:\(games)"
-        sgStr.draw(at: CGPoint(x: x + (w * 0.44), y: y + 2), withAttributes: [.font: UIFont.systemFont(ofSize: 9, weight: .bold), .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)])
-        
+        // 1. Rightmost element: Points (0, 15, 30, 40, AD or tiebreak)
         let ptsStr: String
         if isTiebreak {
             ptsStr = "\(pts)"
@@ -931,11 +929,59 @@ class ScoreboardOverlayView: UIView {
             default: ptsStr = "0"
             }
         }
+        let scoreFont = UIFont.systemFont(ofSize: 14.5, weight: .heavy)
+        let scoreAttrs: [NSAttributedString.Key: Any] = [.font: scoreFont, .foregroundColor: color]
+        let scoreSize = (ptsStr as NSString).size(withAttributes: scoreAttrs)
+        let scoreX = x + w - scoreSize.width - 2
+        ptsStr.draw(at: CGPoint(x: scoreX, y: y - 1), withAttributes: scoreAttrs)
         
-        let scoreFont = UIFont.systemFont(ofSize: 15, weight: .heavy)
-        let scoreSize = (ptsStr as NSString).size(withAttributes: [.font: scoreFont])
-        let scoreX = x + w - scoreSize.width - 4
-        ptsStr.draw(at: CGPoint(x: scoreX, y: y - 2), withAttributes: [.font: scoreFont, .foregroundColor: color])
+        // 2. Games column (Yellow / Gold)
+        let gamesFont = UIFont.systemFont(ofSize: 13.0, weight: .heavy)
+        let gamesStr = "\(games)"
+        let gamesAttrs: [NSAttributedString.Key: Any] = [.font: gamesFont, .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0)]
+        let gamesSize = (gamesStr as NSString).size(withAttributes: gamesAttrs)
+        let gamesX = scoreX - max(gamesSize.width, 14.0) - 6.0
+        gamesStr.draw(at: CGPoint(x: gamesX, y: y - 0.5), withAttributes: gamesAttrs)
+        
+        // 3. Previous Sets History Columns (Right to left before games column)
+        var rightmostSetX = gamesX - 4.0
+        let setColW: CGFloat = 15.0
+        if !setScores.isEmpty {
+            let startSetX = gamesX - CGFloat(setScores.count) * setColW - 4.0
+            rightmostSetX = startSetX
+            let redColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+            
+            for (idx, myScore) in setScores.enumerated() {
+                let oppScore = (idx < oppSetScores.count) ? oppSetScores[idx] : 0
+                let isWon = myScore > oppScore
+                let setFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
+                let setAttrs: [NSAttributedString.Key: Any] = [
+                    .font: setFont,
+                    .foregroundColor: isWon ? redColor : UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1.0)
+                ]
+                let str = "\(myScore)"
+                let strSize = (str as NSString).size(withAttributes: setAttrs)
+                let colX = startSetX + CGFloat(idx) * setColW + (setColW - strSize.width) / 2.0
+                str.draw(at: CGPoint(x: colX, y: y + 1.0), withAttributes: setAttrs)
+            }
+        }
+        
+        // 4. Team Name (Strictly bounded and tail-truncated so it NEVER overlaps set scores or games)
+        let nameX = curX
+        let availableNameW = max(35.0, rightmostSetX - nameX - 4.0)
+        let nameRect = CGRect(x: nameX, y: y + 0.5, width: availableNameW, height: 14)
+        
+        let nameParagraph = NSMutableParagraphStyle()
+        nameParagraph.lineBreakMode = .byTruncatingTail
+        nameParagraph.allowsDefaultTighteningForTruncation = true
+        let nameFont = UIFont.systemFont(ofSize: 10.5, weight: .bold)
+        let nameAttrs: [NSAttributedString.Key: Any] = [
+            .font: nameFont,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: nameParagraph
+        ]
+        let trimName = name.isEmpty ? "TEAM" : name
+        (trimName.uppercased() as NSString).draw(in: nameRect, withAttributes: nameAttrs)
     }
     
     // MARK: - Darts Scoreboard
@@ -1367,37 +1413,43 @@ class ScoreboardOverlayView: UIView {
     
     func drawReplayBadge(ctx: CGContext, rect: CGRect) {
         ctx.saveGState()
-        let text = "● REPLAY"
+        let text = "REPLAY"
         let pStyle = NSMutableParagraphStyle()
         pStyle.alignment = .center
         
-        let font = UIFont.systemFont(ofSize: min(52.0, rect.height * 0.065), weight: .black)
-        let pillW: CGFloat = 360.0
-        let pillH: CGFloat = 72.0
-        let pillX = (rect.width - pillW) / 2.0
-        let pillY: CGFloat = 36.0
-        let pillRect = CGRect(x: pillX, y: pillY, width: pillW, height: pillH)
-        let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 18.0)
+        let font = UIFont.systemFont(ofSize: min(60.0, rect.height * 0.08), weight: .black)
+        let centerX = rect.width / 2.0
+        // Posizionato in Title-Safe Area (100px dall'alto su 1080p, 36px su preview piccole)
+        let topY: CGFloat = (rect.height > 600) ? 95.0 : 36.0
+        let textRect = CGRect(x: centerX - 250.0, y: topY, width: 500.0, height: 70.0)
         
-        // Sfondo semi-trasparente scuro broadcast
-        UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.92).setFill()
-        pillPath.fill()
-        
-        // Bordo neon rosso
-        UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0).setStroke()
-        pillPath.lineWidth = 3.5
-        pillPath.stroke()
-        
-        // Testo REPLAY
-        let redAttrs: [NSAttributedString.Key: Any] = [
+        // 1. Shadow / Outer Stroke scura esterna per massimo contrasto
+        let shadowAttrs: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: UIColor.white,
-            .strokeColor: UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0),
-            .strokeWidth: -4.0,
+            .foregroundColor: UIColor.black.withAlphaComponent(0.60),
+            .strokeColor: UIColor.black.withAlphaComponent(0.60),
+            .strokeWidth: 10.0,
             .paragraphStyle: pStyle
         ]
-        let textRect = CGRect(x: pillX, y: pillY + 6.0, width: pillW, height: pillH - 12.0)
-        text.draw(in: textRect, withAttributes: redAttrs)
+        text.draw(in: textRect.offsetBy(dx: 0, dy: 4), withAttributes: shadowAttrs)
+        
+        // 2. Bordo Rosso vivo (matching Android #EF4444)
+        let borderAttrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0),
+            .strokeColor: UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0),
+            .strokeWidth: 6.0,
+            .paragraphStyle: pStyle
+        ]
+        text.draw(in: textRect, withAttributes: borderAttrs)
+        
+        // 3. Testo interno Bianco puro brillante
+        let fillAttrs: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: pStyle
+        ]
+        text.draw(in: textRect, withAttributes: fillAttrs)
         
         ctx.restoreGState()
     }

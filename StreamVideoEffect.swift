@@ -78,13 +78,14 @@ class StreamVideoEffect: VideoEffect {
         }
         let trimmed = text.uppercased()
         
+        let font = UIFont.systemFont(ofSize: 34, weight: .bold)
         if trimmed != lastMarqueeMessage {
             lastMarqueeMessage = trimmed
-            cachedMarqueeWidth = (trimmed as NSString).size(withAttributes: [.font: marqueeFont]).width
+            cachedMarqueeWidth = (trimmed as NSString).size(withAttributes: [.font: font]).width
         }
         
-        let totalDist = 1920.0 + cachedMarqueeWidth + 120.0
-        let speed: Double = 140.0 // Velocità fluida broadcast in px/s
+        let totalDist = 1920.0 + cachedMarqueeWidth + 140.0
+        let speed: Double = 150.0 // Velocità fluida broadcast in px/s
         let elapsed = CACurrentMediaTime()
         let offset = CGFloat(fmod(elapsed * speed, Double(totalDist)))
         let textX = 1920.0 - offset
@@ -92,43 +93,54 @@ class StreamVideoEffect: VideoEffect {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0
         format.opaque = false
-        let h: CGFloat = 64.0
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: h), format: format)
+        let h: CGFloat = 76.0
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1920, height: 1080), format: format)
         let uiImage = renderer.image { context in
-            let barRect = CGRect(x: 0, y: 0, width: 1920, height: h)
+            // Posizionato a 85px dal fondo per Title-Safe Area (nessun taglio su schermi notch / 19.5:9 o YouTube)
+            let barY: CGFloat = 1080.0 - 90.0
+            let barRect = CGRect(x: 0, y: barY, width: 1920, height: h)
             
-            // Sfondo barra elegante blu scuro con trasparenza
-            UIColor(red: 10/255, green: 22/255, blue: 48/255, alpha: 0.92).setFill()
+            // 1. Sfondo barra nera broadcast
+            UIColor(red: 2/255, green: 6/255, blue: 23/255, alpha: 0.92).setFill()
             context.cgContext.fill(barRect)
             
-            // Bordo superiore neon azzurro
+            // 2. Bordi rossi superiore e inferiore (come su Android)
             let borderPath = UIBezierPath()
-            borderPath.move(to: CGPoint(x: 0, y: 1))
-            borderPath.addLine(to: CGPoint(x: 1920, y: 1))
-            UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.95).setStroke()
-            borderPath.lineWidth = 2.0
+            borderPath.move(to: CGPoint(x: 0, y: barY))
+            borderPath.addLine(to: CGPoint(x: 1920, y: barY))
+            borderPath.move(to: CGPoint(x: 0, y: barY + h))
+            borderPath.addLine(to: CGPoint(x: 1920, y: barY + h))
+            UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0).setStroke()
+            borderPath.lineWidth = 3.0
             borderPath.stroke()
             
-            // Badge icona "LIVE" a sinistra fissa
-            let tagRect = CGRect(x: 20, y: 14, width: 68, height: 36)
-            let tagPath = UIBezierPath(roundedRect: tagRect, cornerRadius: 6)
-            UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.95).setFill()
+            // 3. Badge "LIVE" a sinistra
+            let tagRect = CGRect(x: 24, y: barY + 14, width: 78, height: 48)
+            let tagPath = UIBezierPath(roundedRect: tagRect, cornerRadius: 8)
+            UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0).setFill()
             tagPath.fill()
             let tagAttrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 15, weight: .black),
+                .font: UIFont.systemFont(ofSize: 20, weight: .black),
                 .foregroundColor: UIColor.white
             ]
-            "LIVE".draw(at: CGPoint(x: 32, y: 22), withAttributes: tagAttrs)
+            "LIVE".draw(at: CGPoint(x: 36, y: barY + 24), withAttributes: tagAttrs)
             
-            // Testo scorrevole nitido in bianco
+            // 4. Testo scorrevole
+            let shadowAttrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: UIColor.black,
+                .strokeColor: UIColor.black,
+                .strokeWidth: 4.0
+            ]
+            (trimmed as NSString).draw(at: CGPoint(x: textX, y: barY + 18), withAttributes: shadowAttrs)
+            
             let textAttrs: [NSAttributedString.Key: Any] = [
-                .font: self.marqueeFont,
+                .font: font,
                 .foregroundColor: UIColor.white
             ]
-            (trimmed as NSString).draw(at: CGPoint(x: textX, y: 14), withAttributes: textAttrs)
+            (trimmed as NSString).draw(at: CGPoint(x: textX, y: barY + 18), withAttributes: textAttrs)
         }
         if let cgImg = uiImage.cgImage {
-            // CIImage origin is at bottom-left, so (0,0) with height 64 sits directly at the bottom of 1080p frame
             return CIImage(cgImage: cgImg)
         }
         return nil
@@ -299,7 +311,7 @@ class StreamVideoEffect: VideoEffect {
                 outputImage = stingerImg.composited(over: outputImage)
             }
         } else if currentlyReplaying {
-            let isBlinkingOn = ((Int(Date().timeIntervalSince1970 * 1000) % 700) < 480)
+            let isBlinkingOn = ((Int(Date().timeIntervalSince1970 * 1000) % 1000) < 500)
             if isBlinkingOn, let badgeImg = getReplayBadgeCIImage() {
                 outputImage = badgeImg.composited(over: outputImage)
             }

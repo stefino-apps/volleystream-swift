@@ -6,6 +6,7 @@ class MainViewController: UIViewController {
 
     var lfView: MTHKView!
     var scoreboardView: ScoreboardOverlayView?
+    var marqueeOverlayView: MarqueeOverlayView?
     
     // Top Bar UI Controls
     var closeButton: UIButton!
@@ -330,6 +331,13 @@ class MainViewController: UIViewController {
         view.addSubview(sv)
         self.scoreboardView = sv
         StreamManager.shared.videoEffect.scoreboardView = sv
+        
+        let mv = MarqueeOverlayView(frame: view.bounds)
+        mv.isUserInteractionEnabled = false
+        mv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(mv)
+        self.marqueeOverlayView = mv
+        StreamManager.shared.videoEffect.marqueeView = mv
         
         sv.onOverlayNeedsUpdate = { [weak self] in
             guard let self = self else { return }
@@ -1630,6 +1638,7 @@ class MainViewController: UIViewController {
         }
         localState.lastUpdate = Int64(Date().timeIntervalSince1970 * 1000)
         sv.updateFromState(localState)
+        marqueeOverlayView?.updateMessage(localState.scrollMessage, show: localState.showScrollText)
         StreamManager.shared.videoEffect.currentState = localState
         FirebaseManager.shared.updateMatchState(localState)
         
