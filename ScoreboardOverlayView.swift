@@ -1061,7 +1061,6 @@ class ScoreboardOverlayView: UIView {
         let teamName = (sp.team == "A") ? (state.teamA.isEmpty ? "CASA" : state.teamA) : (state.teamB.isEmpty ? "OSPITE" : state.teamB)
         let textLine2 = teamName.uppercased()
         
-        let centerX = rect.width / 2.0
         let centerY = rect.height / 2.0
         
         let font = UIFont.systemFont(ofSize: min(100.0, rect.height * 0.11), weight: .black)

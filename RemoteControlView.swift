@@ -676,58 +676,54 @@ struct RemoteControlView: View {
     }
     
     // MARK: - Soccer / Handball Controls
+    
+    private var soccerTimerButtonConfig: (title: String, icon: String, bg: Color) {
+        let halfDurMin = (matchState.soccerHalfDuration > 0) ? matchState.soccerHalfDuration : 45
+        let halfDurSec = halfDurMin * 60
+        let regulationSec = halfDurSec * max(1, matchState.currentSet)
+        
+        if !matchState.timerRunning {
+            let icon = "play.fill"
+            let bg = Color(hex: "#10b981")
+            if matchState.currentSet == 1 && matchState.timerSeconds == 0 {
+                return ("AVVIA 1° TEMPO", icon, bg)
+            } else if matchState.currentSet == 2 && matchState.timerSeconds == halfDurSec {
+                return ("AVVIA 2° TEMPO", icon, bg)
+            } else {
+                return ("RIPRENDI TIMER", icon, bg)
+            }
+        } else {
+            if matchState.timerSeconds >= regulationSec {
+                let icon = "flag.checkered"
+                if matchState.currentSet == 1 {
+                    return ("FINE 1° TEMPO", icon, Color(hex: "#f59e0b"))
+                } else {
+                    return ("FINE PARTITA", icon, Color(hex: "#ef4444"))
+                }
+            } else {
+                return ("PAUSA", "pause.fill", Color(hex: "#ef4444"))
+            }
+        }
+    }
+    
     var soccerControlsView: some View {
-        VStack(spacing: 6) {
+        let timerConfig = soccerTimerButtonConfig
+        return VStack(spacing: 6) {
             // Timer Control Bar
             HStack(spacing: 8) {
-                let halfDurMin = (matchState.soccerHalfDuration > 0) ? matchState.soccerHalfDuration : 45
-                let halfDurSec = halfDurMin * 60
-                let regulationSec = halfDurSec * max(1, matchState.currentSet)
-                
-                let btnTitle: String
-                let btnBgColor: Color
-                let btnIcon: String
-                
-                if !matchState.timerRunning {
-                    btnIcon = "play.fill"
-                    btnBgColor = Color(hex: "#10b981")
-                    if matchState.currentSet == 1 && matchState.timerSeconds == 0 {
-                        btnTitle = "AVVIA 1° TEMPO"
-                    } else if matchState.currentSet == 2 && matchState.timerSeconds == halfDurSec {
-                        btnTitle = "AVVIA 2° TEMPO"
-                    } else {
-                        btnTitle = "RIPRENDI TIMER"
-                    }
-                } else {
-                    if matchState.timerSeconds >= regulationSec {
-                        btnIcon = "flag.checkered"
-                        if matchState.currentSet == 1 {
-                            btnTitle = "FINE 1° TEMPO"
-                            btnBgColor = Color(hex: "#f59e0b")
-                        } else {
-                            btnTitle = "FINE PARTITA"
-                            btnBgColor = Color(hex: "#ef4444")
-                        }
-                    } else {
-                        btnIcon = "pause.fill"
-                        btnTitle = "PAUSA"
-                        btnBgColor = Color(hex: "#ef4444")
-                    }
-                }
-                
                 Button(action: {
                     triggerHaptic()
                     FirebaseManager.shared.sendCommand("SOCCER_TIMER_TOGGLE")
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: btnIcon)
-                        Text(btnTitle)
+                        Image(systemName: timerConfig.icon)
+                        Text(timerConfig.title)
                             .font(.system(size: 13, weight: .black))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 42)
-                    .background(btnBgColor)
+                    .background(timerConfig.bg)
                     .cornerRadius(8)
                 }
                 
