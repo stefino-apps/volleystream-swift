@@ -303,15 +303,28 @@ class ScoreboardOverlayView: UIView {
         
         if sport == "tennis" || sport == "padel" {
             let isWinningGameWinsSetA = (state.tennisGamesA == 5 && state.tennisGamesB <= 4) || (state.tennisGamesA == 6 && state.tennisGamesB == 5) || state.isTiebreak
-            let isGamePointA = state.isTiebreak ? (state.tennisPointsA >= 6 && state.tennisPointsA > state.tennisPointsB) : (state.tennisPointsA >= 3 && state.tennisPointsA > state.tennisPointsB)
+            let isGamePointA: Bool
+            let isGamePointB: Bool
+            
+            if state.isTiebreak {
+                isGamePointA = (state.tennisPointsA >= 6 && state.tennisPointsA > state.tennisPointsB)
+                isGamePointB = (state.tennisPointsB >= 6 && state.tennisPointsB > state.tennisPointsA)
+            } else if state.isPuntoDeOro {
+                isGamePointA = (state.tennisPointsA >= 3 && (state.tennisPointsA > state.tennisPointsB || state.tennisPointsB == 3))
+                isGamePointB = (state.tennisPointsB >= 3 && (state.tennisPointsB > state.tennisPointsA || state.tennisPointsA == 3))
+            } else {
+                isGamePointA = (state.tennisPointsA >= 3 && state.tennisPointsA > state.tennisPointsB)
+                isGamePointB = (state.tennisPointsB >= 3 && state.tennisPointsB > state.tennisPointsA)
+            }
+            
             isSetPointA = isWinningGameWinsSetA && isGamePointA
             
             let isWinningGameWinsSetB = (state.tennisGamesB == 5 && state.tennisGamesA <= 4) || (state.tennisGamesB == 6 && state.tennisGamesA == 5) || state.isTiebreak
-            let isGamePointB = state.isTiebreak ? (state.tennisPointsB >= 6 && state.tennisPointsB > state.tennisPointsA) : (state.tennisPointsB >= 3 && state.tennisPointsB > state.tennisPointsA)
             isSetPointB = isWinningGameWinsSetB && isGamePointB
             
-            let winningSetA = state.setsA == state.tennisSetsToWin - 1
-            let winningSetB = state.setsB == state.tennisSetsToWin - 1
+            let setsToWin = (state.tennisSetsToWin > 0) ? state.tennisSetsToWin : 2
+            let winningSetA = state.setsA == setsToWin - 1
+            let winningSetB = state.setsB == setsToWin - 1
             if isSetPointA && winningSetA { isMatchPoint = true }
             if isSetPointB && winningSetB { isMatchPoint = true }
         } else {
@@ -1242,7 +1255,20 @@ class ScoreboardOverlayView: UIView {
             .foregroundColor: UIColor.white,
             .paragraphStyle: pStyle
         ]
-        let scoreStr = "\(state.scoreA)  -  \(state.scoreB)"
+        
+        let sport = state.sportType.lowercased()
+        let scoreStr: String
+        if sport == "tennis" || sport == "padel" {
+            if isMatchFin {
+                scoreStr = "\(state.setsA)  -  \(state.setsB)"
+            } else if let lastSet = state.setScores.last {
+                scoreStr = "\(lastSet[0])  -  \(lastSet[1])"
+            } else {
+                scoreStr = "\(state.tennisGamesA)  -  \(state.tennisGamesB)"
+            }
+        } else {
+            scoreStr = "\(state.scoreA)  -  \(state.scoreB)"
+        }
         scoreStr.draw(in: CGRect(x: safeMarginX + logoSize + 40.0, y: centerY - 65, width: safeWidth - (logoSize * 2.0) - 80.0, height: 120), withAttributes: scoreAttrs)
         
         // 5. Nomi Squadre e Set Vinti
@@ -1263,8 +1289,16 @@ class ScoreboardOverlayView: UIView {
         
         // 6. Schede Parziali dei Set Precedenti (Posizionate nella Safe Area inferiore: max Y 940px)
         var allSets: [[Int]] = state.setScores
-        if allSets.isEmpty && (state.scoreA > 0 || state.scoreB > 0) {
-            allSets.append([state.scoreA, state.scoreB])
+        if allSets.isEmpty {
+            if sport == "tennis" || sport == "padel" {
+                if state.tennisGamesA > 0 || state.tennisGamesB > 0 {
+                    allSets.append([state.tennisGamesA, state.tennisGamesB])
+                }
+            } else {
+                if state.scoreA > 0 || state.scoreB > 0 {
+                    allSets.append([state.scoreA, state.scoreB])
+                }
+            }
         }
         
         if !allSets.isEmpty {

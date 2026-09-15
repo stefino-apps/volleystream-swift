@@ -1796,7 +1796,11 @@ class MainViewController: UIViewController {
             let initial = getDartsInitialScore()
             localState.scoreA = min(initial, localState.scoreA + 20)
         } else if sport == "tennis" || sport == "padel" {
-            if localState.tennisPointsA > 0 { localState.tennisPointsA -= 1 }
+            if localState.tennisPointsA > 0 {
+                localState.tennisPointsA -= 1
+            } else if localState.tennisGamesA > 0 && localState.tennisPointsB == 0 {
+                localState.tennisGamesA -= 1
+            }
         } else {
             if localState.scoreA > 0 {
                 localState.scoreA -= 1
@@ -1821,6 +1825,8 @@ class MainViewController: UIViewController {
             localState.redCardsA = (localState.redCardsA + 1) % 4
         } else if sport == "tennis" || sport == "padel" {
             localState.tennisGamesA += 1
+            localState.tennisPointsA = 0
+            localState.tennisPointsB = 0
             checkTennisSetWin()
         } else if sport == "beach_volley" || sport == "beach volley" {
             localState.timeoutA = (localState.timeoutA + 1) % 2
@@ -1889,7 +1895,11 @@ class MainViewController: UIViewController {
             let initial = getDartsInitialScore()
             localState.scoreB = min(initial, localState.scoreB + 20)
         } else if sport == "tennis" || sport == "padel" {
-            if localState.tennisPointsB > 0 { localState.tennisPointsB -= 1 }
+            if localState.tennisPointsB > 0 {
+                localState.tennisPointsB -= 1
+            } else if localState.tennisGamesB > 0 && localState.tennisPointsA == 0 {
+                localState.tennisGamesB -= 1
+            }
         } else {
             if localState.scoreB > 0 {
                 localState.scoreB -= 1
@@ -1914,6 +1924,8 @@ class MainViewController: UIViewController {
             localState.redCardsB = (localState.redCardsB + 1) % 4
         } else if sport == "tennis" || sport == "padel" {
             localState.tennisGamesB += 1
+            localState.tennisPointsA = 0
+            localState.tennisPointsB = 0
             checkTennisSetWin()
         } else if sport == "beach_volley" || sport == "beach volley" {
             localState.timeoutB = (localState.timeoutB + 1) % 2
@@ -1980,12 +1992,9 @@ class MainViewController: UIViewController {
                         self.localState.scoreB = 0
                         self.localState.timeoutA = 0
                         self.localState.timeoutB = 0
-                        self.localState.isFifthSet = (!isBeach && self.localState.currentSet == 5)
                         self.localState.isSetFinished = false
                         self.isSetTransitionInProgress = false
                         self.updateLocalState()
-                    } else {
-                        self.isSetTransitionInProgress = false
                     }
                 }
             }
@@ -2069,18 +2078,20 @@ class MainViewController: UIViewController {
     }
     
     private func checkTennisSetWin() {
-        let setsToWin = localState.tennisSetsToWin
+        guard !isSetTransitionInProgress, !localState.isSetFinished, !localState.isMatchFinished else { return }
+        let setsToWin = (localState.tennisSetsToWin > 0) ? localState.tennisSetsToWin : 2
         var setWonA = false
         var setWonB = false
-        if (localState.tennisGamesA >= 6 && (localState.tennisGamesA - localState.tennisGamesB) >= 2) || (localState.tennisGamesA == 7 && localState.tennisGamesB == 6) {
+        if (localState.tennisGamesA >= 6 && (localState.tennisGamesA - localState.tennisGamesB) >= 2) || (localState.tennisGamesA == 7 && (localState.tennisGamesB == 5 || localState.tennisGamesB == 6)) {
             setWonA = true
-        } else if (localState.tennisGamesB >= 6 && (localState.tennisGamesB - localState.tennisGamesA) >= 2) || (localState.tennisGamesB == 7 && localState.tennisGamesA == 6) {
+        } else if (localState.tennisGamesB >= 6 && (localState.tennisGamesB - localState.tennisGamesA) >= 2) || (localState.tennisGamesB == 7 && (localState.tennisGamesA == 5 || localState.tennisGamesA == 6)) {
             setWonB = true
         } else if localState.tennisGamesA == 6 && localState.tennisGamesB == 6 {
             localState.isTiebreak = true
         }
         
         if setWonA || setWonB {
+            isSetTransitionInProgress = true
             let finalGamesA = localState.tennisGamesA
             let finalGamesB = localState.tennisGamesB
             localState.setScores.append([finalGamesA, finalGamesB])
@@ -2095,7 +2106,8 @@ class MainViewController: UIViewController {
             
             showToast(message: isMatchFin ? "🏆 \(winName) vince il Match!" : "🎉 \(winName) vince il \(localState.currentSet)° Set!")
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+            // 1. La grafica di fine set appare dopo 2 secondi
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
                 guard let self = self else { return }
                 self.localState.isSetFinished = true
                 if isMatchFin {
@@ -2103,7 +2115,8 @@ class MainViewController: UIViewController {
                 }
                 self.updateLocalState()
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) { [weak self] in
+                // 2. Dura 8 secondi e poi avanza al set successivo
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
                     guard let self = self else { return }
                     if !isMatchFin {
                         self.localState.tennisGamesA = 0
@@ -2113,6 +2126,7 @@ class MainViewController: UIViewController {
                         self.localState.isTiebreak = false
                         self.localState.currentSet += 1
                         self.localState.isSetFinished = false
+                        self.isSetTransitionInProgress = false
                         self.updateLocalState()
                     }
                 }
@@ -2828,11 +2842,13 @@ class MainViewController: UIViewController {
             localState.tennisGamesA += 1
             localState.tennisPointsA = 0
             localState.tennisPointsB = 0
+            checkTennisSetWin()
             updateLocalState()
         case "TENNIS_GAME_B":
             localState.tennisGamesB += 1
             localState.tennisPointsA = 0
             localState.tennisPointsB = 0
+            checkTennisSetWin()
             updateLocalState()
         case "SOCCER_RED_A":
             localState.redCardsA = (localState.redCardsA > 0) ? 0 : 1
