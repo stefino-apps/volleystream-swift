@@ -680,23 +680,54 @@ struct RemoteControlView: View {
         VStack(spacing: 6) {
             // Timer Control Bar
             HStack(spacing: 8) {
-                let m = matchState.timerSeconds / 60
-                let s = matchState.timerSeconds % 60
-                let timerStr = String(format: "%02d:%02d", m, s)
+                let halfDurMin = (matchState.soccerHalfDuration > 0) ? matchState.soccerHalfDuration : 45
+                let halfDurSec = halfDurMin * 60
+                let regulationSec = halfDurSec * max(1, matchState.currentSet)
+                
+                let btnTitle: String
+                let btnBgColor: Color
+                let btnIcon: String
+                
+                if !matchState.timerRunning {
+                    btnIcon = "play.fill"
+                    btnBgColor = Color(hex: "#10b981")
+                    if matchState.currentSet == 1 && matchState.timerSeconds == 0 {
+                        btnTitle = "AVVIA 1° TEMPO"
+                    } else if matchState.currentSet == 2 && matchState.timerSeconds == halfDurSec {
+                        btnTitle = "AVVIA 2° TEMPO"
+                    } else {
+                        btnTitle = "RIPRENDI TIMER"
+                    }
+                } else {
+                    if matchState.timerSeconds >= regulationSec {
+                        btnIcon = "flag.checkered"
+                        if matchState.currentSet == 1 {
+                            btnTitle = "FINE 1° TEMPO"
+                            btnBgColor = Color(hex: "#f59e0b")
+                        } else {
+                            btnTitle = "FINE PARTITA"
+                            btnBgColor = Color(hex: "#ef4444")
+                        }
+                    } else {
+                        btnIcon = "pause.fill"
+                        btnTitle = "PAUSA"
+                        btnBgColor = Color(hex: "#ef4444")
+                    }
+                }
                 
                 Button(action: {
                     triggerHaptic()
                     FirebaseManager.shared.sendCommand("SOCCER_TIMER_TOGGLE")
                 }) {
                     HStack(spacing: 6) {
-                        Image(systemName: matchState.timerRunning ? "pause.fill" : "play.fill")
-                        Text(matchState.timerRunning ? "PAUSA \(timerStr)" : "AVVIA \(timerStr)")
+                        Image(systemName: btnIcon)
+                        Text(btnTitle)
                             .font(.system(size: 13, weight: .black))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(matchState.timerRunning ? Color.orange : Color(hex: "#10b981"))
+                    .frame(height: 42)
+                    .background(btnBgColor)
                     .cornerRadius(8)
                 }
                 
@@ -707,7 +738,7 @@ struct RemoteControlView: View {
                     Text("🔄 RESET")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.white)
-                        .frame(width: 80, height: 40)
+                        .frame(width: 80, height: 42)
                         .background(Color.white.opacity(0.12))
                         .cornerRadius(8)
                 }

@@ -380,13 +380,32 @@ class ScoreboardOverlayView: UIView {
         
         // 3. Render Attached SOCCER / HANDBALL Timer on the right of the scoreboard
         if sport == "soccer" || sport == "handball" || sport == "pallamano" {
-            let m = state.timerSeconds / 60
-            let s = state.timerSeconds % 60
-            let timeStr = String(format: "%02d:%02d", m, s)
+            let halfDurMin = state.soccerHalfDuration > 0 ? state.soccerHalfDuration : 45
+            let halfDurSec = halfDurMin * 60
+            let regulationSec = halfDurSec * max(1, state.currentSet)
+            
+            let dispMin: Int
+            let dispSec: Int
+            var extraTimeStr: String? = nil
+            
+            if sport == "soccer" && state.timerSeconds >= regulationSec {
+                // Il timer principale si blocca al minuto di regolamento (es. 15:00 o 30:00 o 45:00 o 90:00)
+                dispMin = halfDurMin * max(1, state.currentSet)
+                dispSec = 0
+                let extraSec = state.timerSeconds - regulationSec
+                let extraM = extraSec / 60
+                let extraS = extraSec % 60
+                extraTimeStr = String(format: "+%d:%02d", extraM, extraS)
+            } else {
+                dispMin = state.timerSeconds / 60
+                dispSec = state.timerSeconds % 60
+            }
+            
+            let timeStr = String(format: "%02d:%02d", dispMin, dispSec)
             let periodStr = state.currentSet == 1 ? "1° TEMPO" : (state.currentSet == 2 ? "2° TEMPO" : "SUPPL.")
             let timerX = x + boxW + 4
-            let timerW: CGFloat = 84.0
-            drawAttachedTimerBadge(ctx: ctx, x: timerX, y: y, w: timerW, h: h, headerH: headerH, periodText: periodStr, timeText: timeStr, isRunning: state.timerRunning, style: style)
+            let timerW: CGFloat = (extraTimeStr != nil) ? 122.0 : 84.0
+            drawAttachedTimerBadge(ctx: ctx, x: timerX, y: y, w: timerW, h: h, headerH: headerH, periodText: periodStr, timeText: timeStr, extraText: extraTimeStr, isRunning: state.timerRunning, style: style)
         }
         
         // 4. Render Attached SET POINT / MATCH POINT Badge on the right of the scoreboard
@@ -448,10 +467,7 @@ class ScoreboardOverlayView: UIView {
             baseTitle = "BASKET | Q\(state.currentSet)/\(state.totalPeriods)"
         case "soccer":
             let half = state.currentSet == 1 ? "1° TEMPO" : (state.currentSet == 2 ? "2° TEMPO" : "SUPPL.")
-            let m = state.timerSeconds / 60
-            let s = state.timerSeconds % 60
-            let timeStr = String(format: "%02d:%02d", m, s)
-            baseTitle = "CALCIO | \(half) | \(timeStr)"
+            baseTitle = "CALCIO | \(half)"
         case "handball", "pallamano":
             let half = state.currentSet == 1 ? "1° TEMPO" : "2° TEMPO"
             let m = state.timerSeconds / 60
@@ -780,7 +796,7 @@ class ScoreboardOverlayView: UIView {
     
     // MARK: - Attached Soccer Timer Badge Beside Scoreboard
     
-    private func drawAttachedTimerBadge(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, headerH: CGFloat, periodText: String, timeText: String, isRunning: Bool, style: ThemeStyles) {
+    private func drawAttachedTimerBadge(ctx: CGContext, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, headerH: CGFloat, periodText: String, timeText: String, extraText: String? = nil, isRunning: Bool, style: ThemeStyles) {
         let rect = CGRect(x: x, y: y, width: w, height: h)
         let path = UIBezierPath(roundedRect: rect, cornerRadius: 8)
         
@@ -809,14 +825,40 @@ class ScoreboardOverlayView: UIView {
         (periodText as NSString).draw(at: CGPoint(x: x + (w - pSize.width) / 2.0, y: y + 2.5), withAttributes: headerAttrs)
         
         // Timer Text in the middle
-        let timeFont = UIFont.monospacedDigitSystemFont(ofSize: 17.5, weight: .heavy)
-        let timeAttrs: [NSAttributedString.Key: Any] = [
-            .font: timeFont,
-            .foregroundColor: isRunning ? UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0) : UIColor.white
-        ]
-        let tSize = (timeText as NSString).size(withAttributes: timeAttrs)
-        let timeY = y + headerH + (h - headerH - tSize.height) / 2.0
-        (timeText as NSString).draw(at: CGPoint(x: x + (w - tSize.width) / 2.0, y: timeY), withAttributes: timeAttrs)
+        if let extra = extraText {
+            // Main time (frozen, e.g. 15:00) + Extra time (e.g. +1:23 in bright gold/amber)
+            let timeFont = UIFont.monospacedDigitSystemFont(ofSize: 15.0, weight: .heavy)
+            let extraFont = UIFont.monospacedDigitSystemFont(ofSize: 14.0, weight: .heavy)
+            
+            let timeAttrs: [NSAttributedString.Key: Any] = [
+                .font: timeFont,
+                .foregroundColor: UIColor.white
+            ]
+            let extraAttrs: [NSAttributedString.Key: Any] = [
+                .font: extraFont,
+                .foregroundColor: UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0) // Bright Gold/Amber
+            ]
+            
+            let tSize = (timeText as NSString).size(withAttributes: timeAttrs)
+            let eSize = (extra as NSString).size(withAttributes: extraAttrs)
+            let gap: CGFloat = 4.0
+            let totalW = tSize.width + gap + eSize.width
+            let startX = x + (w - totalW) / 2.0
+            let timeY = y + headerH + (h - headerH - tSize.height) / 2.0
+            let extraY = y + headerH + (h - headerH - eSize.height) / 2.0
+            
+            (timeText as NSString).draw(at: CGPoint(x: startX, y: timeY), withAttributes: timeAttrs)
+            (extra as NSString).draw(at: CGPoint(x: startX + tSize.width + gap, y: extraY), withAttributes: extraAttrs)
+        } else {
+            let timeFont = UIFont.monospacedDigitSystemFont(ofSize: 17.5, weight: .heavy)
+            let timeAttrs: [NSAttributedString.Key: Any] = [
+                .font: timeFont,
+                .foregroundColor: isRunning ? UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0) : UIColor.white
+            ]
+            let tSize = (timeText as NSString).size(withAttributes: timeAttrs)
+            let timeY = y + headerH + (h - headerH - tSize.height) / 2.0
+            (timeText as NSString).draw(at: CGPoint(x: x + (w - tSize.width) / 2.0, y: timeY), withAttributes: timeAttrs)
+        }
     }
     
     // MARK: - Tennis / Padel Scoreboard

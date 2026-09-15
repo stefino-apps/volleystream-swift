@@ -214,6 +214,14 @@ class MainViewController: UIViewController {
             self.localState.scrollMessage = savedScroll
         }
         
+        if self.localState.sportType.lowercased() == "soccer" {
+            let savedHalfDur = UserDefaults.standard.integer(forKey: "soccer_half_duration")
+            self.localState.soccerHalfDuration = (savedHalfDur > 0) ? savedHalfDur : 45
+            self.localState.timerSeconds = 0
+            self.localState.timerRunning = false
+            self.localState.currentSet = 1
+        }
+        
         if self.localState.sportType.lowercased() == "darts" {
             let startScore = UserDefaults.standard.integer(forKey: "darts_initial_score")
             let initial = (startScore == 301) ? 301 : 501
@@ -2120,7 +2128,21 @@ class MainViewController: UIViewController {
                 localState.foulsA = 0
                 localState.foulsB = 0
             }
-        } else if sport == "soccer" || sport == "handball" || sport == "pallamano" {
+        } else if sport == "soccer" {
+            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+            let halfDurSec = halfDurMin * 60
+            if localState.currentSet == 1 {
+                localState.currentSet = 2
+                localState.timerSeconds = halfDurSec
+                localState.timerRunning = false
+                showToast(message: "🏁 Passato al 2° Tempo (Pronto per l'avvio)")
+            } else {
+                localState.isMatchFinished = true
+                localState.timerRunning = false
+                showToast(message: "🏆 Fine Partita!")
+            }
+            updateSoccerTimerButton()
+        } else if sport == "handball" || sport == "pallamano" {
             if localState.currentSet < 2 {
                 localState.currentSet += 1
             }
@@ -2156,37 +2178,133 @@ class MainViewController: UIViewController {
     // MARK: - Soccer / Handball Timer Actions
     
     @objc func toggleSoccerTimer() {
-        localState.timerRunning.toggle()
+        let sport = localState.sportType.lowercased()
+        if sport == "soccer" {
+            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+            let halfDurSec = halfDurMin * 60
+            let regulationSec = halfDurSec * max(1, localState.currentSet)
+            
+            if localState.timerRunning {
+                if localState.timerSeconds >= regulationSec {
+                    // L'arbitro ha fischiato la fine del tempo durante i minuti di recupero!
+                    if localState.currentSet == 1 {
+                        localState.timerRunning = false
+                        localState.currentSet = 2
+                        localState.timerSeconds = halfDurSec // Inizia esattamente dal minuto di fine 1°T (es. 15:00 o 45:00)
+                        showToast(message: "🏁 Fine 1° Tempo - Pronto per il 2° Tempo")
+                    } else {
+                        localState.timerRunning = false
+                        localState.isMatchFinished = true
+                        showToast(message: "🏆 Fine Partita!")
+                    }
+                } else {
+                    localState.timerRunning = false
+                    showToast(message: "⏸️ Timer in Pausa")
+                }
+            } else {
+                localState.timerRunning = true
+                if localState.currentSet == 1 && localState.timerSeconds == 0 {
+                    showToast(message: "▶️ 1° Tempo Iniziato")
+                } else if localState.currentSet == 2 && localState.timerSeconds == halfDurSec {
+                    showToast(message: "▶️ 2° Tempo Iniziato")
+                } else {
+                    showToast(message: "▶️ Timer Ripreso")
+                }
+            }
+        } else {
+            localState.timerRunning.toggle()
+            showToast(message: localState.timerRunning ? "⏱️ Timer Avviato" : "⏸️ Timer in Pausa")
+        }
+        
         updateSoccerTimerButton()
         updateLocalState(saveHistory: false)
-        showToast(message: localState.timerRunning ? "⏱️ Timer Avviato" : "⏸️ Timer in Pausa")
     }
     
     @objc func resetSoccerTimer() {
-        localState.timerSeconds = 0
+        let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+        let halfDurSec = halfDurMin * 60
+        if localState.currentSet == 2 {
+            localState.timerSeconds = halfDurSec
+        } else {
+            localState.timerSeconds = 0
+        }
         localState.timerRunning = false
         updateSoccerTimerButton()
         updateLocalState(saveHistory: false)
-        showToast(message: "🔄 Timer Azzerato")
+        showToast(message: "🔄 Timer Reimpostato")
     }
     
     @objc func resetSoccerTimerAction(_ gesture: UILongPressGestureRecognizer) {
         guard gesture.state == .began else { return }
-        let alert = UIAlertController(title: "⏱️ Reset Timer", message: "Vuoi azzerare il cronometro della partita?", preferredStyle: .alert)
+        let alert = UIAlertController(title: "⏱️ Reset Timer", message: "Vuoi reimpostare il cronometro della partita?", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Azzera", style: .destructive) { [weak self] _ in
-            self?.resetSoccerTimer()
+        alert.addAction(UIAlertAction(title: "Ricomincia 1° Tempo", style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            self.localState.currentSet = 1
+            self.localState.timerSeconds = 0
+            self.localState.timerRunning = false
+            self.localState.isMatchFinished = false
+            self.updateSoccerTimerButton()
+            self.updateLocalState(saveHistory: false)
+            self.showToast(message: "🔄 Riavviato 1° Tempo (00:00)")
         })
+        if self.localState.currentSet == 2 {
+            alert.addAction(UIAlertAction(title: "Ricomincia 2° Tempo", style: .default) { [weak self] _ in
+                guard let self = self else { return }
+                let halfDurMin = (self.localState.soccerHalfDuration > 0) ? self.localState.soccerHalfDuration : 45
+                self.localState.timerSeconds = halfDurMin * 60
+                self.localState.timerRunning = false
+                self.localState.isMatchFinished = false
+                self.updateSoccerTimerButton()
+                self.updateLocalState(saveHistory: false)
+                self.showToast(message: "🔄 Riavviato 2° Tempo")
+            })
+        }
         present(alert, animated: true)
     }
     
     func updateSoccerTimerButton() {
-        let m = localState.timerSeconds / 60
-        let s = localState.timerSeconds % 60
-        let timeStr = String(format: "%02d:%02d", m, s)
-        let icon = localState.timerRunning ? "⏸️" : "▶️"
-        btnSoccerTimer?.setTitle("\(icon) \(timeStr)", for: .normal)
-        btnSoccerTimer?.backgroundColor = localState.timerRunning ? UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.95) : UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95)
+        guard let btn = btnSoccerTimer else { return }
+        let sport = localState.sportType.lowercased()
+        
+        if sport == "soccer" {
+            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+            let halfDurSec = halfDurMin * 60
+            let regulationSec = halfDurSec * max(1, localState.currentSet)
+            
+            if !localState.timerRunning {
+                if localState.currentSet == 1 && localState.timerSeconds == 0 {
+                    btn.setTitle("▶️ AVVIA 1°T", for: .normal)
+                    btn.backgroundColor = UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95)
+                } else if localState.currentSet == 2 && localState.timerSeconds == halfDurSec {
+                    btn.setTitle("▶️ AVVIA 2°T", for: .normal)
+                    btn.backgroundColor = UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95)
+                } else {
+                    btn.setTitle("▶️ RIPRENDI", for: .normal)
+                    btn.backgroundColor = UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95)
+                }
+            } else {
+                if localState.timerSeconds >= regulationSec {
+                    if localState.currentSet == 1 {
+                        btn.setTitle("🏁 FINE 1°T", for: .normal)
+                        btn.backgroundColor = UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 0.95)
+                    } else {
+                        btn.setTitle("🏁 FINE PARTITA", for: .normal)
+                        btn.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.95)
+                    }
+                } else {
+                    btn.setTitle("⏸️ PAUSA", for: .normal)
+                    btn.backgroundColor = UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.95)
+                }
+            }
+        } else {
+            let m = localState.timerSeconds / 60
+            let s = localState.timerSeconds % 60
+            let timeStr = String(format: "%02d:%02d", m, s)
+            let icon = localState.timerRunning ? "⏸️" : "▶️"
+            btn.setTitle("\(icon) \(timeStr)", for: .normal)
+            btn.backgroundColor = localState.timerRunning ? UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 0.95) : UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 0.95)
+        }
     }
 
     // MARK: - Darts Calculator Modal
@@ -2723,14 +2841,9 @@ class MainViewController: UIViewController {
             localState.redCardsB = (localState.redCardsB > 0) ? 0 : 1
             updateLocalState()
         case "SOCCER_TIMER_TOGGLE":
-            localState.timerRunning.toggle()
-            updateSoccerTimerButton()
-            updateLocalState(saveHistory: false)
+            toggleSoccerTimer()
         case "SOCCER_TIMER_RESET":
-            localState.timerSeconds = 0
-            localState.timerRunning = false
-            updateSoccerTimerButton()
-            updateLocalState(saveHistory: false)
+            resetSoccerTimer()
         case "TOGGLE_SPONSOR", "SPONSOR", "SPONSORS", "S":
             toggleSponsor()
         case "SPONSOR_1":
