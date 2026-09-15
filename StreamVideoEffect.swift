@@ -76,7 +76,7 @@ class StreamVideoEffect: VideoEffect {
                 text = "VOLLEYSTREAM PRO • DIRETTA STREAMING"
             }
         }
-        let trimmed = text
+        let trimmed = text.uppercased()
         
         if trimmed != lastMarqueeMessage {
             lastMarqueeMessage = trimmed

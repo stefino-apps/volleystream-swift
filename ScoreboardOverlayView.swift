@@ -1012,7 +1012,7 @@ class ScoreboardOverlayView: UIView {
         text.draw(in: textRect, withAttributes: attrs)
     }
     
-    // MARK: - Special Alerts: Blinking Central SET POINT / MATCH POINT
+    // MARK: - Special Alerts: Blinking Central SET POINT / MATCH POINT (1:1 identical to Android)
     
     func drawSpecialAlerts(ctx: CGContext, rect: CGRect, sp: SetPointInfo, state: RemoteMatchState) {
         let textLine1 = sp.isMatchPoint ? "MATCH POINT" : "SET POINT"
@@ -1020,45 +1020,54 @@ class ScoreboardOverlayView: UIView {
         let textLine2 = teamName.uppercased()
         
         let centerX = rect.width / 2.0
-        let centerY = rect.height / 2.0 - 15.0
+        let centerY = rect.height / 2.0
         
-        let font1 = UIFont.systemFont(ofSize: min(52.0, rect.width * 0.075), weight: .black)
-        let font2 = UIFont.systemFont(ofSize: min(28.0, rect.width * 0.042), weight: .bold)
-        
+        let font = UIFont.systemFont(ofSize: min(100.0, rect.height * 0.11), weight: .black)
         let pStyle = NSMutableParagraphStyle()
         pStyle.alignment = .center
         
-        let accentColor = sp.isMatchPoint ? UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 1.0) : UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
+        let borderColor = sp.isMatchPoint ? UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 1.0) : UIColor(red: 239/255, green: 68/255, blue: 68/255, alpha: 1.0)
         
-        // Sfondo pillola broadcast semi-trasparente
-        let pillW = min(460.0, rect.width * 0.78)
-        let pillH: CGFloat = 110.0
-        let pillRect = CGRect(x: centerX - pillW / 2.0, y: centerY - 20.0, width: pillW, height: pillH)
-        let pillPath = UIBezierPath(roundedRect: pillRect, cornerRadius: 18.0)
+        let lines = [textLine1, textLine2]
+        let lineHeight = font.lineHeight * 1.05
+        var curY = centerY - (CGFloat(lines.count) * lineHeight / 2.0)
         
         ctx.saveGState()
-        UIColor(red: 2/255, green: 6/255, blue: 23/255, alpha: 0.90).setFill()
-        pillPath.fill()
         
-        accentColor.setStroke()
-        pillPath.lineWidth = 3.0
-        pillPath.stroke()
+        for line in lines {
+            let lineRect = CGRect(x: 40.0, y: curY, width: rect.width - 80.0, height: lineHeight)
+            
+            // 1. Shadow / Outer Stroke scura esterna (16pt, dark contrast)
+            let shadowAttrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: UIColor.black.withAlphaComponent(0.80),
+                .strokeColor: UIColor.black.withAlphaComponent(0.80),
+                .strokeWidth: 16.0,
+                .paragraphStyle: pStyle
+            ]
+            line.draw(in: lineRect.offsetBy(dx: 0, dy: 4), withAttributes: shadowAttrs)
+            
+            // 2. Bordo d'accento (10pt, Rosso vivo per Set Point, Gold per Match Point)
+            let borderAttrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: borderColor,
+                .strokeColor: borderColor,
+                .strokeWidth: 10.0,
+                .paragraphStyle: pStyle
+            ]
+            line.draw(in: lineRect, withAttributes: borderAttrs)
+            
+            // 3. Testo interno Bianco puro brillante
+            let fillAttrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: UIColor.white,
+                .paragraphStyle: pStyle
+            ]
+            line.draw(in: lineRect, withAttributes: fillAttrs)
+            
+            curY += lineHeight
+        }
         
-        // Riga 1: MATCH POINT / SET POINT
-        let line1Attrs: [NSAttributedString.Key: Any] = [
-            .font: font1,
-            .foregroundColor: accentColor,
-            .paragraphStyle: pStyle
-        ]
-        textLine1.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY - 10.0, width: pillW, height: 55.0), withAttributes: line1Attrs)
-        
-        // Riga 2: NOME SQUADRA
-        let line2Attrs: [NSAttributedString.Key: Any] = [
-            .font: font2,
-            .foregroundColor: UIColor.white,
-            .paragraphStyle: pStyle
-        ]
-        textLine2.draw(in: CGRect(x: centerX - pillW / 2.0, y: centerY + 46.0, width: pillW, height: 35.0), withAttributes: line2Attrs)
         ctx.restoreGState()
     }
     

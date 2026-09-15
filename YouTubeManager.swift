@@ -91,7 +91,7 @@ public class YouTubeManager: NSObject {
     public var currentBroadcastId: String?
     public var currentLiveUrl: String?
     
-    public func createLiveEvent(title: String, completion: @escaping (String?, String?, String?, Error?) -> Void) {
+    public func createLiveEvent(title: String, description: String? = nil, privacyStatus: String = "unlisted", completion: @escaping (String?, String?, String?, Error?) -> Void) {
         guard let token = accessToken else {
             completion(nil, nil, nil, NSError(domain: "YouTube", code: 401, userInfo: [NSLocalizedDescriptionKey: "Non autenticato"]))
             return
@@ -103,15 +103,28 @@ public class YouTubeManager: NSObject {
         bReq.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         bReq.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        let defaultAppDesc = "Live stream created with VOLLEYSTREAM PRO https://play.google.com/store/apps/details?id=com.volleypro.live"
+        let finalDesc: String
+        if let d = description, !d.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if !d.contains("VOLLEYSTREAM PRO") {
+                finalDesc = "\(d)\n\n\(defaultAppDesc)"
+            } else {
+                finalDesc = d
+            }
+        } else {
+            finalDesc = defaultAppDesc
+        }
+        
         let startTime = Date().addingTimeInterval(300)
         let formatter = ISO8601DateFormatter()
         let bBody: [String: Any] = [
             "snippet": [
                 "title": title,
+                "description": finalDesc,
                 "scheduledStartTime": formatter.string(from: startTime)
             ],
             "status": [
-                "privacyStatus": "unlisted",
+                "privacyStatus": privacyStatus,
                 "selfDeclaredMadeForKids": false
             ],
             "contentDetails": [

@@ -11,7 +11,7 @@ struct LiveSetupView: View {
     @State private var streamFPS = 60 // 30, 60
     
     @State private var streamTitle = "\(AppPreferences.shared.teamHome) vs \(AppPreferences.shared.teamAway)"
-    @State private var streamDescription = "LIVE CREATA CON L'APP VOLLEYSTREAM PRO"
+    @State private var streamDescription = "Live stream created with VOLLEYSTREAM PRO https://play.google.com/store/apps/details?id=com.volleypro.live"
     
     @State private var isYouTubeLoggedIn = false
     @State private var channelName = ""
@@ -658,7 +658,7 @@ struct LiveSetupView: View {
     private func startLiveAction() {
         if streamPlatform == "YouTube" && isYouTubeLoggedIn {
             isCreatingEvent = true
-            YouTubeManager.shared.createLiveEvent(title: streamTitle) { rtmp, key, liveUrl, err in
+            YouTubeManager.shared.createLiveEvent(title: streamTitle, description: streamDescription, privacyStatus: streamVisibility) { rtmp, key, liveUrl, err in
                 DispatchQueue.main.async {
                     self.isCreatingEvent = false
                     if err == nil, let rtmp = rtmp, let key = key {
