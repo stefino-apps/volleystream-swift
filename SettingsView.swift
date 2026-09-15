@@ -19,6 +19,7 @@ struct SettingsView: View {
     @AppStorage("punto_de_oro") private var puntoDeOro: Bool = false
     @AppStorage("remote_session_id") private var remoteSessionId: String = "REGIA_01"
     @AppStorage("tennis_sets_to_win") private var tennisSetsToWin: Int = 2
+    @AppStorage("beach_sets_to_win") private var beachSetsToWin: Int = 2
     @AppStorage("basket_periods_mode") private var basketPeriodsMode: Int = 4
     @AppStorage("soccer_half_duration") private var soccerHalfDuration: Int = 45
     @AppStorage("darts_initial_score") private var dartsInitialScore: Int = 501
@@ -273,6 +274,36 @@ struct SettingsView: View {
                     .cornerRadius(8)
                 }
                 .padding(.top, 4)
+            } else if selectedSport == "handball" {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("DURATA TEMPO (MIN)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                        .tracking(1.5)
+                    Picker("Durata", selection: $soccerHalfDuration) {
+                        ForEach([10, 15, 20, 25, 30], id: \.self) { min in
+                            Text("\(min) min").tag(min)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .padding(8)
+                    .background(Color(hex: "#020617").opacity(0.6))
+                    .cornerRadius(8)
+                }
+                .padding(.top, 4)
+            } else if selectedSport == "beach_volley" {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("AL MEGLIO DI")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                        .tracking(1.5)
+                    Picker("Set", selection: $beachSetsToWin) {
+                        Text("3 Set (Vinci 2)").tag(2)
+                        Text("5 Set (Vinci 3)").tag(3)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                .padding(.top, 4)
             } else if selectedSport == "tennis" {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("AL MEGLIO DI")
@@ -287,19 +318,32 @@ struct SettingsView: View {
                 }
                 .padding(.top, 4)
             } else if selectedSport == "padel" {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("PUNTO DE ORO")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color(hex: "#64748b"))
-                            .tracking(1.5)
-                        Text("A 40-40 si gioca un solo punto decisivo")
-                            .font(.system(size: 11))
-                            .foregroundColor(Color(hex: "#94a3b8"))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("AL MEGLIO DI")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(hex: "#64748b"))
+                        .tracking(1.5)
+                    Picker("Set", selection: $tennisSetsToWin) {
+                        Text("3 Set (Vinci 2)").tag(2)
+                        Text("5 Set (Vinci 3)").tag(3)
                     }
-                    Spacer()
-                    Toggle("", isOn: $puntoDeOro)
-                        .labelsHidden()
+                    .pickerStyle(SegmentedPickerStyle())
+                    
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("PUNTO DE ORO")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(Color(hex: "#64748b"))
+                                .tracking(1.5)
+                            Text("A 40-40 si gioca un solo punto decisivo")
+                                .font(.system(size: 11))
+                                .foregroundColor(Color(hex: "#94a3b8"))
+                        }
+                        Spacer()
+                        Toggle("", isOn: $puntoDeOro)
+                            .labelsHidden()
+                    }
+                    .padding(.top, 4)
                 }
                 .padding(.top, 4)
             } else if selectedSport == "darts" {

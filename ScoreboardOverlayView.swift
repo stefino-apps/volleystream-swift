@@ -329,12 +329,14 @@ class ScoreboardOverlayView: UIView {
             if isSetPointB && winningSetB { isMatchPoint = true }
         } else {
             let isBeach = (sport == "beach_volley" || sport == "beach volley")
-            let target = isBeach ? (state.currentSet == 3 ? 14 : 20) : (state.isFifthSet ? 14 : 24)
-            let setsNeeded = isBeach ? 1 : 2
+            let setsToWin = isBeach ? ((state.beachSetsToWin > 0) ? state.beachSetsToWin : 2) : 3
+            let isTiebreakSet = isBeach ? (state.currentSet == (setsToWin == 2 ? 3 : 5)) : state.isFifthSet
+            let target = isTiebreakSet ? 14 : (isBeach ? 20 : 24)
+            let setsNeeded = setsToWin - 1
             
             isSetPointA = state.scoreA >= target && state.scoreA > state.scoreB
             isSetPointB = state.scoreB >= target && state.scoreB > state.scoreA
-            isMatchPoint = (isSetPointA && state.setsA >= setsNeeded) || (isSetPointB && state.setsB >= setsNeeded)
+            isMatchPoint = (isSetPointA && state.setsA == setsNeeded) || (isSetPointB && state.setsB == setsNeeded)
         }
         
         if isSetPointA { return SetPointInfo(team: "A", isMatchPoint: isMatchPoint) }
@@ -393,7 +395,8 @@ class ScoreboardOverlayView: UIView {
         
         // 3. Render Attached SOCCER / HANDBALL Timer on the right of the scoreboard
         if sport == "soccer" || sport == "handball" || sport == "pallamano" {
-            let halfDurMin = state.soccerHalfDuration > 0 ? state.soccerHalfDuration : 45
+            let defaultDur = (sport == "soccer") ? 45 : 30
+            let halfDurMin = state.soccerHalfDuration > 0 ? state.soccerHalfDuration : defaultDur
             let halfDurSec = halfDurMin * 60
             let regulationSec = halfDurSec * max(1, state.currentSet)
             
@@ -401,7 +404,7 @@ class ScoreboardOverlayView: UIView {
             let dispSec: Int
             var extraTimeStr: String? = nil
             
-            if sport == "soccer" && state.timerSeconds >= regulationSec {
+            if state.timerSeconds >= regulationSec {
                 // Il timer principale si blocca al minuto di regolamento (es. 15:00 o 30:00 o 45:00 o 90:00)
                 dispMin = halfDurMin * max(1, state.currentSet)
                 dispSec = 0

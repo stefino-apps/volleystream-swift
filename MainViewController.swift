@@ -1385,24 +1385,37 @@ class MainViewController: UIViewController {
             btnScoreHome.backgroundColor = UIColor(red: 236/255, green: 72/255, blue: 153/255, alpha: 0.95)
             btnScoreHome.isHidden = false
             
-            if hasExtraScoreBtns {
+            if isBasket {
+                // In Basket mode: Foul button is positioned directly above the Timeout button
+                btnFoulHome.frame = CGRect(x: safeLeft, y: bottomScoreY - subBtnH - 4, width: subBtnW, height: subBtnH)
+                btnFoulHome.layer.cornerRadius = 10
+                btnFoulHome.backgroundColor = darkBg
+                btnFoulHome.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
+                btnFoulHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+                btnFoulHome.isHidden = false
+                
                 let basketW: CGFloat = isPortrait ? 40 : 50
                 btnScoreHome2.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY, width: basketW, height: subBtnH)
                 btnScoreHome2.layer.cornerRadius = 12
                 btnScoreHome2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                btnScoreHome2.isHidden = false
                 
                 btnScoreHome3.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
                 btnScoreHome3.layer.cornerRadius = 12
                 btnScoreHome3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
-                btnScoreHome2.isHidden = false
                 btnScoreHome3.isHidden = false
+            } else if isDarts || isCricket {
+                btnFoulHome.isHidden = true
+                let extraW: CGFloat = isPortrait ? 40 : 50
+                btnScoreHome2.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY, width: extraW, height: subBtnH)
+                btnScoreHome2.layer.cornerRadius = 12
+                btnScoreHome2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                btnScoreHome2.isHidden = false
                 
-                btnFoulHome.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + basketW + 14, y: bottomScoreY, width: basketW, height: scoreBtnSize)
-                btnFoulHome.layer.cornerRadius = 14
-                btnFoulHome.backgroundColor = darkBg
-                btnFoulHome.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
-                btnFoulHome.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
-                btnFoulHome.isHidden = false
+                btnScoreHome3.frame = CGRect(x: safeLeft + subBtnW + scoreBtnSize + 8, y: bottomScoreY + subBtnH + 4, width: extraW, height: subBtnH)
+                btnScoreHome3.layer.cornerRadius = 12
+                btnScoreHome3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                btnScoreHome3.isHidden = false
             } else {
                 btnScoreHome2.isHidden = true
                 btnScoreHome3.isHidden = true
@@ -1429,24 +1442,37 @@ class MainViewController: UIViewController {
             btnScoreAway.backgroundColor = UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 0.95)
             btnScoreAway.isHidden = false
             
-            if hasExtraScoreBtns {
+            if isBasket {
+                // In Basket mode: Foul button is positioned directly above the Timeout button
+                btnFoulAway.frame = CGRect(x: rightSubX, y: bottomScoreY - subBtnH - 4, width: subBtnW, height: subBtnH)
+                btnFoulAway.layer.cornerRadius = 10
+                btnFoulAway.backgroundColor = darkBg
+                btnFoulAway.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
+                btnFoulAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
+                btnFoulAway.isHidden = false
+                
                 let basketW: CGFloat = isPortrait ? 40 : 50
                 btnScoreAway2.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY, width: basketW, height: subBtnH)
                 btnScoreAway2.layer.cornerRadius = 12
                 btnScoreAway2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                btnScoreAway2.isHidden = false
                 
                 btnScoreAway3.frame = CGRect(x: rightScoreX - basketW - 8, y: bottomScoreY + subBtnH + 4, width: basketW, height: subBtnH)
                 btnScoreAway3.layer.cornerRadius = 12
                 btnScoreAway3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
-                btnScoreAway2.isHidden = false
                 btnScoreAway3.isHidden = false
+            } else if isDarts || isCricket {
+                btnFoulAway.isHidden = true
+                let extraW: CGFloat = isPortrait ? 40 : 50
+                btnScoreAway2.frame = CGRect(x: rightScoreX - extraW - 8, y: bottomScoreY, width: extraW, height: subBtnH)
+                btnScoreAway2.layer.cornerRadius = 12
+                btnScoreAway2.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                btnScoreAway2.isHidden = false
                 
-                btnFoulAway.frame = CGRect(x: rightScoreX - basketW - 8 - basketW - 6, y: bottomScoreY, width: basketW, height: scoreBtnSize)
-                btnFoulAway.layer.cornerRadius = 14
-                btnFoulAway.backgroundColor = darkBg
-                btnFoulAway.setTitleColor(UIColor(red: 250/255, green: 204/255, blue: 21/255, alpha: 1.0), for: .normal)
-                btnFoulAway.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
-                btnFoulAway.isHidden = false
+                btnScoreAway3.frame = CGRect(x: rightScoreX - extraW - 8, y: bottomScoreY + subBtnH + 4, width: extraW, height: subBtnH)
+                btnScoreAway3.layer.cornerRadius = 12
+                btnScoreAway3.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+                btnScoreAway3.isHidden = false
             } else {
                 btnScoreAway2.isHidden = true
                 btnScoreAway3.isHidden = true
@@ -1756,6 +1782,15 @@ class MainViewController: UIViewController {
         } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
             localState.scoreA += 1
             localState.servingTeam = "A"
+            let isBeach = (sport == "beach_volley" || sport == "beach volley")
+            if isBeach {
+                let setsToWin = (localState.beachSetsToWin > 0) ? localState.beachSetsToWin : 2
+                let isTiebreak = (localState.currentSet == (setsToWin == 2 ? 3 : 5))
+                let totalPts = localState.scoreA + localState.scoreB
+                if totalPts > 0 && totalPts % (isTiebreak ? 5 : 7) == 0 {
+                    showToast(message: "🔄 CAMBIO CAMPO! (\(totalPts) punti)")
+                }
+            }
             checkVolleySetWin()
         } else {
             localState.scoreA += 1
@@ -1821,6 +1856,9 @@ class MainViewController: UIViewController {
             localState.scoreB = initial
             localState.dartsActivePlayer = "B"
             showToast(message: "🎯 Leg assegnata a \(localState.teamA)")
+        } else if sport == "billiards" || sport == "biliardo" {
+            localState.foulsA += 1
+            showToast(message: "🎱 Fallo Casa (\(localState.foulsA))")
         } else if sport == "soccer" {
             localState.redCardsA = (localState.redCardsA + 1) % 4
         } else if sport == "tennis" || sport == "padel" {
@@ -1855,6 +1893,15 @@ class MainViewController: UIViewController {
         } else if sport == "volley" || sport == "beach_volley" || sport == "beach volley" {
             localState.scoreB += 1
             localState.servingTeam = "B"
+            let isBeach = (sport == "beach_volley" || sport == "beach volley")
+            if isBeach {
+                let setsToWin = (localState.beachSetsToWin > 0) ? localState.beachSetsToWin : 2
+                let isTiebreak = (localState.currentSet == (setsToWin == 2 ? 3 : 5))
+                let totalPts = localState.scoreA + localState.scoreB
+                if totalPts > 0 && totalPts % (isTiebreak ? 5 : 7) == 0 {
+                    showToast(message: "🔄 CAMBIO CAMPO! (\(totalPts) punti)")
+                }
+            }
             checkVolleySetWin()
         } else {
             localState.scoreB += 1
@@ -1920,6 +1967,9 @@ class MainViewController: UIViewController {
             localState.scoreB = initial
             localState.dartsActivePlayer = "A"
             showToast(message: "🎯 Leg assegnata a \(localState.teamB)")
+        } else if sport == "billiards" || sport == "biliardo" {
+            localState.foulsB += 1
+            showToast(message: "🎱 Fallo Ospite (\(localState.foulsB))")
         } else if sport == "soccer" {
             localState.redCardsB = (localState.redCardsB + 1) % 4
         } else if sport == "tennis" || sport == "padel" {
@@ -1948,8 +1998,9 @@ class MainViewController: UIViewController {
         
         let sport = localState.sportType.lowercased()
         let isBeach = (sport == "beach_volley" || sport == "beach volley")
-        let setsToWin = isBeach ? 2 : 3
-        let targetScore = isBeach ? (localState.currentSet == 3 ? 15 : 21) : (localState.isFifthSet ? 15 : 25)
+        let setsToWin = isBeach ? ((localState.beachSetsToWin > 0) ? localState.beachSetsToWin : 2) : 3
+        let isTiebreakSet = isBeach ? (localState.currentSet == (setsToWin == 2 ? 3 : 5)) : localState.isFifthSet
+        let targetScore = isTiebreakSet ? 15 : (isBeach ? 21 : 25)
         
         var winner: String? = nil
         if localState.scoreA >= targetScore && (localState.scoreA - localState.scoreB) >= 2 {
@@ -2142,8 +2193,9 @@ class MainViewController: UIViewController {
                 localState.foulsA = 0
                 localState.foulsB = 0
             }
-        } else if sport == "soccer" {
-            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+        } else if sport == "soccer" || sport == "handball" || sport == "pallamano" {
+            let defaultDur = (sport == "soccer") ? 45 : 30
+            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : defaultDur
             let halfDurSec = halfDurMin * 60
             if localState.currentSet == 1 {
                 localState.currentSet = 2
@@ -2156,10 +2208,6 @@ class MainViewController: UIViewController {
                 showToast(message: "🏆 Fine Partita!")
             }
             updateSoccerTimerButton()
-        } else if sport == "handball" || sport == "pallamano" {
-            if localState.currentSet < 2 {
-                localState.currentSet += 1
-            }
         } else if sport == "billiards" || sport == "biliardo" {
             localState.currentSet += 1
             localState.scoreA = 0
@@ -2193,8 +2241,9 @@ class MainViewController: UIViewController {
     
     @objc func toggleSoccerTimer() {
         let sport = localState.sportType.lowercased()
-        if sport == "soccer" {
-            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+        if sport == "soccer" || sport == "handball" || sport == "pallamano" {
+            let defaultDur = (sport == "soccer") ? 45 : 30
+            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : defaultDur
             let halfDurSec = halfDurMin * 60
             let regulationSec = halfDurSec * max(1, localState.currentSet)
             
@@ -2204,7 +2253,7 @@ class MainViewController: UIViewController {
                     if localState.currentSet == 1 {
                         localState.timerRunning = false
                         localState.currentSet = 2
-                        localState.timerSeconds = halfDurSec // Inizia esattamente dal minuto di fine 1°T (es. 15:00 o 45:00)
+                        localState.timerSeconds = halfDurSec // Inizia esattamente dal minuto di fine 1°T (es. 15:00 o 30:00 o 45:00)
                         showToast(message: "🏁 Fine 1° Tempo - Pronto per il 2° Tempo")
                     } else {
                         localState.timerRunning = false
@@ -2235,7 +2284,9 @@ class MainViewController: UIViewController {
     }
     
     @objc func resetSoccerTimer() {
-        let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+        let sport = localState.sportType.lowercased()
+        let defaultDur = (sport == "soccer") ? 45 : 30
+        let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : defaultDur
         let halfDurSec = halfDurMin * 60
         if localState.currentSet == 2 {
             localState.timerSeconds = halfDurSec
@@ -2265,7 +2316,9 @@ class MainViewController: UIViewController {
         if self.localState.currentSet == 2 {
             alert.addAction(UIAlertAction(title: "Ricomincia 2° Tempo", style: .default) { [weak self] _ in
                 guard let self = self else { return }
-                let halfDurMin = (self.localState.soccerHalfDuration > 0) ? self.localState.soccerHalfDuration : 45
+                let sport = self.localState.sportType.lowercased()
+                let defaultDur = (sport == "soccer") ? 45 : 30
+                let halfDurMin = (self.localState.soccerHalfDuration > 0) ? self.localState.soccerHalfDuration : defaultDur
                 self.localState.timerSeconds = halfDurMin * 60
                 self.localState.timerRunning = false
                 self.localState.isMatchFinished = false
@@ -2281,8 +2334,9 @@ class MainViewController: UIViewController {
         guard let btn = btnSoccerTimer else { return }
         let sport = localState.sportType.lowercased()
         
-        if sport == "soccer" {
-            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : 45
+        if sport == "soccer" || sport == "handball" || sport == "pallamano" {
+            let defaultDur = (sport == "soccer") ? 45 : 30
+            let halfDurMin = (localState.soccerHalfDuration > 0) ? localState.soccerHalfDuration : defaultDur
             let halfDurSec = halfDurMin * 60
             let regulationSec = halfDurSec * max(1, localState.currentSet)
             
@@ -2448,6 +2502,20 @@ class MainViewController: UIViewController {
         view.bringSubviewToFront(container)
         self.dartsKeypadContainer = container
         
+        // Hide all other controls leaving only GO LIVE visible while calculator is open
+        let controlsToHide: [UIView] = [
+            closeButton, modeButton, shareLiveButton, shareRemoteButton, replayButton, highlightButton,
+            zoomInButton, zoomOutButton, muteButton, sponsorButton,
+            btnScoreHome, btnTimeoutHome, btnMinusHome, btnFoulHome, btnScoreAway, btnTimeoutAway, btnMinusAway, btnFoulAway,
+            btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter, btnSoccerTimer, btnDartsCalc,
+            gridContainerTR, gridContainerBL, gridContainerBR,
+            imgTeamAGrid, lblTeamAGrid, lblScoreAGrid,
+            imgTeamBGrid, lblTeamBGrid, lblScoreBGrid,
+            btnTextGrid, btnCrGrid, setPillContainer,
+            btnSetMinusGrid, lblSetGrid, btnSetPlusGrid, lblStorageGrid
+        ]
+        controlsToHide.forEach { $0.isHidden = true }
+        
         updateDartsKeypadUI()
     }
     
@@ -2455,6 +2523,7 @@ class MainViewController: UIViewController {
         dartsKeypadContainer?.removeFromSuperview()
         dartsKeypadContainer = nil
         dartsCurrentInput = ""
+        layoutAllViews()
     }
     
     @objc func dartsSelectPlayerA() {

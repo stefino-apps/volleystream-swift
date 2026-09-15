@@ -21,6 +21,7 @@ struct RemoteMatchState: Codable {
     var isSetFinished: Bool = false
     var isMatchFinished: Bool = false
     var tennisSetsToWin: Int = 2
+    var beachSetsToWin: Int = 2
     
     var currentSet: Int = 1
     
@@ -203,6 +204,9 @@ struct RemoteMatchState: Codable {
         if let val = dict["isFifthSet"] as? Bool { self.isFifthSet = val }
         if let val = dict["isSetFinished"] as? Bool { self.isSetFinished = val }
         if let val = dict["isMatchFinished"] as? Bool { self.isMatchFinished = val }
+        if let val = dict["tennisSetsToWin"] as? Int { self.tennisSetsToWin = val }
+        if let val = dict["beachSetsToWin"] as? Int { self.beachSetsToWin = val }
+        if let val = dict["isPuntoDeOro"] as? Bool { self.isPuntoDeOro = val }
         
         if let val = dict["dataUsageGB"] as? Double { self.dataUsageGB = val }
         else if let val = dict["dataUsageGB"] as? Int { self.dataUsageGB = Double(val) }
@@ -255,6 +259,7 @@ struct RemoteMatchState: Codable {
             "isSetFinished": isSetFinished,
             "isMatchFinished": isMatchFinished,
             "tennisSetsToWin": tennisSetsToWin,
+            "beachSetsToWin": beachSetsToWin,
             "currentSet": currentSet,
             "foulsA": foulsA,
             "foulsB": foulsB,

@@ -60,6 +60,14 @@ class AppPreferences {
         set { defaults.set(newValue, forKey: "selected_theme") }
     }
     
+    var beachSetsToWin: Int {
+        get {
+            let v = defaults.integer(forKey: "beach_sets_to_win")
+            return v > 0 ? v : 2
+        }
+        set { defaults.set(newValue, forKey: "beach_sets_to_win") }
+    }
+    
     func saveImage(_ data: Data, name: String) {
         let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(name)
         try? data.write(to: url)
