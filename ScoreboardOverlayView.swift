@@ -128,6 +128,10 @@ class ScoreboardOverlayView: UIView {
         onOverlayNeedsUpdate?()
     }
     
+    func updateState(_ state: RemoteMatchState) {
+        updateFromState(state)
+    }
+    
     func updateFromState(_ state: RemoteMatchState) {
         self.currentState = state
         self.currentTheme = state.overlayTheme.isEmpty ? "neon" : state.overlayTheme

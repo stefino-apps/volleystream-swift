@@ -720,7 +720,6 @@ class MainViewController: UIViewController {
         let isDarts = (sport == "darts")
         let isCricket = (sport == "cricket")
         let isHandball = (sport == "handball" || sport == "pallamano")
-        let hasExtraScoreBtns = isBasket || isDarts || isCricket
         let has2RowGrid = isBasket || isDarts || isCricket
         
         let darkBg = UIColor(red: 15/255, green: 23/255, blue: 42/255, alpha: 0.85)
