@@ -274,9 +274,10 @@ class StreamVideoEffect: VideoEffect {
         let stingerProgress = ReplayManager.shared.getStingerProgress()
         
         if currentlyReplaying {
+            let replayFrame = ReplayManager.shared.getPlaybackFrame()
             let showReplay = !(isOutro && stingerProgress >= 0.5)
-            if showReplay, let replayFrame = ReplayManager.shared.getPlaybackFrame() {
-                outputImage = replayFrame
+            if showReplay, let rf = replayFrame {
+                outputImage = rf
             }
         }
         

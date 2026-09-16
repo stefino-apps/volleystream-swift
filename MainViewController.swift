@@ -1499,7 +1499,25 @@ class MainViewController: UIViewController {
                 btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter, btnSoccerTimer, btnDartsCalc
             ]
             mode0Buttons.forEach { view.bringSubviewToFront($0) }
-            mode0Buttons.forEach { view.bringSubviewToFront($0) }
+        }
+        
+        // Se la tastiera calcolatrice Darts è aperta, nascondi TUTTI gli altri pulsanti e lascia visibile SOLO GO LIVE
+        if let container = dartsKeypadContainer, container.superview != nil {
+            let allControlsToHide: [UIView] = [
+                closeButton, modeButton, shareLiveButton, shareRemoteButton, replayButton, highlightButton,
+                zoomInButton, zoomOutButton, muteButton, sponsorButton,
+                btnScoreHome, btnTimeoutHome, btnMinusHome, btnFoulHome, btnScoreAway, btnTimeoutAway, btnMinusAway, btnFoulAway,
+                btnScoreHome2, btnScoreHome3, btnScoreAway2, btnScoreAway3, btnEndQuarter, btnSoccerTimer, btnDartsCalc,
+                gridContainerTR, gridContainerBL, gridContainerBR,
+                imgTeamAGrid, lblTeamAGrid, lblScoreAGrid,
+                imgTeamBGrid, lblTeamBGrid, lblScoreBGrid,
+                btnTextGrid, btnCrGrid, setPillContainer,
+                btnSetMinusGrid, lblSetGrid, btnSetPlusGrid, lblStorageGrid
+            ]
+            allControlsToHide.forEach { $0.isHidden = true }
+            startStreamButton.isHidden = false
+            view.bringSubviewToFront(startStreamButton)
+            view.bringSubviewToFront(container)
         }
     }
     

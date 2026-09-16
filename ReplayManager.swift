@@ -139,34 +139,56 @@ class ReplayManager {
         guard (now - lastRecordedTime) >= 0.030 else { return }
         lastRecordedTime = now
         
+        var orientedImage = image
         let extent = image.extent
         guard extent.width > 0 && extent.height > 0 else { return }
+        
+        // Se il frame nativo della camera è in portrait (width < height), ruotalo in landscape
+        if extent.width < extent.height {
+            orientedImage = image.oriented(.right)
+        }
+        
+        let targetExtent = orientedImage.extent
+        guard targetExtent.width > 0 && targetExtent.height > 0 else { return }
         
         queue.async { [weak self] in
             guard let self = self else { return }
             
+            // Auto-ripristina lo stato di registrazione se il replay precedente è completato
+            if self.isPlaying && self.playbackBuffer.isEmpty {
+                self.isPlaying = false
+                self.isStingerPlaying = false
+                self.isOutroStinger = false
+            }
+            
             // Normalizza origine e scala a 960x540 direttamente in GPU Metal
-            let normalized = image.transformed(by: CGAffineTransform(translationX: -extent.origin.x, y: -extent.origin.y))
-            let scaleX = 960.0 / extent.width
-            let scaleY = 540.0 / extent.height
+            let normalized = orientedImage.transformed(by: CGAffineTransform(translationX: -targetExtent.origin.x, y: -targetExtent.origin.y))
+            let scaleX = 960.0 / targetExtent.width
+            let scaleY = 540.0 / targetExtent.height
             let scaledImage = normalized.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
             
             var pixelBuffer: CVPixelBuffer?
-            let attrs: [CFString: Any] = [
-                kCVPixelBufferCGImageCompatibilityKey: true,
-                kCVPixelBufferCGBitmapContextCompatibilityKey: true,
-                kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]
-            ]
-            let status = CVPixelBufferCreate(
-                kCFAllocatorDefault,
-                960,
-                540,
-                kCVPixelFormatType_32BGRA,
-                attrs as CFDictionary,
-                &pixelBuffer
-            )
+            if let pool = self.pixelBufferPool {
+                CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
+            }
             
-            if status == kCVReturnSuccess, let buffer = pixelBuffer {
+            if pixelBuffer == nil {
+                let attrs: [CFString: Any] = [
+                    kCVPixelBufferCGImageCompatibilityKey: true,
+                    kCVPixelBufferCGBitmapContextCompatibilityKey: true,
+                    kCVPixelBufferIOSurfacePropertiesKey: [:] as [String: Any]
+                ]
+                CVPixelBufferCreate(
+                    kCFAllocatorDefault,
+                    960,
+                    540,
+                    kCVPixelFormatType_32BGRA,
+                    attrs as CFDictionary,
+                    &pixelBuffer
+                )
+            }
+            
+            if let buffer = pixelBuffer {
                 let bounds = CGRect(x: 0, y: 0, width: 960, height: 540)
                 let colorSpace = CGColorSpaceCreateDeviceRGB()
                 self.ciContext.render(scaledImage, to: buffer, bounds: bounds, colorSpace: colorSpace)
@@ -321,13 +343,28 @@ class ReplayManager {
     
     var isReplaying: Bool {
         var playing = false
-        queue.sync { playing = self.isPlaying }
+        queue.sync {
+            if self.isPlaying && self.playbackBuffer.isEmpty {
+                self.isPlaying = false
+                self.isStingerPlaying = false
+                self.isOutroStinger = false
+            }
+            playing = self.isPlaying
+        }
         return playing
     }
     
     var isStingerActive: Bool {
         var active = false
-        queue.sync { active = self.isStingerPlaying }
+        queue.sync {
+            if self.isStingerPlaying {
+                let elapsed = CACurrentMediaTime() - self.stingerStartTime
+                if elapsed > self.stingerDuration + 0.5 {
+                    self.isStingerPlaying = false
+                }
+            }
+            active = self.isStingerPlaying
+        }
         return active
     }
     
@@ -514,7 +551,7 @@ class ReplayManager {
         
         if let sourceVideoTrack = videoAsset.tracks(withMediaType: .video).first {
             try? compVideoTrack.insertTimeRange(videoTimeRange, of: sourceVideoTrack, at: .zero)
-            compVideoTrack.preferredTransform = sourceVideoTrack.preferredTransform
+            compVideoTrack.preferredTransform = .identity
         }
         
         // Estrai gli ultimi N secondi di audio corrispondenti alla durata del video
