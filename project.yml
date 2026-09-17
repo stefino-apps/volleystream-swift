@@ -11,7 +11,7 @@ packages:
     from: 7.0.0
   HaishinKit:
     url: https://github.com/shogo4405/HaishinKit.swift
-    exactVersion: 1.8.0
+    from: 1.8.0
 schemes:
   MiaApp:
     build:
