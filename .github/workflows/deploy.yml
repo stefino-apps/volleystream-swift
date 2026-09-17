@@ -1,18 +1,20 @@
-name: Build & Upload to App Store Connect
+name: Build and Upload to App Store Connect
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   deploy:
+    name: Build & Upload to App Store
     runs-on: macos-14
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Xcode 15.4
+      - name: Select Xcode 15.4
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
       - name: Install XcodeGen
@@ -21,10 +23,10 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
-      - name: Setup Fastlane & Deploy
+      - name: Run Fastlane to Build and Upload
         env:
           APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
           APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
         run: |
-          bundle exec fastlane release || fastlane release
+          fastlane release
