@@ -11,10 +11,9 @@ platform :ios do
       in_house: false
     )
 
-    # Create temporary keychain for CI
     keychain_name = "ci_keychain"
     keychain_password = "password123"
-    create_keychain(
+    keychain_path = create_keychain(
       name: keychain_name,
       password: keychain_password,
       default_keychain: true,
@@ -23,10 +22,9 @@ platform :ios do
       lock_when_sleeps: false
     )
 
-    # Fetch / Create certificate and provisioning profile
     get_certificates(
       api_key: api_key,
-      keychain_name: keychain_name,
+      keychain_path: keychain_path,
       keychain_password: keychain_password
     )
 
@@ -35,22 +33,15 @@ platform :ios do
       app_identifier: "com.sviluppo.MiaApp"
     )
 
-    # Build and Archive App
     build_app(
       project: "MiaApp.xcodeproj",
       scheme: "MiaApp",
       export_method: "app-store",
-      export_options: {
-        provisioningProfiles: {
-          "com.sviluppo.MiaApp" => ENV["sigh_com.sviluppo.MiaApp_app-store_profile-name"]
-        }
-      },
       output_directory: "./build",
       output_name: "VolleyStreamPro.ipa",
       clean: true
     )
 
-    # Upload to App Store Connect / TestFlight
     upload_to_testflight(
       api_key: api_key,
       ipa: "./build/VolleyStreamPro.ipa",
