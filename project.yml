@@ -67,6 +67,7 @@ targets:
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGN_IDENTITY: ""
         AD_HOC_CODE_SIGNING_ALLOWED: YES
+        OTHER_SWIFT_FLAGS: "$(inherited) -Xfrontend -disable-copy-propagation"
     info:
       path: Info.plist
       properties:

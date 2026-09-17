@@ -76,7 +76,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            OTHER_SWIFT_FLAGS="-Xfrontend -disable-copy-propagation"
 
       - name: Export and Upload Directly to App Store Connect
         env:
