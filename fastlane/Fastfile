@@ -11,17 +11,31 @@ platform :ios do
       in_house: false
     )
 
+    kc_name = "ci_keychain"
+    kc_password = "password123"
+    kc_path = File.expand_path("~/Library/Keychains/#{kc_name}-db")
+
+    delete_keychain(name: kc_name) if File.exist?(kc_path)
+
     create_keychain(
-      name: "ci_keychain",
-      password: "password123",
+      name: kc_name,
+      password: kc_password,
       default_keychain: true,
       unlock: true,
       timeout: 3600,
       lock_when_sleeps: false
     )
 
+    sh("curl -fsSL https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer -o /tmp/AppleWWDRCAG3.cer")
+    sh("curl -fsSL https://www.apple.com/certificateauthority/AppleWWDRCAG6.cer -o /tmp/AppleWWDRCAG6.cer")
+    sh("security import /tmp/AppleWWDRCAG3.cer -k #{kc_path} -T /usr/bin/codesign -T /usr/bin/security || true")
+    sh("security import /tmp/AppleWWDRCAG6.cer -k #{kc_path} -T /usr/bin/codesign -T /usr/bin/security || true")
+    sh("security set-keychain-settings -lut 7200 #{kc_path}")
+
     get_certificates(
-      api_key: api_key
+      api_key: api_key,
+      keychain_path: kc_path,
+      keychain_password: kc_password
     )
 
     get_provisioning_profile(
