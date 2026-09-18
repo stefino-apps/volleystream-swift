@@ -79,10 +79,25 @@ jobs:
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
             SWIFT_OPTIMIZATION_LEVEL="-Onone"
 
+      - name: Package IPA for Sideloadly / Test
+        run: |
+          mkdir -p Payload
+          cp -r build/MiaApp.xcarchive/Products/Applications/MiaApp.app Payload/
+          zip -r VolleyStreamPro.ipa Payload/
+
+      - name: Upload IPA Artifact (for Sideloadly / Direct Install)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VolleyStreamPro-IPA
+          path: VolleyStreamPro.ipa
+          retention-days: 7
+
       - name: Export and Upload Directly to App Store Connect
+        if: ${{ env.APPSTORE_KEY_ID != '' && env.APPSTORE_ISSUER_ID != '' && env.APPSTORE_PRIVATE_KEY != '' }}
         env:
           APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
         run: |
           xcodebuild -exportArchive \
             -archivePath build/MiaApp.xcarchive \
