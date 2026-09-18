@@ -12,6 +12,7 @@ struct BadgePopupData: Identifiable {
 }
 
 struct WelcomeView: View {
+    @ObservedObject private var langManager = LanguageManager.shared
     @StateObject private var storeManager = StoreKitManager.shared
     @State private var navigateToSetup = false
     @State private var showLangPicker = false
@@ -45,8 +46,8 @@ struct WelcomeView: View {
         
         var title: String {
             switch self {
-            case .privacy: return "Informativa sulla Privacy"
-            case .terms: return "Termini di Servizio"
+            case .privacy: return "privacy_policy_title".localized
+            case .terms: return "terms_of_use_title".localized
             }
         }
         
@@ -74,19 +75,19 @@ struct WelcomeView: View {
                         }
                         .actionSheet(isPresented: $showMenu) {
                             ActionSheet(title: Text("Menu"), buttons: [
-                                .default(Text("menu_privacy".localized.isEmpty ? "Privacy Policy" : "menu_privacy".localized)) {
+                                .default(Text("menu_privacy".localized)) {
                                     activeLegalDoc = .privacy
                                 },
-                                .default(Text("menu_terms".localized.isEmpty ? "Termini di Servizio" : "menu_terms".localized)) {
+                                .default(Text("menu_terms".localized)) {
                                     activeLegalDoc = .terms
                                 },
-                                .default(Text("menu_contacts".localized.isEmpty ? "Contatti" : "menu_contacts".localized)) {
+                                .default(Text("menu_contacts".localized)) {
                                     openSupportEmail()
                                 },
-                                .destructive(Text("menu_delete_account".localized.isEmpty ? "Cancella Account" : "menu_delete_account".localized)) {
+                                .destructive(Text("menu_delete_account".localized)) {
                                     showDeleteAccountAlert = true
                                 },
-                                .cancel()
+                                .cancel(Text("cancel".localized))
                             ])
                         }
                         
@@ -108,9 +109,10 @@ struct WelcomeView: View {
                         .actionSheet(isPresented: $showLangPicker) {
                             ActionSheet(title: Text("select_language".localized), buttons: languages.map { lang in
                                 .default(Text(lang.value)) {
+                                    LanguageManager.shared.setLanguage(lang.key)
                                     appLang = lang.key
                                 }
-                            } + [.cancel()])
+                            } + [.cancel(Text("cancel".localized))])
                         }
                     }
                     .padding(.horizontal, 24)
@@ -123,15 +125,15 @@ struct WelcomeView: View {
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 4) {
                                     if storeManager.isPremium {
-                                        Text("PREMIUM ATTIVO")
+                                        Text("premium_active".localized)
                                             .font(.system(size: 13, weight: .bold))
                                             .foregroundColor(Color(hex: "#22c55e"))
                                     } else if storeManager.isTrialActive {
-                                        Text("\(storeManager.daysRemainingInTrial) GIORNI PROVA")
+                                        Text(String(format: "trial_days_remaining".localized, storeManager.daysRemainingInTrial))
                                             .font(.system(size: 13, weight: .bold))
                                             .foregroundColor(Color(hex: "#22c55e"))
                                     } else {
-                                        Text("VERSIONE FREE")
+                                        Text("free_version".localized)
                                             .font(.system(size: 13, weight: .bold))
                                             .foregroundColor(Color(hex: "#EF4444"))
                                     }
@@ -331,7 +333,7 @@ struct WelcomeView: View {
                     // Footer Legal Links: Privacy Policy • Termini di Utilizzo • Contatti
                     HStack(spacing: 12) {
                         Button(action: { activeLegalDoc = .privacy }) {
-                            Text("Privacy Policy")
+                            Text("menu_privacy".localized)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(Color(hex: "#94a3b8"))
                                 .underline()
@@ -342,7 +344,7 @@ struct WelcomeView: View {
                             .foregroundColor(Color(hex: "#475569"))
                         
                         Button(action: { activeLegalDoc = .terms }) {
-                            Text("Termini d'uso")
+                            Text("menu_terms".localized)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(Color(hex: "#94a3b8"))
                                 .underline()
@@ -353,7 +355,7 @@ struct WelcomeView: View {
                             .foregroundColor(Color(hex: "#475569"))
                         
                         Button(action: { openSupportEmail() }) {
-                            Text("Contatti")
+                            Text("menu_contacts".localized)
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(Color(hex: "#94a3b8"))
                                 .underline()
@@ -446,13 +448,13 @@ struct WelcomeView: View {
             }
             .alert(isPresented: $showDeleteAccountAlert) {
                 Alert(
-                    title: Text("Eliminazione Account"),
-                    message: Text("Sei sicuro di voler eliminare in via definitiva l'accesso del tuo account Google/YouTube da questa app? Questa azione revocherà i permessi e cancellerà tutti i dati locali associati."),
-                    primaryButton: .destructive(Text("Elimina")) {
+                    title: Text("delete_account_confirm_title".localized),
+                    message: Text("delete_account_confirm_msg".localized),
+                    primaryButton: .destructive(Text("btn_delete".localized)) {
                         YouTubeManager.shared.disconnect()
                         AppPreferences.shared.clearAll()
                     },
-                    secondaryButton: .cancel(Text("Annulla"))
+                    secondaryButton: .cancel(Text("cancel".localized))
                 )
             }
         }
@@ -493,6 +495,7 @@ struct WelcomeView: View {
 
 struct PremiumPaywallSheet: View {
     @ObservedObject var storeManager = StoreKitManager.shared
+    @ObservedObject private var langManager = LanguageManager.shared
     @Environment(\.presentationMode) var presentationMode
     @State private var restoreAlertMessage: String? = nil
     @State private var showLegalDoc: WelcomeView.LegalDocType? = nil
@@ -533,18 +536,18 @@ struct PremiumPaywallSheet: View {
                                 )
                             )
                         
-                        Text("Sblocca tutte le funzionalità professionali")
+                        Text("unlock_all_features".localized)
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "#94a3b8"))
                     }
                     
                     // Features List
                     VStack(alignment: .leading, spacing: 16) {
-                        PremiumFeatureRow(icon: "iphone.radiowaves.left.and.right", title: "Controllo Remoto (R.C.) senza limiti", subtitle: "Gestisci i punti dal secondo smartphone")
-                        PremiumFeatureRow(icon: "photo.badge.checkmark", title: "Loghi e Sponsor Personalizzati", subtitle: "Mostra sponsor e loghi ufficiali delle squadre")
-                        PremiumFeatureRow(icon: "arrow.counterclockwise.circle.fill", title: "Instant Replay & Highlights", subtitle: "Rivedi i punti salienti ed esporta video")
-                        PremiumFeatureRow(icon: "tv.fill", title: "Nessun Watermark Promozionale", subtitle: "Nessuna scritta promozionale su YouTube")
-                        PremiumFeatureRow(icon: "video.fill", title: "Streaming HD 1080p @ 60 FPS", subtitle: "Massima qualità e fluidità broadcast")
+                        PremiumFeatureRow(icon: "iphone.radiowaves.left.and.right", title: "feat_rc_unlimited".localized, subtitle: "feat_rc_unlimited_sub".localized)
+                        PremiumFeatureRow(icon: "photo.badge.checkmark", title: "feat_logos_sponsors".localized, subtitle: "feat_logos_sponsors_sub".localized)
+                        PremiumFeatureRow(icon: "arrow.counterclockwise.circle.fill", title: "feat_replay_hl".localized, subtitle: "feat_replay_hl_sub".localized)
+                        PremiumFeatureRow(icon: "tv.fill", title: "feat_no_watermark".localized, subtitle: "feat_no_watermark_sub".localized)
+                        PremiumFeatureRow(icon: "video.fill", title: "feat_hd_stream".localized, subtitle: "feat_hd_stream_sub".localized)
                     }
                     .padding(20)
                     .background(Color(hex: "#0f172a"))
@@ -557,11 +560,11 @@ struct PremiumPaywallSheet: View {
                     
                     // Pricing info
                     VStack(spacing: 6) {
-                        Text("7 GIORNI DI PROVA GRATUITA INCLUSI")
+                        Text("sub_trial_badge".localized)
                             .font(.system(size: 14, weight: .heavy))
                             .foregroundColor(Color(hex: "#22c55e"))
                         
-                        Text("Poi solo €39,99 / anno (€3,33/mese). Annulla in qualsiasi momento.")
+                        Text("sub_price_desc".localized)
                             .font(.system(size: 13))
                             .foregroundColor(Color(hex: "#cbd5e1"))
                             .multilineTextAlignment(.center)
@@ -589,7 +592,7 @@ struct PremiumPaywallSheet: View {
                             if storeManager.isPurchasing {
                                 ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .black))
                             }
-                            Text(storeManager.isPremium ? "ABBONAMENTO ATTIVO" : "PROVA GRATIS PER 7 GIORNI")
+                            Text(storeManager.isPremium ? "active_subscription".localized : "btn_try_free".localized)
                                 .font(.system(size: 16, weight: .heavy))
                                 .foregroundColor(.black)
                         }
@@ -613,13 +616,13 @@ struct PremiumPaywallSheet: View {
                         Task {
                             await storeManager.restorePurchases()
                             if storeManager.isPremium {
-                                restoreAlertMessage = "Abbonamento Premium ripristinato con successo!"
+                                restoreAlertMessage = "restore_success".localized
                             } else {
-                                restoreAlertMessage = "Nessun abbonamento attivo trovato per questo account Apple ID."
+                                restoreAlertMessage = "restore_none".localized
                             }
                         }
                     }) {
-                        Text("Ripristina Acquisti")
+                        Text("btn_restore_purchases".localized)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(Color(hex: "#06b6d4"))
                             .underline()
@@ -628,7 +631,7 @@ struct PremiumPaywallSheet: View {
                     
                     // Apple Review Guideline 3.1.2 Required Subscription Disclaimer
                     VStack(spacing: 8) {
-                        Text("Dettagli abbonamento: La prova gratuita dura 7 giorni. Al termine, l'abbonamento si rinnova automaticamente a €39,99/anno a meno che non venga annullato almeno 24 ore prima della scadenza. Il pagamento viene addebitato sull'account Apple ID alla conferma. Puoi gestire e annullare l'abbonamento nelle Impostazioni dell'account App Store.")
+                        Text("sub_disclaimer".localized)
                             .font(.system(size: 10))
                             .foregroundColor(Color(hex: "#64748b"))
                             .multilineTextAlignment(.center)
@@ -636,7 +639,7 @@ struct PremiumPaywallSheet: View {
                         
                         HStack(spacing: 16) {
                             Button(action: { showLegalDoc = .privacy }) {
-                                Text("Informativa sulla Privacy")
+                                Text("menu_privacy".localized)
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(Color(hex: "#06b6d4"))
                                     .underline()
@@ -647,7 +650,7 @@ struct PremiumPaywallSheet: View {
                                 .foregroundColor(Color(hex: "#475569"))
                             
                             Button(action: { showLegalDoc = .terms }) {
-                                Text("Termini di Servizio (EULA)")
+                                Text("eula_terms".localized)
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(Color(hex: "#06b6d4"))
                                     .underline()
@@ -667,9 +670,9 @@ struct PremiumPaywallSheet: View {
             set: { if !$0 { restoreAlertMessage = nil } }
         )) {
             Alert(
-                title: Text("Ripristino Acquisti"),
+                title: Text("restore_title".localized),
                 message: Text(restoreAlertMessage ?? ""),
-                dismissButton: .default(Text("OK"))
+                dismissButton: .default(Text("ok".localized))
             )
         }
     }
@@ -748,6 +751,7 @@ struct AndroidBadgeView: View {
 // In-App Native Legal Document Viewer
 struct LegalDocSheetView: View {
     let doc: WelcomeView.LegalDocType
+    @ObservedObject private var langManager = LanguageManager.shared
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -763,10 +767,10 @@ struct LegalDocSheetView: View {
                                 .font(.system(size: 24))
                                 .foregroundColor(Color(hex: "#06b6d4"))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(doc == .privacy ? "Informativa sulla Privacy" : "Termini di Servizio")
+                                Text(doc == .privacy ? "privacy_policy_title".localized : "terms_of_use_title".localized)
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.white)
-                                Text("VolleyStream Pro • Ultimo aggiornamento: Marzo 2026")
+                                Text("VolleyStream Pro • \("legal_updated".localized)")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#94a3b8"))
                             }
@@ -783,10 +787,10 @@ struct LegalDocSheetView: View {
                         
                         // Contact Card
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Domande o Contatti?")
+                            Text("legal_questions_title".localized)
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(Color(hex: "#06b6d4"))
-                            Text("Per qualsiasi domanda riguardante la privacy o i termini di servizio, puoi contattare il nostro team di supporto a:")
+                            Text("legal_questions_desc".localized)
                                 .font(.system(size: 13))
                                 .foregroundColor(Color(hex: "#cbd5e1"))
                             Text("✉️ volleystreampro@gmail.com")
@@ -802,11 +806,11 @@ struct LegalDocSheetView: View {
                     .padding(20)
                 }
             }
-            .navigationBarTitle(Text(doc == .privacy ? "Privacy Policy" : "Termini d'Uso"), displayMode: .inline)
+            .navigationBarTitle(Text(doc == .privacy ? "menu_privacy".localized : "menu_terms".localized), displayMode: .inline)
             .navigationBarItems(trailing: Button(action: {
                 presentationMode.wrappedValue.dismiss()
             }) {
-                Text("Chiudi")
+                Text("btn_close".localized)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(Color(hex: "#06b6d4"))
             })
@@ -945,7 +949,7 @@ struct BadgeDetailModalView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 16, weight: .bold))
-                        Text("HO CAPITO")
+                        Text("understood".localized)
                             .font(.system(size: 15, weight: .heavy))
                     }
                     .foregroundColor(.white)

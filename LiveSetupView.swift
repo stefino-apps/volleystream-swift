@@ -3,6 +3,7 @@ import SwiftUI
 struct LiveSetupView: View {
     @Environment(\.presentationMode) var presentationMode
     @ObservedObject private var storeManager = StoreKitManager.shared
+    @ObservedObject private var langManager = LanguageManager.shared
     @FocusState private var isTitleFocused: Bool
     
     @State private var streamPlatform = "YouTube" // "YouTube" or "Custom"
@@ -48,13 +49,13 @@ struct LiveSetupView: View {
                 // Header Bar matching Android (Photo 2)
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("STREAMING LIVE")
+                        Text("streaming_live".localized)
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(Color(hex: "#06b6d4"))
                             .tracking(2.0)
                         
                         HStack(spacing: 8) {
-                            Text(streamPlatform == "YouTube" ? "CONFIGURAZIONE ..." : "CONFIGURAZIONE RTMP")
+                            Text(streamPlatform == "YouTube" ? "youtube_config".localized : "rtmp_custom_title".localized)
                                 .font(.system(size: 20, weight: .bold))
                                 .foregroundColor(.white)
                                 .lineLimit(1)
@@ -114,7 +115,7 @@ struct LiveSetupView: View {
                 // Bottom Fixed Action Bar (INDIETRO + AVANTI) matching Android Photo 2
                 HStack(spacing: 12) {
                     Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                        Text("INDIETRO")
+                        Text("btn_back".localized)
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -127,11 +128,11 @@ struct LiveSetupView: View {
                         HStack(spacing: 6) {
                             if isCreatingEvent {
                                 ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                Text("CREAZIONE...")
+                                Text("creating_event".localized)
                                     .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(Color(hex: "#050811"))
                             } else {
-                                Text("AVANTI")
+                                Text("btn_next".localized)
                                     .font(.system(size: 15, weight: .bold))
                                     .foregroundColor(Color(hex: "#050811"))
                             }
@@ -156,9 +157,9 @@ struct LiveSetupView: View {
         }
         .alert(isPresented: $showAlert) {
             Alert(
-                title: Text(alertTitle.isEmpty ? "Attenzione" : alertTitle),
+                title: Text(alertTitle.isEmpty ? "warning_dnd_title".localized : alertTitle),
                 message: Text(alertMessage),
-                primaryButton: .default(Text("Entra comunque in Regia")) {
+                primaryButton: .default(Text("btn_enter_director".localized)) {
                     proceedToDirector(rtmp: rtmpUrl.isEmpty ? "rtmp://a.rtmp.youtube.com/live2" : rtmpUrl, key: streamKey.isEmpty ? "offline_test" : streamKey)
                 },
                 secondaryButton: .cancel(Text("cancel".localized))
@@ -195,16 +196,16 @@ struct LiveSetupView: View {
     // MARK: - Card 1: Platform Selection (Photo 2 matching)
     private var cardPlatformSelection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("PIATTAFORMA DI STREAMING")
+            Text("platform_selection".localized)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "#06b6d4"))
                 .tracking(1.5)
             
             VStack(spacing: 12) {
-                radioButton(title: "YouTube (Auto)", selected: streamPlatform == "YouTube") {
+                radioButton(title: "platform_youtube_auto".localized, selected: streamPlatform == "YouTube") {
                     streamPlatform = "YouTube"
                 }
-                radioButton(title: "Facebook / Custom RTMP", selected: streamPlatform == "Custom") {
+                radioButton(title: "platform_custom_rtmp".localized, selected: streamPlatform == "Custom") {
                     streamPlatform = "Custom"
                 }
             }
@@ -231,7 +232,7 @@ struct LiveSetupView: View {
             
             if isYouTubeLoggedIn {
                 VStack(spacing: 2) {
-                    Text("CONNESSO A")
+                    Text("remote_connected".localized)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Color(hex: "#22c55e"))
                     Text(channelName.isEmpty ? "stellaazzurramalnate-" : channelName)
@@ -240,7 +241,7 @@ struct LiveSetupView: View {
                 }
                 
                 Button(action: signOutYouTube) {
-                    Text("DISCONNETTI")
+                    Text("disconnect".localized)
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(Color(hex: "#050811"))
                         .frame(maxWidth: .infinity)
@@ -250,12 +251,12 @@ struct LiveSetupView: View {
                 }
                 .padding(.top, 4)
             } else {
-                Text("NON CONNESSO")
+                Text("status_not_connected".localized)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(Color(hex: "#94a3b8"))
                 
                 Button(action: signInYouTube) {
-                    Text("COLLEGA CANALE YOUTUBE")
+                    Text("login_youtube".localized)
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(Color(hex: "#050811"))
                         .frame(maxWidth: .infinity)
@@ -275,19 +276,19 @@ struct LiveSetupView: View {
     // MARK: - Card 3: Video Visibility (Photo 2 matching)
     private var cardVideoVisibility: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("VISIBILITÀ VIDEO")
+            Text("video_visibility".localized)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "#06b6d4"))
                 .tracking(1.5)
             
             VStack(spacing: 12) {
-                radioButton(title: "PUBBLICO", selected: streamVisibility == "public") {
+                radioButton(title: "public_video".localized, selected: streamVisibility == "public") {
                     streamVisibility = "public"
                 }
-                radioButton(title: "NON IN ELENCO", selected: streamVisibility == "unlisted") {
+                radioButton(title: "unlisted_video".localized, selected: streamVisibility == "unlisted") {
                     streamVisibility = "unlisted"
                 }
-                radioButton(title: "PRIVATO", selected: streamVisibility == "private") {
+                radioButton(title: "private_video".localized, selected: streamVisibility == "private") {
                     streamVisibility = "private"
                 }
             }
@@ -301,13 +302,13 @@ struct LiveSetupView: View {
     // MARK: - Card Custom RTMP
     private var cardCustomRTMP: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("CONFIGURAZIONE RTMP PERSONALIZZATA")
+            Text("rtmp_custom_title".localized)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "#06b6d4"))
                 .tracking(1.5)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("URL Server RTMP")
+                Text("rtmp_server_url".localized)
                     .font(.caption).foregroundColor(Color(hex: "#64748b"))
                 TextField("rtmp://...", text: $rtmpUrl)
                     .font(.system(size: 13))
@@ -319,7 +320,7 @@ struct LiveSetupView: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Chiave Stream")
+                Text("stream_key_label".localized)
                     .font(.caption).foregroundColor(Color(hex: "#64748b"))
                 TextField("stream-key", text: $streamKey)
                     .font(.system(size: 13))
@@ -339,19 +340,19 @@ struct LiveSetupView: View {
     // MARK: - Card Resolution
     private var cardResolution: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("RISOLUZIONE VIDEO")
+            Text("video_resolution".localized)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "#06b6d4"))
                 .tracking(1.5)
             
             VStack(spacing: 12) {
-                radioButton(title: "1080p (Consigliata)", selected: streamResolution == "1080p") {
+                radioButton(title: "res_1080p_rec".localized, selected: streamResolution == "1080p") {
                     streamResolution = "1080p"
                 }
-                radioButton(title: "720p", selected: streamResolution == "720p") {
+                radioButton(title: "res_720p_simple".localized, selected: streamResolution == "720p") {
                     streamResolution = "720p"
                 }
-                radioButton(title: "480p", selected: streamResolution == "480p") {
+                radioButton(title: "res_480p_simple".localized, selected: streamResolution == "480p") {
                     streamResolution = "480p"
                 }
             }
@@ -366,7 +367,7 @@ struct LiveSetupView: View {
     private var cardFPS: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("MODALITÀ FPS")
+                Text("fps_mode_title".localized)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.5)
@@ -387,7 +388,7 @@ struct LiveSetupView: View {
                 radioButton(title: "30 FPS", selected: streamFPS == 30) {
                     streamFPS = 30
                 }
-                radioButton(title: !storeManager.isPremiumOrTrial ? "60 FPS (Auto-adattivo) 🔒" : "60 FPS (Auto-adattivo)", selected: streamFPS == 60) {
+                radioButton(title: !storeManager.isPremiumOrTrial ? "\("fps_60_auto".localized) 🔒" : "fps_60_auto".localized, selected: streamFPS == 60) {
                     if !storeManager.isPremiumOrTrial {
                         showPremiumPaywall = true
                     } else {
@@ -405,13 +406,13 @@ struct LiveSetupView: View {
     // MARK: - Card Stream Details
     private var cardStreamDetails: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("DETTAGLI STREAM")
+            Text("stream_details".localized)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "#06b6d4"))
                 .tracking(1.5)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Titolo della diretta")
+                Text("stream_title_label".localized)
                     .font(.caption).foregroundColor(Color(hex: "#64748b"))
                 HStack {
                     TextField("stream_title_hint".localized, text: $streamTitle)
@@ -433,7 +434,7 @@ struct LiveSetupView: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Descrizione (opzionale)")
+                Text("stream_desc_label".localized)
                     .font(.caption).foregroundColor(Color(hex: "#64748b"))
                 TextField("stream_description_hint".localized, text: $streamDescription)
                     .font(.system(size: 13))
@@ -453,7 +454,7 @@ struct LiveSetupView: View {
     // MARK: - Card Network Test
     private var cardNetworkTest: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("TEST QUALITÀ DELLA RETE")
+            Text("network_quality_title".localized)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "#06b6d4"))
                 .tracking(1.5)
@@ -485,7 +486,7 @@ struct LiveSetupView: View {
                     if isTestingNetwork {
                         ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
                     }
-                    Text(isTestingNetwork ? "test_running".localized : "ESEGUI TEST VELOCITÀ")
+                    Text(isTestingNetwork ? "test_running".localized : "start_speedtest".localized)
                         .font(.system(size: 12, weight: .bold))
                 }
                 .foregroundColor(.white)
@@ -522,7 +523,7 @@ struct LiveSetupView: View {
     private var cardLocalRecording: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("REGISTRAZIONE LOCALE")
+                Text("local_record_title".localized)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.5)
@@ -550,7 +551,7 @@ struct LiveSetupView: View {
                 ))
                 .labelsHidden()
             }
-            Text("Salva una copia del match nella galleria del dispositivo")
+            Text("local_record_card_desc".localized)
                 .font(.system(size: 11))
                 .foregroundColor(Color(hex: "#64748b"))
         }

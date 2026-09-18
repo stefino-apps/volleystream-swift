@@ -1545,9 +1545,9 @@ class MainViewController: UIViewController {
     }
     
     @objc func confirmResetMatch() {
-        let alert = UIAlertController(title: "Reset Partita", message: "Vuoi azzerare il punteggio e i set della partita in corso?", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Azzera", style: .destructive) { [weak self] _ in
+        let alert = UIAlertController(title: "dialog_reset_match_title".localized, message: "dialog_reset_match_msg".localized, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "cancel".localized, style: .cancel))
+        alert.addAction(UIAlertAction(title: "btn_reset".localized, style: .destructive) { [weak self] _ in
             guard let self = self else { return }
             self.localState.scoreA = 0
             self.localState.scoreB = 0
@@ -1558,7 +1558,7 @@ class MainViewController: UIViewController {
             self.localState.timeoutB = 0
             self.localState.servingTeam = ""
             self.updateLocalState()
-            self.showToast(message: "🔄 Partita azzerata")
+            self.showToast(message: "🔄 \("btn_reset".localized)")
         })
         present(alert, animated: true)
     }
@@ -1590,9 +1590,9 @@ class MainViewController: UIViewController {
     }
     
     @objc func confirmExit() {
-        let alert = UIAlertController(title: "Esci dalla Regia", message: "Vuoi terminare la sessione di regia e tornare al menu?", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Esci", style: .destructive) { [weak self] _ in
+        let alert = UIAlertController(title: "dialog_exit_title".localized, message: "dialog_exit_msg".localized, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "cancel".localized, style: .cancel))
+        alert.addAction(UIAlertAction(title: "btn_exit".localized, style: .destructive) { [weak self] _ in
             self?.exitDirector()
         })
         present(alert, animated: true)
@@ -2764,20 +2764,20 @@ class MainViewController: UIViewController {
     
     private func showDoNotDisturbAlert(onConfirm: @escaping () -> Void) {
         let alert = UIAlertController(
-            title: "🔕 MODALITÀ NON DISTURBARE",
-            message: "Prima di avviare la diretta, ti consigliamo vivamente di attivare la modalità 'Non Disturbare' o 'Full Immersion' per evitare che chiamate o notifiche in arrivo interrompano la trasmissione e facciano cadere la connessione.\n\nPuoi aprire direttamente le impostazioni del telefono premendo il pulsante qui sotto.",
+            title: "dnd_alert_title".localized,
+            message: "dnd_alert_message".localized,
             preferredStyle: .alert
         )
         
-        alert.addAction(UIAlertAction(title: "⚙️ APRI NON DISTURBARE", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "dnd_open_settings".localized, style: .default) { [weak self] _ in
             self?.openDoNotDisturbSettings()
         })
         
-        alert.addAction(UIAlertAction(title: "🔴 AVVIA DIRETTA", style: .default) { _ in
+        alert.addAction(UIAlertAction(title: "dnd_start_live".localized, style: .default) { _ in
             onConfirm()
         })
         
-        alert.addAction(UIAlertAction(title: "ANNULLA", style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: "cancel".localized, style: .cancel, handler: nil))
         
         present(alert, animated: true, completion: nil)
     }

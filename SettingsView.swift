@@ -4,6 +4,7 @@ import PhotosUI
 struct SettingsView: View {
     @Environment(\.presentationMode) var presentationMode
     
+    @ObservedObject private var langManager = LanguageManager.shared
     @ObservedObject private var storeManager = StoreKitManager.shared
     @FocusState private var isHomeFocused: Bool
     @FocusState private var isAwayFocused: Bool
@@ -61,28 +62,32 @@ struct SettingsView: View {
         let name: String
     }
     
-    let sports: [SportOption] = [
-        SportOption(id: "volley", name: "🏐 VOLLEY"),
-        SportOption(id: "basket", name: "🏀 BASKET"),
-        SportOption(id: "soccer", name: "⚽ SOCCER"),
-        SportOption(id: "tennis", name: "🎾 TENNIS"),
-        SportOption(id: "darts", name: "🎯 FRECCETTE"),
-        SportOption(id: "billiards", name: "🎱 BILIARDO"),
-        SportOption(id: "beach_volley", name: "🏖️ BEACH VOLLEY"),
-        SportOption(id: "cricket", name: "🏏 CRICKET"),
-        SportOption(id: "padel", name: "🎾 PADEL"),
-        SportOption(id: "handball", name: "🤾 PALLAMANO")
-    ]
+    var sports: [SportOption] {
+        [
+            SportOption(id: "volley", name: "sport_volley".localized),
+            SportOption(id: "basket", name: "sport_basket".localized),
+            SportOption(id: "soccer", name: "sport_soccer".localized),
+            SportOption(id: "tennis", name: "sport_tennis".localized),
+            SportOption(id: "darts", name: "sport_darts".localized),
+            SportOption(id: "billiards", name: "sport_billiards".localized),
+            SportOption(id: "beach_volley", name: "sport_beach_volley".localized),
+            SportOption(id: "cricket", name: "sport_cricket".localized),
+            SportOption(id: "padel", name: "sport_padel".localized),
+            SportOption(id: "handball", name: "sport_handball".localized)
+        ]
+    }
     
-    let themes: [ThemeOption] = [
-        ThemeOption(id: "neon", name: "NEON GLOW (DEFAULT)"),
-        ThemeOption(id: "minimal", name: "MODERN MINIMAL"),
-        ThemeOption(id: "glass", name: "PREMIUM GLASS"),
-        ThemeOption(id: "classic", name: "TV CLASSICA"),
-        ThemeOption(id: "odometer_blue", name: "PRO BLUE"),
-        ThemeOption(id: "odometer_red", name: "PRO RED"),
-        ThemeOption(id: "odometer_dark", name: "PRO DARK")
-    ]
+    var themes: [ThemeOption] {
+        [
+            ThemeOption(id: "neon", name: "theme_neon".localized),
+            ThemeOption(id: "minimal", name: "theme_minimal".localized),
+            ThemeOption(id: "glass", name: "theme_glass".localized),
+            ThemeOption(id: "classic", name: "theme_classic".localized),
+            ThemeOption(id: "odometer_blue", name: "theme_odometer_blue".localized),
+            ThemeOption(id: "odometer_red", name: "theme_odometer_red".localized),
+            ThemeOption(id: "odometer_dark", name: "theme_odometer_dark".localized)
+        ]
+    }
     
     var body: some View {
         ZStack {
@@ -99,11 +104,11 @@ struct SettingsView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("IMPOSTAZIONI")
+                        Text("settings_title".localized)
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                             .tracking(1.0)
-                        Text("MATCH")
+                        Text("settings_header_match".localized)
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                             .tracking(1.0)
@@ -129,7 +134,7 @@ struct SettingsView: View {
                         
                         // Reset Logos Button (matching Android)
                         Button(action: resetLogos) {
-                            Text("RESET LOGHI")
+                            Text("btn_reset_logos".localized)
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 20)
@@ -165,7 +170,7 @@ struct SettingsView: View {
                         saveAllPreferences()
                         navigateToLiveSetup = true
                     }) {
-                        Text("AVANTI")
+                        Text("btn_next".localized)
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(Color(hex: "#050811"))
                             .frame(maxWidth: .infinity)
@@ -204,7 +209,7 @@ struct SettingsView: View {
             Alert(
                 title: Text("replay_test_title".localized),
                 message: Text(replayTestMessage),
-                dismissButton: .default(Text("OK"))
+                dismissButton: .default(Text("ok".localized))
             )
         }
         .sheet(isPresented: $showPremiumPaywall) {
@@ -216,7 +221,7 @@ struct SettingsView: View {
     private var cardSportSelection: some View {
         VStack(alignment: .leading, spacing: 14) {
             // SPORT Header
-            Text("SPORT")
+            Text("sport_section_title".localized)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(Color(hex: "#06b6d4"))
                 .tracking(2.0)
@@ -232,7 +237,7 @@ struct SettingsView: View {
                 }
             } label: {
                 HStack {
-                    Text(sports.first(where: { $0.id == selectedSport })?.name ?? "🏐 VOLLEY")
+                    Text(sports.first(where: { $0.id == selectedSport })?.name ?? "sport_volley".localized)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                     Spacer()
@@ -246,20 +251,20 @@ struct SettingsView: View {
             // Conditional Rules
             if selectedSport == "basket" {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("NUMERO DI QUARTI")
+                    Text("quarti_label".localized)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
                     Picker("Quarti", selection: $basketPeriodsMode) {
-                        Text("4 Quarti").tag(4)
-                        Text("2 Tempi").tag(2)
+                        Text("quarti_4".localized).tag(4)
+                        Text("tempi_2".localized).tag(2)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
                 .padding(.top, 4)
             } else if selectedSport == "soccer" {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("DURATA TEMPO (MIN)")
+                    Text("durata_tempo".localized)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
@@ -276,7 +281,7 @@ struct SettingsView: View {
                 .padding(.top, 4)
             } else if selectedSport == "handball" {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("DURATA TEMPO (MIN)")
+                    Text("durata_tempo".localized)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
@@ -293,49 +298,49 @@ struct SettingsView: View {
                 .padding(.top, 4)
             } else if selectedSport == "beach_volley" {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("AL MEGLIO DI")
+                    Text("al_meglio_di".localized)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
                     Picker("Set", selection: $beachSetsToWin) {
-                        Text("3 Set (Vinci 2)").tag(2)
-                        Text("5 Set (Vinci 3)").tag(3)
+                        Text("best_of_3".localized).tag(2)
+                        Text("best_of_5".localized).tag(3)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
                 .padding(.top, 4)
             } else if selectedSport == "tennis" {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("AL MEGLIO DI")
+                    Text("al_meglio_di".localized)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
                     Picker("Set", selection: $tennisSetsToWin) {
-                        Text("3 Set (Vinci 2)").tag(2)
-                        Text("5 Set (Vinci 3)").tag(3)
+                        Text("best_of_3".localized).tag(2)
+                        Text("best_of_5".localized).tag(3)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
                 .padding(.top, 4)
             } else if selectedSport == "padel" {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("AL MEGLIO DI")
+                    Text("al_meglio_di".localized)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
                     Picker("Set", selection: $tennisSetsToWin) {
-                        Text("3 Set (Vinci 2)").tag(2)
-                        Text("5 Set (Vinci 3)").tag(3)
+                        Text("best_of_3".localized).tag(2)
+                        Text("best_of_5".localized).tag(3)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("PUNTO DE ORO")
+                            Text("punto_de_oro_title".localized)
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(Color(hex: "#64748b"))
                                 .tracking(1.5)
-                            Text("A 40-40 si gioca un solo punto decisivo")
+                            Text("punto_de_oro_desc".localized)
                                 .font(.system(size: 11))
                                 .foregroundColor(Color(hex: "#94a3b8"))
                         }
@@ -348,7 +353,7 @@ struct SettingsView: View {
                 .padding(.top, 4)
             } else if selectedSport == "darts" {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("MODALITÀ FRECCETTE")
+                    Text("darts_mode_label".localized)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
@@ -356,7 +361,7 @@ struct SettingsView: View {
                         Text("301").tag(301)
                         Text("501").tag(501)
                         Text("701").tag(701)
-                        Text("Libero").tag(0)
+                        Text("darts_mode_free".localized).tag(0)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
@@ -366,7 +371,7 @@ struct SettingsView: View {
             // TEMA GRAFICO OVERLAY Header
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("TEMA GRAFICO OVERLAY")
+                    Text("theme_overlay_header".localized)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color(hex: "#06b6d4"))
                         .tracking(2.0)
@@ -376,7 +381,7 @@ struct SettingsView: View {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 10))
                                 .foregroundColor(Color(hex: "#FACC15"))
-                            Text("PRO THEMES")
+                            Text("pro_themes_badge".localized)
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(Color(hex: "#FACC15"))
                         }
@@ -400,7 +405,7 @@ struct SettingsView: View {
                     }
                 } label: {
                     HStack {
-                        Text(themes.first(where: { $0.id == selectedTheme })?.name ?? "NEON GLOW (DEFAULT)")
+                        Text(themes.first(where: { $0.id == selectedTheme })?.name ?? "theme_neon".localized)
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
@@ -414,8 +419,8 @@ struct SettingsView: View {
                 // Scoreboard Theme Live Preview
                 ScoreboardThemePreviewCard(
                     themeId: selectedTheme,
-                    teamA: teamHome.isEmpty ? "CASA" : teamHome,
-                    teamB: teamAway.isEmpty ? "OSPITE" : teamAway,
+                    teamA: teamHome.isEmpty ? "default_team_home".localized : teamHome,
+                    teamB: teamAway.isEmpty ? "default_team_guest".localized : teamAway,
                     sport: selectedSport
                 )
                 .padding(.top, 4)
@@ -451,7 +456,7 @@ struct SettingsView: View {
                                 Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
                                     .font(.system(size: 22, weight: .bold))
                                     .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
-                                Text("LOGO")
+                                Text("logo".localized)
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                             }
@@ -493,7 +498,7 @@ struct SettingsView: View {
             // Team A Name Field (Auto clear on tap + max 14 chars)
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("SQUADRA A (CASA)")
+                    Text("team_a_label".localized)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
@@ -504,7 +509,7 @@ struct SettingsView: View {
                 }
                 
                 HStack(spacing: 6) {
-                    TextField("NOME SQUADRA", text: $teamHome)
+                    TextField("team_name_hint".localized, text: $teamHome)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                         .autocapitalization(.allCharacters)
@@ -513,7 +518,7 @@ struct SettingsView: View {
                         .onChange(of: isHomeFocused) { focused in
                             if focused {
                                 let upper = teamHome.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-                                if upper == "CASA" || upper == "SQUADRA CASA" || upper == "SQUADRA A" {
+                                if upper == "CASA" || upper == "SQUADRA CASA" || upper == "SQUADRA A" || upper == "HOME" {
                                     teamHome = ""
                                 }
                             }
@@ -566,7 +571,7 @@ struct SettingsView: View {
                                 Image(systemName: !storeManager.canUseFeature(.customLogos) ? "lock.fill" : "plus")
                                     .font(.system(size: 22, weight: .bold))
                                     .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
-                                Text("LOGO")
+                                Text("logo".localized)
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundColor(!storeManager.canUseFeature(.customLogos) ? Color(hex: "#FACC15") : Color(hex: "#64748b"))
                             }
@@ -608,7 +613,7 @@ struct SettingsView: View {
             // Team B Name Field (Auto clear on tap + max 14 chars)
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("SQUADRA B (OSPITE)")
+                    Text("team_b_label".localized)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color(hex: "#64748b"))
                         .tracking(1.5)
@@ -619,7 +624,7 @@ struct SettingsView: View {
                 }
                 
                 HStack(spacing: 6) {
-                    TextField("NOME SQUADRA", text: $teamAway)
+                    TextField("team_name_hint".localized, text: $teamAway)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                         .autocapitalization(.allCharacters)
@@ -628,7 +633,7 @@ struct SettingsView: View {
                         .onChange(of: isAwayFocused) { focused in
                             if focused {
                                 let upper = teamAway.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-                                if upper == "OSPITE" || upper == "SQUADRA OSPITE" || upper == "SQUADRA B" {
+                                if upper == "OSPITE" || upper == "SQUADRA OSPITE" || upper == "SQUADRA B" || upper == "GUEST" {
                                     teamAway = ""
                                 }
                             }
@@ -662,7 +667,7 @@ struct SettingsView: View {
     private var cardFullScreenSponsors: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("FOTO SPONSOR (MAX 4)")
+                Text("sponsors_max".localized)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.5)
@@ -689,7 +694,7 @@ struct SettingsView: View {
             HStack {
                 Spacer()
                 Button(action: resetSponsors) {
-                    Text("RESET SPONSOR")
+                    Text("btn_reset".localized)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 18)
@@ -775,7 +780,7 @@ struct SettingsView: View {
     private var cardRotatingBanners: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("BANNER SPONSOR IN SOVRIMPRESSIONE (A ROTAZIONE)")
+                Text("sponsors_rotating".localized)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.0)
@@ -792,7 +797,7 @@ struct SettingsView: View {
                 }
             }
             
-            Text("Le immagini selezionate ruoteranno a turno in diretta durante tutto il match")
+            Text("sponsors_rotating_desc".localized)
                 .font(.system(size: 12))
                 .foregroundColor(Color(hex: "#94a3b8"))
             
@@ -806,7 +811,7 @@ struct SettingsView: View {
             HStack {
                 Spacer()
                 Button(action: resetBanners) {
-                    Text("RESET BANNER")
+                    Text("btn_reset".localized)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 18)
@@ -938,7 +943,7 @@ struct SettingsView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 12))
                         .foregroundColor(.yellow)
-                    Text("Replay non supportato su questo dispositivo (Richiesti min. 4 GB RAM)")
+                    Text("replay_not_supported".localized)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color(hex: "#EF4444"))
                 }
@@ -970,10 +975,10 @@ struct SettingsView: View {
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(Color(hex: "#06b6d4"))
                         .tracking(1.2)
-                    Picker("Durata Replay", selection: $replayDuration) {
-                        Text("5 secondi").tag(5)
-                        Text("7 secondi").tag(7)
-                        Text("10 secondi").tag(10)
+                    Picker("replay_duration_label".localized, selection: $replayDuration) {
+                        Text("seconds_5".localized).tag(5)
+                        Text("seconds_7".localized).tag(7)
+                        Text("seconds_10".localized).tag(10)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     
@@ -982,9 +987,9 @@ struct SettingsView: View {
                         .foregroundColor(Color(hex: "#06b6d4"))
                         .tracking(1.2)
                         .padding(.top, 4)
-                    Picker("Velocità Replay", selection: $replaySpeed) {
-                        Text("0.5x (Lento)").tag(0.5)
-                        Text("0.75x (Quasi normale)").tag(0.75)
+                    Picker("replay_speed_label".localized, selection: $replaySpeed) {
+                        Text("speed_slow".localized).tag(0.5)
+                        Text("speed_normal".localized).tag(0.75)
                     }
                     .pickerStyle(SegmentedPickerStyle())
                 }
@@ -1015,11 +1020,11 @@ struct SettingsView: View {
                     .foregroundColor(Color(hex: "#06b6d4"))
                     .tracking(1.2)
                 
-                Picker("Durata HL", selection: $highlightDuration) {
-                    Text("7 secondi").tag(7)
-                    Text("10 secondi").tag(10)
-                    Text("15 secondi").tag(15)
-                    Text("20 secondi").tag(20)
+                Picker("highlight_duration_label".localized, selection: $highlightDuration) {
+                    Text("seconds_7".localized).tag(7)
+                    Text("seconds_10".localized).tag(10)
+                    Text("seconds_15".localized).tag(15)
+                    Text("seconds_20".localized).tag(20)
                 }
                 .pickerStyle(SegmentedPickerStyle())
             }
@@ -1171,7 +1176,7 @@ struct SettingsView: View {
         logoAwayPickerItem = nil
         AppPreferences.shared.deleteImage(name: "logo_team_a.png")
         AppPreferences.shared.deleteImage(name: "logo_team_b.png")
-        showToast("Loghi squadra resettati")
+        showToast("toast_logos_reset".localized)
     }
     
     private func resetSponsors() {
@@ -1181,7 +1186,7 @@ struct SettingsView: View {
             AppPreferences.shared.deleteImage(name: "sponsor_\(i + 1).png")
         }
         AppPreferences.shared.deleteImage(name: "sponsorFull.png")
-        showToast("Sponsor resettati")
+        showToast("toast_sponsors_reset".localized)
     }
     
     private func resetBanners() {
@@ -1192,7 +1197,7 @@ struct SettingsView: View {
             AppPreferences.shared.deleteImage(name: "sponsorRotating_\(i).png")
         }
         UserDefaults.standard.set(0, forKey: "rotating_sponsors_count")
-        showToast("Banner resettati")
+        showToast("toast_banners_reset".localized)
     }
     
     private func saveTextSlot() {
@@ -1204,7 +1209,7 @@ struct SettingsView: View {
     private func loadTextSlot() {
         if let txt = UserDefaults.standard.string(forKey: "saved_scrolling_text_slot_1"), !txt.isEmpty {
             scrollText = txt
-            showToast("Testo caricato")
+            showToast("toast_text_loaded".localized)
         } else {
             showToast("no_saved_text".localized)
         }
@@ -1214,9 +1219,9 @@ struct SettingsView: View {
         let ramGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024.0 * 1024.0 * 1024.0)
         let isRamOk = ramGB >= 3.5 // iOS uses memory more efficiently than Android 5.5GB
         if isRamOk {
-            replayTestMessage = "✅ SÌ, IL TUO DISPOSITIVO PUÒ UTILIZZARE IL REPLAY\n\nMemoria RAM rilevata: \(String(format: "%.1f", ramGB)) GB (OK)\nGPU Metal Framebuffer: Supportato (OK)"
+            replayTestMessage = "replay_benchmark_pass".localized(with: String(format: "%.1f", ramGB))
         } else {
-            replayTestMessage = "❌ PURTROPPO IL TUO DISPOSITIVO NON HA ABBASTANZA MEMORIA\n\nMemoria RAM rilevata: \(String(format: "%.1f", ramGB)) GB (Min. 4 GB consigliati)"
+            replayTestMessage = "replay_benchmark_fail".localized(with: String(format: "%.1f", ramGB))
         }
         showReplayTestAlert = true
     }
@@ -1238,7 +1243,7 @@ struct ScoreboardThemePreviewCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("ANTEPRIMA GRAFICA IN DIRETTA")
+            Text("live_preview_title".localized)
                 .font(.system(size: 10, weight: .bold))
                 .foregroundColor(Color(hex: "#64748b"))
                 .tracking(1.0)

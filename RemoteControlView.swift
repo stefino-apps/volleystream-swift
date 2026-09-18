@@ -3,6 +3,7 @@ import AudioToolbox
 import UIKit
 
 struct RemoteControlView: View {
+    @ObservedObject private var langManager = LanguageManager.shared
     @State private var sessionCode: String = UserDefaults.standard.string(forKey: "incoming_remote_id") ?? ""
     @State private var isConnected = false
     @State private var matchState = RemoteMatchState()
@@ -37,7 +38,7 @@ struct RemoteControlView: View {
             // Top Bar with red INDIETRO button and Cyan Title
             HStack(alignment: .center) {
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                    Text("INDIETRO")
+                    Text("btn_back".localized)
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 14)
@@ -48,7 +49,7 @@ struct RemoteControlView: View {
                 
                 Spacer()
                 
-                Text("CONTROLLO\nREMOTO")
+                Text("popup_remote_control_title".localized)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(Color(hex: "#06B6D4"))
                     .multilineTextAlignment(.center)
@@ -57,7 +58,7 @@ struct RemoteControlView: View {
                 Spacer()
                 
                 // Invisible placeholder to keep title centered
-                Text("INDIETRO")
+                Text("btn_back".localized)
                     .font(.system(size: 13, weight: .bold))
                     .opacity(0)
                     .padding(.horizontal, 14)
@@ -71,7 +72,7 @@ struct RemoteControlView: View {
                 VStack(spacing: 16) {
                     // Card 1: Link Troubleshooting
                     VStack(spacing: 12) {
-                        Text("Problemi con il link? Clicca\nsul pulsante qui sotto")
+                        Text("remote_link_help".localized)
                             .font(.system(size: 17, weight: .bold))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
@@ -81,7 +82,7 @@ struct RemoteControlView: View {
                                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
                             }
                         }) {
-                            Text("CLICCA QUI")
+                            Text("remote_click_here".localized)
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.white)
                                 .frame(width: 160, height: 38)
@@ -90,7 +91,7 @@ struct RemoteControlView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         
-                        Text("Se i link non aprono l'app automaticamente: 1. Clicca il pulsante qui sopra 2. Cerca 'Apri per impostazione predefinita' o 'Link supportati' 3. Seleziona la casella 'volleystreampro.com'")
+                        Text("remote_trouble_desc".localized)
                             .font(.system(size: 12))
                             .foregroundColor(Color(hex: "#94a3b8"))
                             .multilineTextAlignment(.center)
@@ -113,7 +114,7 @@ struct RemoteControlView: View {
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(Color(hex: "#06B6D4"))
                             
-                            Text("COME UTILIZZARE IL\nCONTROLLO REMOTO")
+                            Text("remote_usage_title".localized)
                                 .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(Color(hex: "#06B6D4"))
                                 .lineLimit(2)
@@ -137,17 +138,17 @@ struct RemoteControlView: View {
                         .padding(.vertical, 2)
                         
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("1. Dalla schermata di Regia del dispositivo che riprende il match, premi il pulsante [R.C.] e invia il link (es. tramite WhatsApp) al dispositivo che userai come telecomando.")
+                            Text("rc_step_1".localized)
                                 .font(.system(size: 13))
                                 .foregroundColor(Color(hex: "#cbd5e1"))
                                 .lineSpacing(2)
                             
-                            Text("2. Installa l'app VolleyStream Pro anche sul secondo dispositivo (non è richiesto alcun abbonamento).")
+                            Text("rc_step_2".localized)
                                 .font(.system(size: 13))
                                 .foregroundColor(Color(hex: "#cbd5e1"))
                                 .lineSpacing(2)
                             
-                            Text("3. Clicca sul link ricevuto sul secondo dispositivo: l'app si aprirà all'istante con tutti i comandi per gestire il punteggio a distanza in tempo reale!")
+                            Text("rc_step_3".localized)
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(Color(hex: "#FACC15"))
                                 .lineSpacing(2)
@@ -185,17 +186,17 @@ struct RemoteControlView: View {
                         .padding(.top, 4)
                         
                         VStack(spacing: 4) {
-                            Text("Inserisci Codice Sessione")
+                            Text("remote_enter_code_title".localized)
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                             
-                            Text("Inserisci il codice generato dalla\nRegia per collegarti al match")
+                            Text("remote_enter_code_desc".localized)
                                 .font(.system(size: 13))
                                 .foregroundColor(Color(hex: "#94a3b8"))
                                 .multilineTextAlignment(.center)
                         }
                         
-                        TextField("CODICE", text: $sessionCode)
+                        TextField("remote_code_hint".localized, text: $sessionCode)
                             .font(.system(size: 24, weight: .bold, design: .monospaced))
                             .multilineTextAlignment(.center)
                             .autocapitalization(.allCharacters)
@@ -214,7 +215,7 @@ struct RemoteControlView: View {
                         Button(action: { connectToSession() }) {
                             HStack(spacing: 8) {
                                 Image(systemName: "bolt.fill")
-                                Text("CONNETTI TELECOMANDO")
+                                Text("remote_connect_btn".localized)
                             }
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.black)
@@ -274,7 +275,7 @@ struct RemoteControlView: View {
                     Circle()
                         .fill(Color(hex: "#10b981"))
                         .frame(width: 8, height: 8)
-                    Text("Connesso a: \(sessionCode)")
+                    Text("remote_connected_to".localized(with: sessionCode))
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color(hex: "#94a3b8"))
                 }
@@ -286,7 +287,7 @@ struct RemoteControlView: View {
                     Circle()
                         .fill(matchState.isStreaming ? Color.red : Color.gray)
                         .frame(width: 7, height: 7)
-                    Text(matchState.isStreaming ? "DIRETTA: LIVE" : "LIVE NON ATTIVA")
+                    Text(matchState.isStreaming ? "live_active".localized : "live_not_active".localized)
                         .font(.system(size: 11, weight: .heavy))
                         .foregroundColor(matchState.isStreaming ? Color.red : Color(hex: "#06B6D4"))
                     
@@ -322,7 +323,7 @@ struct RemoteControlView: View {
                         Circle()
                             .fill(Color.white)
                             .frame(width: 8, height: 8)
-                        Text(matchState.isStreaming ? "ARRESTA DIRETTA" : "GO LIVE")
+                        Text(matchState.isStreaming ? "remote_stop_live".localized : "remote_go_live".localized)
                             .font(.system(size: 14, weight: .black))
                     }
                     .foregroundColor(.white)
@@ -340,7 +341,7 @@ struct RemoteControlView: View {
                     HStack(spacing: 6) {
                         Text("↩")
                             .font(.system(size: 16, weight: .bold))
-                        Text("ANNULLA")
+                        Text("btn_undo".localized)
                             .font(.system(size: 14, weight: .bold))
                     }
                     .foregroundColor(.white)
