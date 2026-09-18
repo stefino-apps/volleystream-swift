@@ -819,35 +819,24 @@ struct LegalDocSheetView: View {
     
     private var privacyContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            legalCard(title: "1. Titolare del Trattamento", text: "Il titolare del trattamento dei dati è VolleyStream Pro. Contatto email: volleystreampro@gmail.com. La protezione e riservatezza dei tuoi dati è la nostra priorità.")
-            
-            legalCard(title: "2. Fotocamera e Microfono", text: "L'applicazione richiede l'accesso a Fotocamera e Microfono esclusivamente per consentire la ripresa e la trasmissione in diretta streaming su YouTube e il salvataggio locale dei match e degli highlights sul tuo dispositivo. Nessun flusso audio/video viene registrato o memorizzato sui nostri server.")
-            
-            legalCard(title: "3. Account Google e YouTube API Services", text: "VolleyStream Pro utilizza i servizi API di YouTube per consentirti di trasmettere live sul tuo canale. L'uso dell'app implica l'accettazione dei Termini di Servizio di YouTube (https://www.youtube.com/t/terms) e delle Norme sulla Privacy di Google (https://policies.google.com/privacy). Puoi revocare l'accesso in qualsiasi momento da myaccount.google.com/permissions.")
-            
-            legalCard(title: "4. Firebase e Controllo Remoto", text: "Utilizziamo Google Firebase per la sincronizzazione temporanea dei punteggi, del tabellone e del controllo remoto durante la partita. I dati vengono crittografati in transito (HTTPS) e cancellati al termine della sessione.")
-            
-            legalCard(title: "5. Pagamenti e Abbonamenti", text: "Tutti i pagamenti e gli abbonamenti sono gestiti in modo sicuro e autonomo tramite Apple App Store / In-App Purchase. Non raccogliamo né memorizziamo alcun dato relativo a carte di credito o conti bancari.")
-            
-            legalCard(title: "6. Tutela dei Minori e Consenso", text: "Qualora le riprese coinvolgano soggetti minorenni, l'Utente ha l'obbligo tassativo di ottenere il preventivo consenso scritto dai genitori o tutori legali prima di avviare qualsiasi trasmissione o registrazione.")
-            
-            legalCard(title: "7. Diritti dell'Utente (GDPR)", text: "Hai il diritto di richiedere in qualsiasi momento l'accesso, la rettifica, la cancellazione o la revoca del consenso per qualsiasi dato associato al tuo utilizzo inviando un'email a volleystreampro@gmail.com.")
+            legalCard(title: "privacy_sec1_title".localized, text: "privacy_sec1_text".localized)
+            legalCard(title: "privacy_sec2_title".localized, text: "privacy_sec2_text".localized)
+            legalCard(title: "privacy_sec3_title".localized, text: "privacy_sec3_text".localized)
+            legalCard(title: "privacy_sec4_title".localized, text: "privacy_sec4_text".localized)
+            legalCard(title: "privacy_sec5_title".localized, text: "privacy_sec5_text".localized)
+            legalCard(title: "privacy_sec6_title".localized, text: "privacy_sec6_text".localized)
+            legalCard(title: "privacy_sec7_title".localized, text: "privacy_sec7_text".localized)
         }
     }
     
     private var termsContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            legalCard(title: "1. Accettazione dei Termini", text: "Scaricando, installando o utilizzando VolleyStream Pro, accetti integralmente i presenti Termini di Servizio. Se non accetti questi termini, ti preghiamo di non utilizzare l'applicazione.")
-            
-            legalCard(title: "2. Licenza d'Uso", text: "Ti concediamo una licenza personale, non esclusiva, non trasferibile e revocabile per utilizzare l'app a scopi personali, sportivi o di trasmissione di eventi in conformità con i presenti Termini.")
-            
-            legalCard(title: "3. Abbonamenti e Rinnovo Automatico", text: "VolleyStream Pro offre piani di abbonamento per accedere a tutte le funzionalità avanzate (overlay grafici pro, replay istantaneo, highlights, controllo remoto, 10 sport). L'abbonamento si rinnova automaticamente a meno che non venga annullato almeno 24 ore prima della scadenza tramite le Impostazioni del tuo ID Apple.")
-            
-            legalCard(title: "4. Responsabilità sui Contenuti Trasmessi", text: "L'Utente è l'unico responsabile delle immagini e dei suoni trasmessi. È vietato trasmettere contenuti protetti da copyright senza autorizzazione, contenuti illeciti, diffamatori o offensivi. L'Utente si impegna a rispettare tutte le normative sulla privacy e la tutela dei minori.")
-            
-            legalCard(title: "5. YouTube API Terms of Service", text: "L'utilizzo delle funzioni di live streaming su YouTube richiede il rispetto dei YouTube Terms of Service (https://www.youtube.com/t/terms). VolleyStream Pro opera come interfaccia tecnica per la trasmissione verso la piattaforma YouTube.")
-            
-            legalCard(title: "6. Limitazione di Responsabilità", text: "VolleyStream Pro fornisce il servizio 'così com'è'. Non possiamo garantire l'assenza di interruzioni causate da problemi di rete, instabilità della connessione Wi-Fi/4G/5G dell'utente o malfunzionamenti dei server di terze parti.")
+            legalCard(title: "terms_sec1_title".localized, text: "terms_sec1_text".localized)
+            legalCard(title: "terms_sec2_title".localized, text: "terms_sec2_text".localized)
+            legalCard(title: "terms_sec3_title".localized, text: "terms_sec3_text".localized)
+            legalCard(title: "terms_sec4_title".localized, text: "terms_sec4_text".localized)
+            legalCard(title: "terms_sec5_title".localized, text: "terms_sec5_text".localized)
+            legalCard(title: "terms_sec6_title".localized, text: "terms_sec6_text".localized)
         }
     }
     
