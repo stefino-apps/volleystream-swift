@@ -82,7 +82,7 @@ jobs:
       - name: Package IPA for Sideloadly / Test
         run: |
           mkdir -p Payload
-          cp -r build/MiaApp.xcarchive/Products/Applications/MiaApp.app Payload/
+          cp -r build/MiaApp.xcarchive/Products/Applications/*.app Payload/
           zip -r VolleyStreamPro.ipa Payload/
 
       - name: Upload IPA Artifact (for Sideloadly / Direct Install)
